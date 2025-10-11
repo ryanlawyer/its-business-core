@@ -1,0 +1,31 @@
+{
+  "organization": {
+    "name": "ITS Business Core",
+    "logo": null
+  },
+  "security": {
+    "passwordPolicy": {
+      "enabled": true,
+      "minLength": 8,
+      "requireUppercase": true,
+      "requireLowercase": true,
+      "requireNumbers": true,
+      "requireSymbols": false,
+      "preventReuse": 0
+    },
+    "sessionTimeout": {
+      "enabled": false,
+      "inactivityMinutes": 30
+    }
+  },
+  "purchaseOrders": {
+    "numberPrefix": "PO-",
+    "resetCounterYearly": true
+  },
+  "fiscalYear": {
+    "startMonth": 1
+  },
+  "auditLog": {
+    "retentionMonths": 0
+  }
+}

@@ -1,0 +1,463 @@
+// ITS Business System - Core Edition
+// Simplified schema for SMB (1-250 employees)
+// SQLite for simplicity and NAS deployment
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER MANAGEMENT
+// ============================================
+
+model Role {
+  id          String  @id @default(uuid())
+  name        String  @unique // e.g., "Administrator", "Manager", "User"
+  code        String  @unique // e.g., "ADMIN", "MANAGER", "USER"
+  description String?
+  isSystem    Boolean @default(false) // System roles cannot be deleted
+  isActive    Boolean @default(true)
+
+  // Permissions (JSON stored as string in SQLite)
+  permissions String @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users User[]
+
+  @@index([code])
+  @@map("roles")
+}
+
+model User {
+  id       String  @id @default(uuid())
+  email    String  @unique
+  password String? // Optional for EntraID users
+  name     String
+
+  // EntraID fields (for future authentication)
+  entraIdObjectId String? @unique
+  authProvider    String  @default("local") // "local" | "entraId"
+
+  // Role assignment
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  // Optional department assignment
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  // Status
+  isActive Boolean @default(true)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  timeclockEntries     TimeclockEntry[]
+  purchaseOrders       PurchaseOrder[]
+  auditLogs            AuditLog[] // Logs created by this user
+  budgetAmendments     BudgetAmendment[]
+  closedFiscalYears    FiscalYear[]
+
+  @@index([email])
+  @@index([roleId])
+  @@index([departmentId])
+  @@index([entraIdObjectId])
+  @@map("users")
+}
+
+// ============================================
+// ORGANIZATIONAL STRUCTURE
+// ============================================
+
+model Department {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String?
+  isActive    Boolean @default(true)
+
+  // Hierarchy support (for future use)
+  parentId String?
+  parent   Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children Department[] @relation("DepartmentHierarchy")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users                 User[]
+  budgetItems           BudgetItem[]
+  budgetTargets         DepartmentBudgetTarget[]
+  purchaseOrders        PurchaseOrder[]
+
+  @@index([parentId])
+  @@map("departments")
+}
+
+// ============================================
+// BUDGET MANAGEMENT
+// ============================================
+
+model BudgetCategory {
+  id          String  @id @default(uuid())
+  code        String  @unique
+  name        String
+  description String?
+
+  // Hierarchy support
+  parentId String?
+  parent   BudgetCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children BudgetCategory[] @relation("CategoryHierarchy")
+
+  // GL Integration (for future QuickBooks/Xero)
+  glAccountCode String?
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  budgetItems BudgetItem[]
+
+  @@index([parentId])
+  @@map("budget_categories")
+}
+
+model BudgetItem {
+  id           String  @id @default(uuid())
+  code         String  @unique
+  description  String?
+  budgetAmount Float   @default(0) // Total budget for this line item
+
+  // Optional department
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  // NEW: Category relationship
+  categoryId String?
+  category   BudgetCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  // Fiscal year (simple integer: 2025, 2026, etc.)
+  fiscalYear Int @default(2025)
+
+  // NEW: Accrual settings
+  accrualType String @default("ANNUAL") // "ANNUAL", "MONTHLY", "QUARTERLY"
+
+  // NEW: GL Integration
+  glAccountCode String?
+
+  // NEW: Stored values for budget tracking (updated by app logic)
+  encumbered  Float @default(0) // Sum of APPROVED PO line items
+  actualSpent Float @default(0) // Sum of COMPLETED PO line items
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  poLineItems      POLineItem[]
+  budgetAmendments BudgetAmendment[]
+
+  @@index([code])
+  @@index([fiscalYear])
+  @@index([departmentId])
+  @@index([categoryId])
+  @@map("budget_items")
+}
+
+model BudgetAmendment {
+  id           String     @id @default(uuid())
+  budgetItemId String
+  budgetItem   BudgetItem @relation(fields: [budgetItemId], references: [id], onDelete: Cascade)
+
+  type   String // "INCREASE", "DECREASE", "TRANSFER_IN", "TRANSFER_OUT"
+  amount Float
+  reason String
+
+  // For transfers: link related amendments
+  relatedAmendmentId String?
+  relatedAmendment   BudgetAmendment?  @relation("TransferLink", fields: [relatedAmendmentId], references: [id], onDelete: SetNull)
+  relatedTo          BudgetAmendment[] @relation("TransferLink")
+
+  // Transfer source/destination
+  fromBudgetItemId String?
+  toBudgetItemId   String?
+
+  // Tracking
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  fiscalYear Int
+
+  // Prior budget amount (for audit trail)
+  previousAmount Float
+  newAmount      Float
+
+  createdAt DateTime @default(now())
+
+  @@index([budgetItemId])
+  @@index([createdById])
+  @@index([fiscalYear])
+  @@index([createdAt])
+  @@map("budget_amendments")
+}
+
+model FiscalYear {
+  id        String   @id @default(uuid())
+  year      Int      @unique
+  startDate DateTime
+  endDate   DateTime
+
+  status String @default("OPEN") // "OPEN", "SOFT_CLOSED", "HARD_CLOSED"
+
+  closedById String?
+  closedBy   User?    @relation(fields: [closedById], references: [id], onDelete: SetNull)
+  closedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([year])
+  @@index([status])
+  @@map("fiscal_years")
+}
+
+model DepartmentBudgetTarget {
+  id           String     @id @default(uuid())
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  fiscalYear   Int
+  targetAmount Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([departmentId, fiscalYear])
+  @@index([fiscalYear])
+  @@map("department_budget_targets")
+}
+
+// ============================================
+// VENDOR MANAGEMENT
+// ============================================
+
+model Vendor {
+  id           String  @id @default(uuid())
+  vendorNumber String  @unique
+  name         String
+
+  // Contact info
+  phone   String?
+  email   String?
+  address String?
+  city    String?
+  state   String?
+  zipCode String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  purchaseOrders PurchaseOrder[]
+
+  @@index([vendorNumber])
+  @@index([name])
+  @@map("vendors")
+}
+
+// ============================================
+// PURCHASE ORDER SYSTEM
+// ============================================
+
+enum POStatus {
+  DRAFT             // Being created, not submitted
+  PENDING_APPROVAL  // Submitted, waiting for manager approval
+  APPROVED          // Approved, ready to send to vendor
+  COMPLETED         // Received and closed
+  CANCELLED         // Cancelled (soft delete)
+}
+
+model PurchaseOrder {
+  id       String   @id @default(uuid())
+  poNumber String   @unique
+  poDate   DateTime @default(now())
+
+  // Vendor
+  vendorId String
+  vendor   Vendor @relation(fields: [vendorId], references: [id])
+
+  // Creator
+  requestedById String
+  requestedBy   User   @relation(fields: [requestedById], references: [id])
+
+  // Department (links to creator's department)
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  // Optional fields
+  notes String?
+
+  // Receipt attachment
+  receiptFileName String?
+  receiptFilePath String?
+
+  // Workflow
+  status POStatus @default(DRAFT)
+
+  // Approval tracking
+  approvedBy String?
+  approvedAt DateTime?
+
+  // Rejection tracking
+  rejectedBy    String?
+  rejectedAt    DateTime?
+  rejectionNote String?
+
+  // Void tracking
+  voidedBy String?
+  voidedAt DateTime?
+  voidNote String?
+
+  // Completion
+  completedAt DateTime?
+
+  // Totals (calculated from line items)
+  totalAmount Float @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  lineItems POLineItem[]
+  documents Document[]
+
+  @@index([poNumber])
+  @@index([vendorId])
+  @@index([requestedById])
+  @@index([departmentId])
+  @@index([status])
+  @@index([poDate])
+  @@map("purchase_orders")
+}
+
+model POLineItem {
+  id          String @id @default(uuid())
+  description String
+  amount      Float
+
+  // PO relationship
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  // Budget line item
+  budgetItemId String
+  budgetItem   BudgetItem @relation(fields: [budgetItemId], references: [id])
+
+  @@index([purchaseOrderId])
+  @@index([budgetItemId])
+  @@map("po_line_items")
+}
+
+// ============================================
+// DOCUMENT MANAGEMENT
+// ============================================
+
+model Document {
+  id               String @id @default(uuid())
+  filename         String
+  originalFilename String
+  filepath         String
+  filesize         Int
+  mimetype         String
+
+  // Optional PO attachment
+  purchaseOrderId String?
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull)
+
+  uploadedAt DateTime @default(now())
+
+  @@index([purchaseOrderId])
+  @@map("documents")
+}
+
+// ============================================
+// TIMECLOCK SYSTEM
+// ============================================
+
+model TimeclockEntry {
+  id       String    @id @default(uuid())
+  userId   String
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clockIn  DateTime
+  clockOut DateTime?
+  duration Int? // Duration in seconds
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([clockIn])
+  @@map("timeclock_entries")
+}
+
+// ============================================
+// SYSTEM SETTINGS
+// ============================================
+
+model SystemSettings {
+  id                    String   @id @default(uuid())
+  key                   String   @unique
+  value                 String
+  description           String?
+  category              String   @default("general") // "general", "file_upload", "security", etc.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+  @@index([category])
+  @@map("system_settings")
+}
+
+// ============================================
+// AUDIT LOG SYSTEM
+// ============================================
+
+model AuditLog {
+  id String @id @default(uuid())
+
+  // Who did it
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // What happened
+  action     String // "USER_CREATED", "PO_APPROVED", "LOGIN_FAILED", etc.
+  entityType String // "User", "PurchaseOrder", "Role", "Department", etc.
+  entityId   String? // ID of the affected entity
+
+  // Changes (JSON: { before: {...}, after: {...} })
+  changes String @default("{}")
+
+  // Context
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

@@ -1,0 +1,169 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { prisma } from '@/lib/prisma';
+import { createAuditLog, getRequestContext } from '@/lib/audit';
+import { POStatus } from '@prisma/client';
+import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
+import { updateBudgetFromPO } from '@/lib/budget-tracking';
+
+// POST /api/purchase-orders/[id]/status - Change PO status
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userWithPerms = await getUserWithPermissions(session.user.id);
+    if (!userWithPerms) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { user, permissions } = userWithPerms;
+
+    const { id } = await params;
+    const body = await req.json();
+    const { newStatus, note }: { newStatus: POStatus; note?: string } = body;
+
+    // Get current PO
+    const po = await prisma.purchaseOrder.findUnique({
+      where: { id },
+      include: {
+        requestedBy: true,
+      },
+    });
+
+    if (!po) {
+      return NextResponse.json({ error: 'Purchase order not found' }, { status: 404 });
+    }
+
+    // Validate status transition
+    const validTransitions: Record<POStatus, POStatus[]> = {
+      DRAFT: ['PENDING_APPROVAL', 'CANCELLED'],
+      PENDING_APPROVAL: ['APPROVED', 'DRAFT', 'CANCELLED'],
+      APPROVED: ['COMPLETED', 'CANCELLED'],
+      COMPLETED: ['CANCELLED'],
+      CANCELLED: [],
+    };
+
+    if (!validTransitions[po.status].includes(newStatus)) {
+      return NextResponse.json(
+        { error: `Invalid status transition from ${po.status} to ${newStatus}` },
+        { status: 400 }
+      );
+    }
+
+    // Check permissions for status changes
+    if (newStatus === 'PENDING_APPROVAL') {
+      // Submit for approval - user must own the PO or have edit permission
+      if (po.requestedById !== user.id && !hasPermission(permissions, 'purchaseOrders', 'canEdit')) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    } else if (newStatus === 'APPROVED') {
+      // Approve - must have approve permission
+      if (!hasPermission(permissions, 'purchaseOrders', 'canApprove')) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    } else if (newStatus === 'COMPLETED') {
+      // Complete - must have approve permission, and must have receipt
+      if (!hasPermission(permissions, 'purchaseOrders', 'canApprove')) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+      if (!po.receiptFileName && !po.receiptFilePath) {
+        return NextResponse.json(
+          { error: 'Cannot complete PO without receipt attachment' },
+          { status: 400 }
+        );
+      }
+    } else if (newStatus === 'CANCELLED') {
+      // Void - user can void own DRAFT, manager can void department, admin can void all
+      if (!hasPermission(permissions, 'purchaseOrders', 'canVoid')) {
+        if (po.status !== 'DRAFT' || po.requestedById !== user.id) {
+          return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+      }
+      // Void requires a note
+      if (!note) {
+        return NextResponse.json(
+          { error: 'Void note is required when cancelling a PO' },
+          { status: 400 }
+        );
+      }
+    } else if (newStatus === 'DRAFT' && po.status === 'PENDING_APPROVAL') {
+      // Reject - must have approve permission
+      if (!hasPermission(permissions, 'purchaseOrders', 'canApprove')) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+      // Rejection requires a note
+      if (!note) {
+        return NextResponse.json(
+          { error: 'Rejection note is required when rejecting a PO' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Prepare update data
+    const updateData: any = {
+      status: newStatus,
+    };
+
+    let auditAction: string = 'PO_UPDATED';
+
+    if (newStatus === 'PENDING_APPROVAL') {
+      auditAction = 'PO_SUBMITTED';
+    } else if (newStatus === 'APPROVED') {
+      updateData.approvedBy = user.id;
+      updateData.approvedAt = new Date();
+      auditAction = 'PO_APPROVED';
+    } else if (newStatus === 'COMPLETED') {
+      updateData.completedAt = new Date();
+      auditAction = 'PO_COMPLETED';
+    } else if (newStatus === 'CANCELLED') {
+      updateData.voidedBy = user.id;
+      updateData.voidedAt = new Date();
+      updateData.voidNote = note;
+      auditAction = 'PO_VOIDED';
+    } else if (newStatus === 'DRAFT' && po.status === 'PENDING_APPROVAL') {
+      updateData.rejectedBy = user.id;
+      updateData.rejectedAt = new Date();
+      updateData.rejectionNote = note;
+      auditAction = 'PO_REJECTED';
+    }
+
+    // Update PO
+    const updated = await prisma.purchaseOrder.update({
+      where: { id },
+      data: updateData,
+    });
+
+    // Update budget tracking (encumbered/actualSpent)
+    await updateBudgetFromPO(id, po.status, newStatus);
+
+    // Audit log
+    const { ipAddress, userAgent } = getRequestContext(req);
+    await createAuditLog({
+      userId: user.id,
+      action: auditAction as any,
+      entityType: 'PurchaseOrder',
+      entityId: id,
+      changes: {
+        before: { status: po.status },
+        after: { status: newStatus, note },
+      },
+      ipAddress,
+      userAgent,
+    });
+
+    return NextResponse.json({ purchaseOrder: updated });
+  } catch (error) {
+    console.error('Error changing PO status:', error);
+    return NextResponse.json(
+      { error: 'Failed to change PO status' },
+      { status: 500 }
+    );
+  }
+}
