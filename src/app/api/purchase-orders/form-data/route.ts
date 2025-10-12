@@ -77,9 +77,36 @@ export async function GET() {
       }),
     ]);
 
+    // Calculate remaining budget for each budget item
+    const budgetItemsWithRemaining = budgetItems.map(item => ({
+      id: item.id,
+      code: item.code,
+      name: item.description,
+      allocated: item.budgetAmount,
+      encumbered: item.encumbered,
+      actualSpent: item.actualSpent,
+      remaining: item.budgetAmount - item.encumbered - item.actualSpent,
+      department: item.department,
+    }));
+
+    // Fetch departments for filtering
+    const departments = await prisma.department.findMany({
+      where: {
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+
     const data = {
       vendors,
-      budgetItems,
+      budgetItems: budgetItemsWithRemaining,
+      departments,
     };
 
     // Cache for 5 minutes

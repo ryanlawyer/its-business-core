@@ -134,7 +134,7 @@ model BudgetCategory {
 model BudgetItem {
   id           String  @id @default(uuid())
   code         String  @unique
-  description  String?
+  description  String
   budgetAmount Float   @default(0) // Total budget for this line item
 
   // Optional department

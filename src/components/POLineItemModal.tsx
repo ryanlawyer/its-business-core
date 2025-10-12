@@ -18,6 +18,10 @@ type BudgetItem = {
   id: string;
   code: string;
   name: string;
+  allocated?: number;
+  encumbered?: number;
+  actualSpent?: number;
+  remaining?: number;
 };
 
 type POLineItemModalProps = {
@@ -157,6 +161,29 @@ export default function POLineItemModal({
             {errors.budgetItemId && (
               <p className="text-red-500 text-xs mt-1">{errors.budgetItemId}</p>
             )}
+            {/* Show available budget */}
+            {formData.budgetItemId && (() => {
+              const selectedBudget = budgetItems.find(b => b.id === formData.budgetItemId);
+              if (selectedBudget && selectedBudget.remaining !== undefined) {
+                const isOverBudget = formData.amount > selectedBudget.remaining;
+                return (
+                  <div className={`mt-2 p-2 rounded text-sm ${isOverBudget ? 'bg-red-50 border border-red-200' : 'bg-blue-50 border border-blue-200'}`}>
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-700">Available Budget:</span>
+                      <span className={`font-bold ${isOverBudget ? 'text-red-600' : 'text-green-600'}`}>
+                        ${selectedBudget.remaining.toFixed(2)}
+                      </span>
+                    </div>
+                    {isOverBudget && formData.amount > 0 && (
+                      <div className="mt-1 text-red-600 font-medium">
+                        ⚠️ Over budget by ${(formData.amount - selectedBudget.remaining).toFixed(2)}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              return null;
+            })()}
           </div>
 
           {/* Amount */}

@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import BudgetItemSelector from '@/components/BudgetItemSelector';
 
 type Vendor = {
   id: string;
@@ -10,10 +12,23 @@ type Vendor = {
   vendorNumber: string;
 };
 
+type Department = {
+  id: string;
+  name: string;
+};
+
 type BudgetItem = {
   id: string;
   code: string;
-  description: string;
+  name: string;
+  allocated?: number;
+  encumbered?: number;
+  actualSpent?: number;
+  remaining?: number;
+  department?: {
+    id: string;
+    name: string;
+  };
 };
 
 type LineItem = {
@@ -25,10 +40,20 @@ type LineItem = {
 
 export default function NewPurchaseOrderPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [showOverBudgetDialog, setShowOverBudgetDialog] = useState(false);
+  const [overBudgetItems, setOverBudgetItems] = useState<Array<{
+    code: string;
+    name: string;
+    amount: number;
+    available: number;
+    overBy: number;
+  }>>([]);
 
   const [vendorId, setVendorId] = useState('');
   const [department, setDepartment] = useState('');
@@ -65,6 +90,7 @@ export default function NewPurchaseOrderPage() {
 
       setVendors(data.vendors || []);
       setBudgetItems(data.budgetItems || []);
+      setDepartments(data.departments || []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -103,8 +129,58 @@ export default function NewPurchaseOrderPage() {
     );
   };
 
+  const checkBudgetOverages = () => {
+    const overages: Array<{
+      code: string;
+      name: string;
+      amount: number;
+      available: number;
+      overBy: number;
+    }> = [];
+
+    // Group line items by budget item
+    const budgetTotals = new Map<string, number>();
+    lineItems.forEach(item => {
+      const amount = parseFloat(item.amount) || 0;
+      const current = budgetTotals.get(item.budgetItemId) || 0;
+      budgetTotals.set(item.budgetItemId, current + amount);
+    });
+
+    // Check each budget item for overages
+    budgetTotals.forEach((totalAmount, budgetItemId) => {
+      const budget = budgetItems.find(b => b.id === budgetItemId);
+      if (budget && budget.remaining !== undefined) {
+        if (totalAmount > budget.remaining) {
+          overages.push({
+            code: budget.code,
+            name: budget.name,
+            amount: totalAmount,
+            available: budget.remaining,
+            overBy: totalAmount - budget.remaining,
+          });
+        }
+      }
+    });
+
+    return overages;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check for budget overages
+    const overages = checkBudgetOverages();
+    if (overages.length > 0) {
+      setOverBudgetItems(overages);
+      setShowOverBudgetDialog(true);
+      return;
+    }
+
+    // If no overages, proceed with normal submission
+    await submitPO(false);
+  };
+
+  const submitPO = async (saveAsDraft: boolean) => {
     setSubmitting(true);
 
     try {
@@ -116,6 +192,7 @@ export default function NewPurchaseOrderPage() {
           vendorId,
           department: department || null,
           note: note || null,
+          status: saveAsDraft ? 'DRAFT' : undefined, // If over budget, save as DRAFT
           lineItems: lineItems.map((item) => ({
             budgetItemId: item.budgetItemId,
             description: item.description,
@@ -321,21 +398,17 @@ export default function NewPurchaseOrderPage() {
                       <label className="block text-xs font-medium text-gray-700 mb-1">
                         Budget Code *
                       </label>
-                      <select
-                        value={item.budgetItemId}
-                        onChange={(e) =>
-                          updateLineItem(item.id, 'budgetItemId', e.target.value)
+                      <BudgetItemSelector
+                        budgetItems={budgetItems}
+                        departments={departments}
+                        selectedBudgetItemId={item.budgetItemId}
+                        onChange={(budgetItemId) =>
+                          updateLineItem(item.id, 'budgetItemId', budgetItemId)
                         }
+                        userDepartmentId={session?.user?.departmentId}
+                        userDepartmentName={session?.user?.departmentName}
                         required
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">Select budget code</option>
-                        {budgetItems.map((budget) => (
-                          <option key={budget.id} value={budget.id}>
-                            {budget.code}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </div>
 
                     <div>
@@ -406,6 +479,91 @@ export default function NewPurchaseOrderPage() {
             </button>
           </div>
         </form>
+
+        {/* Over Budget Confirmation Dialog */}
+        {showOverBudgetDialog && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="border-b px-6 py-4">
+                <h2 className="text-2xl font-bold text-red-600">
+                  ⚠️ Budget Exceeded
+                </h2>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <p className="text-gray-700">
+                  The following budget items will be exceeded by this purchase order:
+                </p>
+
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-3">
+                  {overBudgetItems.map((item, index) => (
+                    <div key={index} className="bg-white rounded p-3 border border-red-100">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <div className="font-semibold text-gray-900">{item.code}</div>
+                          <div className="text-sm text-gray-600">{item.name}</div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-sm">
+                        <div>
+                          <span className="text-gray-600">Available:</span>
+                          <div className="font-semibold text-green-600">
+                            ${item.available.toFixed(2)}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Requested:</span>
+                          <div className="font-semibold text-gray-900">
+                            ${item.amount.toFixed(2)}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Over by:</span>
+                          <div className="font-semibold text-red-600">
+                            ${item.overBy.toFixed(2)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-900">
+                    <strong>Note:</strong> If you continue, the purchase order will be saved as a <strong>DRAFT</strong> and will not affect budget allocations until approved.
+                  </p>
+                </div>
+
+                <p className="text-gray-700">
+                  What would you like to do?
+                </p>
+              </div>
+
+              <div className="border-t px-6 py-4 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowOverBudgetDialog(false);
+                    setOverBudgetItems([]);
+                  }}
+                  className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel & Revise
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setShowOverBudgetDialog(false);
+                    await submitPO(true);
+                  }}
+                  className="px-6 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors font-semibold"
+                >
+                  Save as Draft
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -26,7 +26,10 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get('search');
 
     // Build query based on permissions
-    let whereClause: any = {};
+    let whereClause: any = {
+      // Exclude cancelled POs by default
+      status: { not: 'CANCELLED' },
+    };
 
     if (canViewAllData(permissions, 'purchaseOrders')) {
       // Can view all POs - no filter

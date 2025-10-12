@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { getRoleDisplay, getRoleBadgeColor } from '@/lib/permissions';
 import { parsePermissions, hasPermission } from '@/lib/client-permissions';
 
@@ -12,6 +12,26 @@ export default function Navbar() {
   const { data: session } = useSession();
   const user = session?.user;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [organizationName, setOrganizationName] = useState('ITS Business Core');
+
+  // Fetch organization name on mount
+  useEffect(() => {
+    const fetchOrganizationName = async () => {
+      try {
+        const res = await fetch('/api/settings/public');
+        if (res.ok) {
+          const data = await res.json();
+          setOrganizationName(data.organization.name);
+        }
+      } catch (error) {
+        console.error('Error fetching organization name:', error);
+      }
+    };
+
+    if (user) {
+      fetchOrganizationName();
+    }
+  }, [user]);
 
   const isActive = useCallback(
     (path: string) => {
@@ -72,10 +92,14 @@ export default function Navbar() {
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded flex items-center justify-center">
               <span className="text-blue-600 font-bold text-lg">ITS</span>
             </div>
-            <span className="text-lg sm:text-xl font-bold hidden xs:inline">
-              ITS Business Core
+            {/* Desktop/Tablet: Show full name */}
+            <span className="text-lg sm:text-xl font-bold hidden sm:inline">
+              {organizationName}
             </span>
-            <span className="text-lg sm:text-xl font-bold xs:hidden">ITS</span>
+            {/* Mobile: Show first word only to save space */}
+            <span className="text-lg font-bold sm:hidden">
+              {organizationName.split(' ')[0]}
+            </span>
           </Link>
 
           {/* Desktop Menu */}

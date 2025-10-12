@@ -326,6 +326,42 @@ The system is fully functional with all core features implemented:
 3. Fixed budget dashboard values (recalculated from POs)
 4. Fixed YoY calculation to handle division by zero (shows "N/A" for missing data)
 
+### **Phase 11: Docker Deployment** ✅
+- [x] Multi-stage Dockerfile for optimized builds
+- [x] Docker Compose configuration with persistent volumes
+- [x] Automated startup script (docker-entrypoint.sh)
+- [x] Database initialization and seeding on first run
+- [x] Windows batch scripts for easy management (start, stop, reset, update)
+- [x] Port configuration changed to 3003 (avoid conflicts with dev)
+- [x] Docker deployment documentation (README.md, QUICKSTART.md)
+- [x] `.dockerignore` for optimized builds
+- [x] Health checks for container monitoring
+
+**Docker Setup:**
+- Container runs on port 3003 externally (3000 internally)
+- Persistent volumes for database (`its-data`) and uploads (`its-uploads`)
+- Automatic database initialization with seed data
+- Update workflow: `update.bat` copies latest code and rebuilds
+- Located in: `ITSCoreDocker/` folder
+
+### **Phase 12: GitHub Integration** ✅
+- [x] Git repository initialized
+- [x] `.gitignore` files created (excludes .env, *.db, node_modules, uploads)
+- [x] Code pushed to GitHub: https://github.com/ryanlawyer/its-business-core
+- [x] GitHub setup documentation (GITHUB_SETUP.md)
+- [x] Deployment from GitHub documentation (DEPLOY_FROM_GITHUB.md)
+- [x] Security verification (no sensitive data committed)
+- [x] 105 files committed successfully
+
+**GitHub Benefits:**
+- ✅ Deployment now independent of development laptop
+- ✅ Can deploy from any machine with `git clone`
+- ✅ Version control for all changes
+- ✅ Backup in cloud (GitHub)
+- ✅ Ready for team collaboration
+- ✅ Can deploy to Synology NAS directly from GitHub
+- ✅ CI/CD ready (GitHub Actions can be added)
+
 ---
 
 ## 📊 **Comparison to Original System**
@@ -390,5 +426,227 @@ The system is fully functional with all core features implemented:
 
 ---
 
-**Last Updated**: 2025-10-11
-**Version**: 1.0.0 (Production Ready)
+---
+
+## 🐳 **Docker Deployment**
+
+### **Quick Start**
+
+```bash
+# Clone from GitHub
+git clone https://github.com/ryanlawyer/its-business-core.git
+cd its-business-core/ITSCoreDocker
+
+# Build and start (Windows)
+update.bat
+
+# Access application
+http://localhost:3003
+```
+
+### **Docker Commands**
+
+```bash
+# Start container
+docker-compose up -d --build
+
+# Stop container
+docker-compose down
+
+# View logs
+docker-compose logs -f
+
+# Reset database
+docker-compose down -v && docker-compose up -d --build
+```
+
+### **Batch Scripts (Windows)**
+
+- `start.bat` - Build and start container
+- `stop.bat` - Stop container (preserves data)
+- `reset.bat` - Reset database to fresh state
+- `update.bat` - Copy latest code and rebuild
+
+### **Docker Files**
+
+- **Dockerfile** - Multi-stage build (deps → builder → runner)
+- **docker-compose.yml** - Container orchestration
+- **docker-entrypoint.sh** - Startup script (auto-seeds DB)
+- **.dockerignore** - Build optimization
+
+### **Persistent Data**
+
+- **Database**: Docker volume `its-business-core_its-data`
+- **Uploads**: Docker volume `its-business-core_its-uploads`
+- **Location**: Managed by Docker, survives container restarts
+
+---
+
+## 🐙 **GitHub Repository**
+
+### **Repository Information**
+
+- **URL**: https://github.com/ryanlawyer/its-business-core
+- **Branch**: main
+- **Files**: 105 files committed
+- **Status**: Public/Private repository
+
+### **What's Included**
+
+✅ All source code (src/)
+✅ Database schema (prisma/)
+✅ Docker configuration
+✅ Documentation files
+✅ Scripts and utilities
+
+### **What's Excluded (Protected)**
+
+❌ `.env` - Environment variables
+❌ `*.db` - Database files
+❌ `node_modules/` - Dependencies
+❌ `.next/` - Build artifacts
+❌ `uploads/` - Uploaded files
+
+### **Deployment from GitHub**
+
+```bash
+# Deploy anywhere with Docker
+git clone https://github.com/ryanlawyer/its-business-core.git
+cd its-business-core/ITSCoreDocker
+docker-compose up -d --build
+
+# Access at http://localhost:3003
+# Login: admin@example.com / admin123
+```
+
+### **Update Workflow**
+
+```bash
+# After making changes locally
+git add .
+git commit -m "Description of changes"
+git push
+
+# On deployment machine
+git pull origin main
+docker-compose up -d --build
+```
+
+---
+
+## 🎨 **Phase 13: Enhanced Budget Selection UI** ✅
+
+### **Problem Addressed**
+Standard dropdown with 500+ budget items was difficult to use - required scrolling through long lists to find the correct budget code.
+
+### **Solution Implemented**
+Hybrid searchable dropdown + modal browser using **Headless UI** library for enterprise-grade UX.
+
+### **Features Added**
+
+#### 1. **Searchable Combobox** (Primary Interface)
+- **Type-ahead filtering**: Search by budget code, description, or department
+- **Department filtering**: Defaults to user's department with hint text
+  - Example: "Searching in IT Department - Browse All for more"
+- **Color-coded budget amounts**: Visual budget health indicators
+  - 🟢 Green: >20% remaining
+  - 🟡 Yellow: 5-20% remaining
+  - 🔴 Red: <5% remaining
+- **Keyboard navigation**: Full support for arrows, enter, escape
+- **Accessibility**: WCAG compliant with screen reader support
+
+#### 2. **Browse All Modal** (Secondary Interface)
+- **Advanced filtering**:
+  - Search box (budget code or description)
+  - Department dropdown (defaults to user's department)
+- **Sortable table view**:
+  - Click column headers to sort by Code, Description, or Available Budget
+  - Shows: Code | Description | Department | Available Budget (color-coded)
+- **Responsive design**:
+  - Full-screen takeover on mobile
+  - Centered modal on desktop
+- **Quick selection**: Click "Select" button or row to choose
+
+#### 3. **Budget Item Description Requirement**
+- Made description field **mandatory** when creating budget items
+- Updated database schema: `description String` (no longer nullable)
+- Updated frontend form with `required` attribute
+- Regenerated Prisma client to reflect changes
+
+#### 4. **API Enhancements**
+- Added department information to budget item responses
+- Included departments list for modal filtering
+- Updated `/api/purchase-orders/form-data` endpoint:
+  ```typescript
+  {
+    vendors: [...],
+    budgetItems: [...], // Now includes department object
+    departments: [...], // New: for filtering
+  }
+  ```
+
+#### 5. **Component Architecture**
+- **BudgetItemSelector.tsx**: Reusable component combining combobox + modal
+- **Dependencies added**:
+  - `@headlessui/react`: Accessible UI components (~15kb)
+  - `@heroicons/react`: Icon library for UI elements
+
+### **User Experience Flow**
+
+**Power Users (Quick Selection)**:
+1. Click Budget Code field
+2. Type "IT-001" or "Hardware"
+3. See filtered results with color-coded amounts
+4. Press Enter to select
+
+**All Users (Browse Mode)**:
+1. Click "Browse" button
+2. Filter by department or search
+3. Sort by any column (code, name, remaining)
+4. View full details in table
+5. Click "Select" on desired item
+
+### **Technical Implementation**
+
+**Files Modified**:
+- Created: `src/components/BudgetItemSelector.tsx` (hybrid selection component)
+- Updated: `src/app/purchase-orders/new/page.tsx` (integrated new component)
+- Updated: `src/app/api/purchase-orders/form-data/route.ts` (added departments)
+- Updated: `src/app/budget-items/page.tsx` (description now required)
+- Updated: `prisma/schema.prisma` (description field non-nullable)
+
+**Key Features**:
+- ✅ Scales to 500+ budget items
+- ✅ Department-aware filtering
+- ✅ Mobile-responsive
+- ✅ Keyboard accessible
+- ✅ Color-coded budget health
+- ✅ Fast type-ahead search
+- ✅ Reusable component architecture
+
+### **Benefits**
+
+1. **Scalability**: Handles hundreds of budget items efficiently
+2. **User-Friendly**: Accommodates both power users and new users
+3. **Context-Aware**: Auto-filters to user's department
+4. **Visual Feedback**: Color coding shows budget health at a glance
+5. **Accessibility**: Keyboard navigation and screen reader support
+6. **Performance**: Client-side filtering with cached data
+7. **Mobile-Ready**: Full responsive design for field users
+
+### **Dependencies Added**
+```json
+{
+  "@headlessui/react": "^2.2.0",
+  "@heroicons/react": "^2.2.0"
+}
+```
+
+**Bundle Impact**: ~15-20kb gzipped (minimal increase for significant UX improvement)
+
+---
+
+**Last Updated**: 2025-10-12
+**Version**: 1.1.0 (Production Ready)
+**GitHub**: https://github.com/ryanlawyer/its-business-core
+**Docker Port**: 3003 (external) → 3000 (internal)
