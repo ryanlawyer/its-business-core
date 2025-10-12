@@ -650,3 +650,76 @@ Hybrid searchable dropdown + modal browser using **Headless UI** library for ent
 **Version**: 1.1.0 (Production Ready)
 **GitHub**: https://github.com/ryanlawyer/its-business-core
 **Docker Port**: 3003 (external) → 3000 (internal)
+
+---
+
+## Development Session: October 12, 2025
+
+### Issue Resolution & Docker Deployment
+
+**Critical Bug Fix**: Corrupted GitHub Repository
+- **Problem**: Phase 14 commits contained corrupted TypeScript files (leading backticks on every line)
+- **Root Cause**: Python scripts used for file modification during Phase 14 accidentally added backticks
+- **Impact**: Digital Ocean Docker deployment failed with syntax errors
+- **Resolution**: 
+  - Hard reset local repository to last clean commit (ce8698e)
+  - Force pushed clean state to GitHub
+  - Verified build works without corruption
+  - GitHub Commit: Force update from 1db4c26 → ce8698e
+
+**Budget Dashboard Fix**
+- **Problem**: Budget dashboard showing zero amounts after database reset
+- **Root Cause**: Seed file created POs but didn't run budget tracking calculations
+- **Fix**: Updated seed file to automatically call `recalculateAllBudgets()` after seeding
+- **Result**: Dashboard now shows correct values immediately after seeding
+- **Files Modified**: `prisma/seed.ts`
+- **GitHub Commit**: `1db4c26` (reverted, then reapplied cleanly)
+
+**Docker Deployment Enhancements**
+- **Created**: `docker-compose.local.yml` for local testing on port 3003
+- **Fixed Dockerfile Issues**:
+  1. Missing `public/` directory - Created with `.gitkeep`
+  2. Missing `bcryptjs` dependency in production - Added full `node_modules` copy to runner stage
+  3. NextAuth `UntrustedHost` error - Added `AUTH_TRUST_HOST=true` environment variable
+- **Database Seeding**: Successfully seeds on first run with all dependencies
+- **Verification**: Container fully functional at http://localhost:3003
+
+**Development Server Stability**
+- **Issue**: Git reset corrupted Next.js cache (`.next/routes-manifest.json` errors)
+- **Fix**: Cleared `.next` directory and restarted dev server
+- **Issue**: Session user ID mismatch after database reset
+- **Fix**: Reseeded database, user required to log out/in
+- **Status**: Dev server running cleanly on port 3000
+
+**Files Modified**:
+- `Dockerfile` - Added full node_modules copy for seed dependencies
+- `docker-compose.local.yml` - Created for local testing with AUTH_TRUST_HOST
+- `prisma/seed.ts` - Added automatic budget recalculation
+- `public/.gitkeep` - Created missing public directory
+
+**Testing Results**:
+- ✅ Production build successful (clean repository)
+- ✅ Dev server running on port 3000
+- ✅ Docker container running on port 3003
+- ✅ Database seeding works in both environments
+- ✅ Budget calculations accurate
+- ✅ NextAuth working with trust host configuration
+
+**Current State**:
+- **Version**: 1.1.0 (Clean, Production Ready)
+- **Dev Server**: http://localhost:3000 (running)
+- **Docker**: http://localhost:3003 (running)
+- **GitHub**: Clean state, ready for Digital Ocean deployment
+- **Database**: Properly seeded with all test data
+
+**Login Credentials** (Both Environments):
+- Admin: `admin@example.com` / `admin123`
+- Manager: `manager@example.com` / `manager123`
+- User: `user@example.com` / `user123`
+
+**Ready for Next Session**: 
+- GitHub repository is clean and deployable
+- Docker configuration tested and working
+- All critical bugs resolved
+- Phase 14 (Enhanced PO Workflow) ready to be re-implemented cleanly
+

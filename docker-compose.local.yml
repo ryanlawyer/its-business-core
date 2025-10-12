@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  its-business-core:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: its-business-core-local
+    restart: unless-stopped
+    ports:
+      - "3003:3000"
+    volumes:
+      # Persist database
+      - its-data-local:/app/data
+      # Persist uploaded documents
+      - its-uploads-local:/app/uploads
+    environment:
+      # Application settings
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+
+      # Database (points to persistent volume)
+      - DATABASE_URL=file:/app/data/database.db
+
+      # NextAuth settings (CHANGE THESE IN PRODUCTION!)
+      - NEXTAUTH_URL=http://localhost:3003
+      - NEXTAUTH_SECRET=local-docker-secret-key-for-testing
+      - AUTH_TRUST_HOST=true
+
+      # Optional: Set timezone
+      - TZ=America/New_York
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  its-data-local:
+    driver: local
+  its-uploads-local:
+    driver: local

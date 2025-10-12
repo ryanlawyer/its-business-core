@@ -46,6 +46,8 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+# Copy all node_modules to support seeding with bcryptjs
+COPY --from=builder /app/node_modules ./node_modules
 
 # Create directories for SQLite database and uploads
 RUN mkdir -p /app/data /app/uploads && \
