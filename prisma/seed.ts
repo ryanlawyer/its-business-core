@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { recalculateAllBudgets } from '../src/lib/budget-tracking';
 
 const prisma = new PrismaClient();
 
@@ -517,6 +518,13 @@ async function main() {
       category: 'file_upload',
     },
   });
+
+  // Recalculate budget tracking for all POs
+  console.log('
+📊 Recalculating budget tracking...');
+  const budgetResult = await recalculateAllBudgets();
+  console.log(`   ✓ Updated ${budgetResult.budgetItemsUpdated} budget items`);
+
 
   console.log('✅ Seeding complete!');
   console.log('\n📋 Sample Login Credentials:');
