@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import { recalculateAllBudgets } from '../src/lib/budget-tracking';
 
 const prisma = new PrismaClient();
 
@@ -520,10 +519,55 @@ async function main() {
   });
 
   // Recalculate budget tracking for all POs
-  console.log('
-📊 Recalculating budget tracking...');
-  const budgetResult = await recalculateAllBudgets();
-  console.log(`   ✓ Updated ${budgetResult.budgetItemsUpdated} budget items`);
+  console.log('\n📊 Recalculating budget tracking...');
+
+  // Reset all budget items to zero
+  await prisma.budgetItem.updateMany({
+    data: { encumbered: 0, actualSpent: 0 }
+  });
+
+  // Get all APPROVED POs and aggregate encumbered amounts
+  const approvedPOs = await prisma.purchaseOrder.findMany({
+    where: { status: 'APPROVED' },
+    include: { lineItems: true }
+  });
+
+  // Get all COMPLETED POs and aggregate actualSpent amounts
+  const completedPOs = await prisma.purchaseOrder.findMany({
+    where: { status: 'COMPLETED' },
+    include: { lineItems: true }
+  });
+
+  // Aggregate amounts by budget item
+  const budgetTotals = new Map<string, { encumbered: number; actualSpent: number }>();
+
+  // Process APPROVED POs (encumbered)
+  for (const po of approvedPOs) {
+    for (const lineItem of po.lineItems) {
+      const current = budgetTotals.get(lineItem.budgetItemId) || { encumbered: 0, actualSpent: 0 };
+      current.encumbered += lineItem.amount;
+      budgetTotals.set(lineItem.budgetItemId, current);
+    }
+  }
+
+  // Process COMPLETED POs (actualSpent)
+  for (const po of completedPOs) {
+    for (const lineItem of po.lineItems) {
+      const current = budgetTotals.get(lineItem.budgetItemId) || { encumbered: 0, actualSpent: 0 };
+      current.actualSpent += lineItem.amount;
+      budgetTotals.set(lineItem.budgetItemId, current);
+    }
+  }
+
+  // Update all affected budget items
+  for (const [budgetItemId, totals] of budgetTotals.entries()) {
+    await prisma.budgetItem.update({
+      where: { id: budgetItemId },
+      data: { encumbered: totals.encumbered, actualSpent: totals.actualSpent }
+    });
+  }
+
+  console.log(`   ✓ Updated ${budgetTotals.size} budget items (${approvedPOs.length} approved, ${completedPOs.length} completed POs)`);
 
 
   console.log('✅ Seeding complete!');
