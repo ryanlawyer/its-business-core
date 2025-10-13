@@ -27,7 +27,10 @@ A streamlined business management system built for small to medium businesses. R
 ### Budget Management
 - 💵 Budget line items with spend tracking
 - 🏢 Department organization (optional)
-- 📊 At-a-glance remaining budget
+- 📊 Real-time encumbered and actual spend tracking
+- 📅 Fiscal year support
+- 🗂️ Budget categories and amendments
+- 📈 Budget dashboard with remaining funds
 
 ### Vendors
 - 📋 Vendor directory
@@ -38,6 +41,11 @@ A streamlined business management system built for small to medium businesses. R
 - 👥 3 roles: Admin, Manager, User
 - ✅ Active/inactive status
 - 🔑 Simple permissions
+
+### System Features
+- 📋 Audit logging (track all changes)
+- ⚙️ System settings management
+- 🔍 Activity monitoring
 
 ## 🚀 **Quick Start**
 
@@ -83,21 +91,40 @@ Draft → Pending Approval → Approved → Completed
 
 ## 🗂️ **Database Schema**
 
-**8 Core Models**:
-1. User
-2. Department (flat structure)
-3. BudgetItem
-4. Vendor
-5. PurchaseOrder
-6. POLineItem
-7. TimeclockEntry
-8. Document
+**Core Models**:
+1. User - Staff accounts and authentication
+2. Role - Permission management (Admin, Manager, User)
+3. Department - Organizational structure (flat)
+4. FiscalYear - Budget year management
+5. BudgetCategory - Budget organization
+6. BudgetItem - Individual budget line items with tracking
+7. BudgetAmendment - Budget adjustment history
+8. Vendor - Supplier directory
+9. PurchaseOrder - PO management with workflow
+10. POLineItem - PO line items linked to budgets
+11. TimeclockEntry - Time tracking
+12. Document - File attachments
+13. AuditLog - Activity tracking
+14. SystemSettings - Application configuration
 
-## 🐳 **Deployment** (Coming Soon)
+## 🐳 **Docker Deployment**
 
-- Docker Compose for NAS deployment
-- One-command setup on Synology/QNAP
-- No database server required
+Deploy with Docker for production environments:
+
+```bash
+# Development/Testing (port 3003)
+docker-compose -f docker-compose.local.yml up -d
+
+# Production
+docker-compose up -d
+```
+
+**Features**:
+- Persistent data volumes for database and uploads
+- Automatic database initialization and seeding
+- Health checks and auto-restart
+- Ready for NAS deployment (Synology/QNAP)
+- No separate database server required (SQLite)
 
 ## 📈 **Upgrade Path**
 
