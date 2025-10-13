@@ -717,9 +717,99 @@ Hybrid searchable dropdown + modal browser using **Headless UI** library for ent
 - Manager: `manager@example.com` / `manager123`
 - User: `user@example.com` / `user123`
 
-**Ready for Next Session**: 
+**Ready for Next Session**:
 - GitHub repository is clean and deployable
 - Docker configuration tested and working
 - All critical bugs resolved
 - Phase 14 (Enhanced PO Workflow) ready to be re-implemented cleanly
+
+---
+
+## Development Session: October 13, 2025
+
+### Docker Budget Dashboard Fix & Documentation Updates
+
+**Critical Fix**: Budget Dashboard Calculations in Docker
+- **Problem**: Docker container budget dashboard showed $0 for encumbered and actualSpent values
+- **Root Cause**: Seed file imported `recalculateAllBudgets` from `../src/lib/budget-tracking` which doesn't work in Next.js standalone builds
+- **Impact**: Docker deployments had incorrect budget calculations
+- **Resolution**:
+  1. Removed external import from seed file
+  2. Inlined budget recalculation logic directly in `prisma/seed.ts`
+  3. Fixed console.log syntax error (broken string literal across lines)
+  4. Verified working in Docker container
+- **Result**: Budget dashboard now shows correct values in Docker
+  - IT-002: $3,600 encumbered (1 approved PO)
+  - FIN-001: $2,500 actualSpent (1 completed PO)
+- **GitHub Commits**:
+  - `5f1e930` - Initial fix attempt (had syntax error)
+  - `6117e91` - Final fix with inlined logic
+
+**Documentation Updates**
+- **README.md** (`ed4a9a0`):
+  - Updated Docker Deployment section (removed "Coming Soon")
+  - Added deployment commands for local testing (port 3003) and production
+  - Expanded Database Schema from 8 to 14 models with descriptions
+  - Enhanced Budget Management features (fiscal years, categories, amendments, real-time tracking)
+  - Added System Features section (audit logging, system settings, activity monitoring)
+  - Listed all Docker features (persistent volumes, auto-init, health checks, NAS-ready)
+
+**Docker Workflow**
+- **Testing Process**:
+  1. Rebuilt container multiple times to test fixes
+  2. Removed volumes (`-v` flag) to start with fresh database
+  3. Verified seed script runs automatically on first container start
+  4. Confirmed budget recalculation executes successfully
+  5. Tested at http://localhost:3003
+- **Current Docker State**:
+  - Container running on port 3003
+  - Fresh database with correct budget calculations
+  - All features working (login, budget dashboard, POs, etc.)
+  - Automatic initialization on first run
+
+**Files Modified**:
+- `prisma/seed.ts` - Inlined budget recalculation logic (49 lines added)
+- `README.md` - Updated features, Docker deployment, database schema (43 lines added)
+
+**Technical Details**:
+- **Seed File Changes**:
+  - Removed: `import { recalculateAllBudgets } from '../src/lib/budget-tracking'`
+  - Added: Inline implementation of budget calculation logic
+  - Handles both APPROVED POs (encumbered) and COMPLETED POs (actualSpent)
+  - Updates budget items with aggregated totals from PO line items
+  - Logs: "Updated X budget items (Y approved, Z completed POs)"
+
+**Testing Results**:
+- ✅ Docker container builds successfully with fixed seed file
+- ✅ Database initializes with correct budget calculations
+- ✅ Budget dashboard displays accurate encumbered/actualSpent values
+- ✅ No module resolution errors in Docker standalone build
+- ✅ Seed script runs without errors: "Updated 2 budget items (1 approved, 1 completed POs)"
+- ✅ Dev server (port 3000) still working correctly
+- ✅ Docker container (port 3003) fully functional
+
+**Current State**:
+- **Version**: 1.1.0 (Production Ready)
+- **Dev Server**: http://localhost:3000 ✅
+- **Docker Local**: http://localhost:3003 ✅
+- **GitHub**: All changes committed and pushed
+- **Database**: Both environments have correct budget calculations
+
+**Key Learnings**:
+- Next.js standalone builds (used in Docker) don't include src/ directory structure
+- Seed files must be self-contained or use absolute imports for Docker compatibility
+- Docker volumes persist data between container restarts
+- Use `docker-compose down -v` to reset database for testing
+
+**Login Credentials** (Both Environments):
+- Admin: `admin@example.com` / `admin123`
+- Manager: `manager@example.com` / `manager123`
+- User: `user@example.com` / `user123`
+
+**Deployment Ready**:
+- ✅ Docker deployment fully tested and working
+- ✅ Budget calculations accurate in both dev and Docker
+- ✅ Documentation updated to reflect current state
+- ✅ All recent commits pushed to GitHub
+- ✅ System ready for production deployment
 
