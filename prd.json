@@ -354,7 +354,7 @@
         "Export link (/timeclock/export) - canExportPayroll",
         "Menu items hide based on permissions"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-022",

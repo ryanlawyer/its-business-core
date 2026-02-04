@@ -13,6 +13,7 @@ export default function Navbar() {
   const user = session?.user;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [organizationName, setOrganizationName] = useState('ITS Business Core');
+  const [pendingCount, setPendingCount] = useState(0);
 
   // Fetch organization name on mount
   useEffect(() => {
@@ -58,8 +59,34 @@ export default function Navbar() {
       canCreateAmendments:
         hasPermission(permissions, 'budgetItems', 'canCreateAmendments') ||
         hasPermission(permissions, 'budgetItems', 'canTransferFunds'),
+      // Timeclock permissions
+      canViewTeamEntries: hasPermission(permissions, 'timeclock', 'canViewTeamEntries'),
+      canApproveEntries: hasPermission(permissions, 'timeclock', 'canApproveEntries'),
+      canExportPayroll: hasPermission(permissions, 'timeclock', 'canExportPayroll'),
     };
   }, [permissions]);
+
+  // Fetch pending approval count for managers
+  useEffect(() => {
+    const fetchPendingCount = async () => {
+      if (!userPermissions?.canApproveEntries) return;
+
+      try {
+        const res = await fetch('/api/timeclock/pending');
+        if (res.ok) {
+          const data = await res.json();
+          setPendingCount(data.totalCount || 0);
+        }
+      } catch (error) {
+        console.error('Error fetching pending count:', error);
+      }
+    };
+
+    fetchPendingCount();
+    // Refresh every 60 seconds
+    const interval = setInterval(fetchPendingCount, 60000);
+    return () => clearInterval(interval);
+  }, [userPermissions?.canApproveEntries]);
 
   if (!user || !userPermissions) return null;
 
@@ -71,7 +98,12 @@ export default function Navbar() {
     canManageSettings,
     canManageBudgetCategories,
     canCreateAmendments,
+    canViewTeamEntries,
+    canApproveEntries,
+    canExportPayroll,
   } = userPermissions;
+
+  const showTimeclockManager = canViewTeamEntries || canApproveEntries || canExportPayroll;
 
   const showAdminMenu =
     canManageUsers ||
@@ -101,16 +133,72 @@ export default function Navbar() {
 
           {/* Desktop Menu */}
           <div className="nav-menu">
-            <Link
-              href="/"
-              className={`nav-link ${isActive('/') ? 'nav-link-active' : ''}`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-              Timeclock
-            </Link>
+            {/* Timeclock Dropdown */}
+            <div className="nav-item">
+              <button className="nav-link">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                Timeclock
+                <svg className="w-3 h-3 ml-1 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <div className="nav-dropdown">
+                <Link
+                  href="/"
+                  className={`nav-dropdown-link ${isActive('/') ? 'nav-dropdown-link-active' : ''}`}
+                >
+                  My Time
+                </Link>
+                <Link
+                  href="/timeclock/history"
+                  className={`nav-dropdown-link ${isActive('/timeclock/history') ? 'nav-dropdown-link-active' : ''}`}
+                >
+                  My History
+                </Link>
+                {showTimeclockManager && (
+                  <>
+                    <div className="nav-dropdown-divider" />
+                    {canViewTeamEntries && (
+                      <Link
+                        href="/timeclock/team"
+                        className={`nav-dropdown-link ${isActive('/timeclock/team') ? 'nav-dropdown-link-active' : ''}`}
+                      >
+                        Team Overview
+                      </Link>
+                    )}
+                    {canApproveEntries && (
+                      <Link
+                        href="/timeclock/approvals"
+                        className={`nav-dropdown-link ${isActive('/timeclock/approvals') ? 'nav-dropdown-link-active' : ''}`}
+                      >
+                        <span className="flex items-center gap-2">
+                          Approvals
+                          {pendingCount > 0 && (
+                            <span
+                              className="px-1.5 py-0.5 text-xs rounded-full"
+                              style={{ background: 'var(--warning)', color: 'white' }}
+                            >
+                              {pendingCount}
+                            </span>
+                          )}
+                        </span>
+                      </Link>
+                    )}
+                    {canExportPayroll && (
+                      <Link
+                        href="/timeclock/export"
+                        className={`nav-dropdown-link ${isActive('/timeclock/export') ? 'nav-dropdown-link-active' : ''}`}
+                      >
+                        Export
+                      </Link>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
 
             {/* Purchasing Dropdown */}
             <div className="nav-item">
@@ -321,6 +409,7 @@ export default function Navbar() {
       {mobileMenuOpen && (
         <div className="nav-mobile animate-fade-in-down lg:hidden">
           <div className="nav-mobile-section">
+            <div className="nav-mobile-section-title">Timeclock</div>
             <Link
               href="/"
               onClick={() => setMobileMenuOpen(false)}
@@ -330,8 +419,52 @@ export default function Navbar() {
                 <circle cx="12" cy="12" r="10" />
                 <polyline points="12 6 12 12 16 14" />
               </svg>
-              Timeclock
+              My Time
             </Link>
+            <Link
+              href="/timeclock/history"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`nav-mobile-link ${isActive('/timeclock/history') ? 'nav-mobile-link-active' : ''}`}
+            >
+              My History
+            </Link>
+            {canViewTeamEntries && (
+              <Link
+                href="/timeclock/team"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`nav-mobile-link ${isActive('/timeclock/team') ? 'nav-mobile-link-active' : ''}`}
+              >
+                Team Overview
+              </Link>
+            )}
+            {canApproveEntries && (
+              <Link
+                href="/timeclock/approvals"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`nav-mobile-link ${isActive('/timeclock/approvals') ? 'nav-mobile-link-active' : ''}`}
+              >
+                <span className="flex items-center gap-2">
+                  Approvals
+                  {pendingCount > 0 && (
+                    <span
+                      className="px-1.5 py-0.5 text-xs rounded-full"
+                      style={{ background: 'var(--warning)', color: 'white' }}
+                    >
+                      {pendingCount}
+                    </span>
+                  )}
+                </span>
+              </Link>
+            )}
+            {canExportPayroll && (
+              <Link
+                href="/timeclock/export"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`nav-mobile-link ${isActive('/timeclock/export') ? 'nav-mobile-link-active' : ''}`}
+              >
+                Export
+              </Link>
+            )}
           </div>
 
           <div className="nav-mobile-section">

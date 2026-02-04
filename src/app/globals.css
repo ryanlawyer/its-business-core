@@ -782,6 +782,12 @@ body {
   background: var(--accent-primary-subtle);
 }
 
+.nav-dropdown-divider {
+  height: 1px;
+  margin: var(--space-2) 0;
+  background: var(--border-subtle);
+}
+
 .nav-user {
   display: flex;
   align-items: center;

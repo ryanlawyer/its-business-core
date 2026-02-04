@@ -736,3 +736,36 @@
 ### Quality checks
 - Build passes successfully
 - All 31 tests pass
+
+---
+
+## Iteration 21 - TC-021: Navbar Updates
+
+### What was implemented
+- Updated Navbar component with Timeclock dropdown menu:
+  - Replaced single Timeclock link with dropdown
+  - My Time link (/) - shown to all users
+  - My History link (/timeclock/history) - shown to all users
+  - Separator divider line between user and manager items
+  - Team Overview link (/timeclock/team) - shown if canViewTeamEntries
+  - Approvals link (/timeclock/approvals) with pending count badge - shown if canApproveEntries
+  - Export link (/timeclock/export) - shown if canExportPayroll
+  - Menu items dynamically hide based on permissions
+- Added pending count badge that fetches from /api/timeclock/pending
+- Pending count refreshes every 60 seconds
+- Updated mobile menu with same timeclock items
+- Added nav-dropdown-divider CSS class for separator styling
+
+### Key decisions
+- Pending count fetched on navbar mount and refreshed periodically
+- Manager items only shown when at least one manager permission is present
+- Same icon for timeclock dropdown as before (clock icon)
+- Export link points to /timeclock/export (TC-027 will implement the page)
+
+### Files modified
+- `src/components/Navbar.tsx` - Updated with timeclock dropdown menu
+- `src/app/globals.css` - Added nav-dropdown-divider style
+
+### Quality checks
+- Build passes successfully
+- All 31 tests pass
