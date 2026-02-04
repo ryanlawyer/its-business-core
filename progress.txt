@@ -883,3 +883,32 @@
 ### Quality checks
 - Build passes successfully
 - All 31 tests pass
+
+---
+
+## Iteration 25 - TC-025: Excel Export
+
+### What was implemented
+- Extended `/api/timeclock/export` to support format=xlsx:
+  - Uses xlsx library for Excel generation
+  - Same query params as CSV export (periodStart, periodEnd, departmentId, templateId)
+  - Bold header row with gray background fill
+  - Auto-width columns based on content (capped at 50 chars)
+  - Number formatting for hour columns (0.00 format, 2 decimal places)
+  - Proper MIME type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+  - Content-Disposition header with .xlsx filename
+- Converts hour string values to numbers for proper Excel formatting
+- Creates workbook with single "Timeclock Export" sheet
+
+### Key decisions
+- Hour columns automatically converted to numbers for Excel math
+- Column widths auto-calculated from header and data lengths
+- Header styling uses bold font and light gray background
+- Same data structure as CSV for consistency
+
+### Files modified
+- `src/app/api/timeclock/export/route.ts` - Added xlsx format support
+
+### Quality checks
+- Build passes successfully
+- All 31 tests pass

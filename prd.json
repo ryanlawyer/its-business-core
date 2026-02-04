@@ -424,7 +424,7 @@
         "Returns .xlsx file with proper MIME type",
         "Permission check: requires canExportPayroll"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-026",

@@ -3,7 +3,8 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
 import { calculateOvertime, TimeclockEntryForCalculation } from '@/lib/overtime';
-import { AVAILABLE_EXPORT_FIELDS, TemplateColumn } from '../templates/route';
+import { TemplateColumn } from '../templates/route';
+import * as XLSX from 'xlsx';
 
 // Default columns if no template specified
 const DEFAULT_COLUMNS: TemplateColumn[] = [
@@ -254,7 +255,90 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // For other formats, return JSON for now (Excel/PDF handled in TC-025/TC-026)
+    // Generate Excel (xlsx)
+    if (format === 'xlsx') {
+      // Build worksheet data
+      const wsData: (string | number)[][] = [];
+
+      // Header row
+      wsData.push(columns.map((col) => col.headerName));
+
+      // Data rows
+      for (const row of rows) {
+        const rowData: (string | number)[] = columns.map((col) => {
+          const value = row[col.sourceField as keyof ExportRow] || '';
+          // Convert hour values to numbers for proper formatting
+          if (['regularHours', 'dailyOvertimeHours', 'weeklyOvertimeHours', 'totalHours'].includes(col.sourceField)) {
+            return parseFloat(value) || 0;
+          }
+          return value;
+        });
+        wsData.push(rowData);
+      }
+
+      // Create worksheet
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+      // Apply formatting
+      // Bold header row
+      const headerRange = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+      for (let col = headerRange.s.c; col <= headerRange.e.c; col++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+        if (!ws[cellAddress]) continue;
+        ws[cellAddress].s = {
+          font: { bold: true },
+          fill: { fgColor: { rgb: 'E0E0E0' } },
+        };
+      }
+
+      // Auto-width columns
+      const colWidths: number[] = [];
+      for (let col = 0; col < columns.length; col++) {
+        let maxWidth = columns[col].headerName.length;
+        for (const row of rows) {
+          const value = String(row[columns[col].sourceField as keyof ExportRow] || '');
+          maxWidth = Math.max(maxWidth, value.length);
+        }
+        colWidths.push(Math.min(maxWidth + 2, 50)); // Cap at 50 chars
+      }
+      ws['!cols'] = colWidths.map((w) => ({ wch: w }));
+
+      // Number formatting for hour columns
+      const hourColumns = columns
+        .map((col, idx) => ({ col, idx }))
+        .filter(({ col }) =>
+          ['regularHours', 'dailyOvertimeHours', 'weeklyOvertimeHours', 'totalHours'].includes(col.sourceField)
+        );
+
+      for (let rowIdx = 1; rowIdx <= rows.length; rowIdx++) {
+        for (const { idx } of hourColumns) {
+          const cellAddress = XLSX.utils.encode_cell({ r: rowIdx, c: idx });
+          if (ws[cellAddress]) {
+            ws[cellAddress].z = '0.00'; // 2 decimal places
+          }
+        }
+      }
+
+      // Create workbook
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Timeclock Export');
+
+      // Generate buffer
+      const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+      // Generate filename
+      const filename = `timeclock-export-${periodStart}-to-${periodEnd}.xlsx`;
+
+      return new NextResponse(buffer, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'Content-Disposition': `attachment; filename="${filename}"`,
+        },
+      });
+    }
+
+    // For other formats, return JSON for now (PDF handled in TC-026)
     return NextResponse.json({
       format,
       periodStart,
