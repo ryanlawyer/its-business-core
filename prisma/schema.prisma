@@ -68,6 +68,12 @@ model User {
   budgetAmendments     BudgetAmendment[]
   closedFiscalYears    FiscalYear[]
 
+  // Receipt management relations
+  receipts                 Receipt[]
+  tags                     Tag[]
+  merchantCategoryMappings MerchantCategoryMapping[]
+  bankStatements           BankStatement[]
+
   @@index([email])
   @@index([roleId])
   @@index([departmentId])
@@ -126,6 +132,11 @@ model BudgetCategory {
   updatedAt DateTime @updatedAt
 
   budgetItems BudgetItem[]
+
+  // Receipt management relations
+  receipts                 Receipt[]
+  receiptLineItems         ReceiptLineItem[]
+  merchantCategoryMappings MerchantCategoryMapping[]
 
   @@index([parentId])
   @@map("budget_categories")
@@ -269,6 +280,7 @@ model Vendor {
 
   // Relations
   purchaseOrders PurchaseOrder[]
+  receipts       Receipt[]
 
   @@index([vendorNumber])
   @@index([name])
@@ -340,6 +352,8 @@ model PurchaseOrder {
   // Relations
   lineItems POLineItem[]
   documents Document[]
+  receipts  Receipt[]
+  bankTransactions BankTransaction[]
 
   @@index([poNumber])
   @@index([vendorId])
@@ -460,4 +474,246 @@ model AuditLog {
   @@index([entityId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ============================================
+// RECEIPT MANAGEMENT SYSTEM
+// ============================================
+
+// Receipt status enum
+enum ReceiptStatus {
+  PENDING    // Uploaded, awaiting OCR
+  PROCESSING // OCR in progress
+  COMPLETED  // OCR complete, data extracted
+  FAILED     // OCR failed
+  REVIEWED   // User has reviewed/edited
+}
+
+// Receipt source enum
+enum ReceiptSource {
+  UPLOAD     // Manual upload
+  EMAIL      // Forwarded via email
+  SCAN       // Scanned via mobile app
+}
+
+// Receipt model - core expense receipt tracking
+model Receipt {
+  id            String        @id @default(uuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Optional link to vendor
+  vendorId      String?
+  vendor        Vendor?       @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+
+  // Optional link to purchase order
+  purchaseOrderId String?
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull)
+
+  // Optional link to budget category
+  budgetCategoryId String?
+  budgetCategory   BudgetCategory? @relation(fields: [budgetCategoryId], references: [id], onDelete: SetNull)
+
+  // Receipt data (extracted via OCR or manual entry)
+  merchantName  String?
+  receiptDate   DateTime?
+  totalAmount   Float?        // Amount in original currency
+  currency      String        @default("USD")
+  taxAmount     Float?
+
+  // Multi-currency support
+  convertedAmount Float?      // Amount in base currency
+  conversionRate  Float?      // Rate used for conversion
+  targetCurrency  String?     // Currency converted to
+
+  // Status and processing
+  status        ReceiptStatus @default(PENDING)
+
+  // File storage
+  imageUrl      String?       // Path to receipt image
+  thumbnailUrl  String?       // Thumbnail preview
+
+  // OCR data (JSON stored as string)
+  rawOcrData    String?       // Raw OCR response for debugging
+
+  // Source tracking
+  source        ReceiptSource @default(UPLOAD)
+  senderEmail   String?       // Email sender for forwarded receipts
+  emailSubject  String?       // Original email subject
+  rawEmailHtml  String?       // Original email HTML for reference
+
+  // Notes
+  notes         String?
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  lineItems     ReceiptLineItem[]
+  tags          ReceiptTag[]
+  bankTransactions BankTransaction[]
+
+  @@index([userId])
+  @@index([vendorId])
+  @@index([purchaseOrderId])
+  @@index([budgetCategoryId])
+  @@index([receiptDate])
+  @@index([status])
+  @@map("receipts")
+}
+
+// Receipt line item model
+model ReceiptLineItem {
+  id          String   @id @default(uuid())
+  receiptId   String
+  receipt     Receipt  @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+
+  description String
+  quantity    Float?
+  unitPrice   Float?
+  total       Float
+
+  // Optional category for line item
+  budgetCategoryId String?
+  budgetCategory   BudgetCategory? @relation(fields: [budgetCategoryId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([receiptId])
+  @@index([budgetCategoryId])
+  @@map("receipt_line_items")
+}
+
+// Tag model for receipt labeling
+model Tag {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name      String
+  color     String   @default("#6B7280") // gray-500
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  receiptTags ReceiptTag[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("tags")
+}
+
+// Receipt-Tag join table (many-to-many)
+model ReceiptTag {
+  id        String   @id @default(uuid())
+  receiptId String
+  receipt   Receipt  @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  tagId     String
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([receiptId, tagId])
+  @@index([receiptId])
+  @@index([tagId])
+  @@map("receipt_tags")
+}
+
+// Merchant-Category mapping for AI learning
+model MerchantCategoryMapping {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  merchantName    String   // Normalized merchant name (lowercase, trimmed)
+  budgetCategoryId String
+  budgetCategory  BudgetCategory @relation(fields: [budgetCategoryId], references: [id], onDelete: Cascade)
+
+  useCount        Int      @default(1) // Number of times this mapping was used
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, merchantName])
+  @@index([userId])
+  @@index([merchantName])
+  @@map("merchant_category_mappings")
+}
+
+// ============================================
+// BANK STATEMENT RECONCILIATION
+// ============================================
+
+// Bank statement status enum
+enum BankStatementStatus {
+  PENDING    // Uploaded, awaiting parsing
+  PROCESSING // Parsing in progress
+  COMPLETED  // Parsing complete
+  FAILED     // Parsing failed
+}
+
+// Bank transaction type enum
+enum BankTransactionType {
+  DEBIT
+  CREDIT
+}
+
+// Bank statement model
+model BankStatement {
+  id           String              @id @default(uuid())
+  userId       String
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  filename     String              // Original filename
+  filePath     String              // Path to file
+  uploadDate   DateTime            @default(now())
+  startDate    DateTime?           // First transaction date
+  endDate      DateTime?           // Last transaction date
+  accountName  String?             // Bank account name/identifier
+
+  status       BankStatementStatus @default(PENDING)
+
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  // Relations
+  transactions BankTransaction[]
+
+  @@index([userId])
+  @@index([uploadDate])
+  @@index([status])
+  @@map("bank_statements")
+}
+
+// Bank transaction model
+model BankTransaction {
+  id                  String              @id @default(uuid())
+  statementId         String
+  statement           BankStatement       @relation(fields: [statementId], references: [id], onDelete: Cascade)
+
+  transactionDate     DateTime
+  description         String
+  amount              Float
+  type                BankTransactionType
+
+  // Matching
+  matchedReceiptId    String?
+  matchedReceipt      Receipt?            @relation(fields: [matchedReceiptId], references: [id], onDelete: SetNull)
+
+  // Optional link to purchase order
+  matchedPurchaseOrderId String?
+  matchedPurchaseOrder   PurchaseOrder?   @relation(fields: [matchedPurchaseOrderId], references: [id], onDelete: SetNull)
+
+  noReceiptRequired   Boolean             @default(false) // Mark transactions that don't need receipts
+
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@index([statementId])
+  @@index([transactionDate])
+  @@index([matchedReceiptId])
+  @@index([matchedPurchaseOrderId])
+  @@map("bank_transactions")
 }
