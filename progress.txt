@@ -947,3 +947,51 @@
 ### Quality checks
 - Build passes successfully
 - All 31 tests pass
+
+---
+
+## Iteration 27 - TC-027: Export UI Page
+
+### What was implemented
+- Created `/timeclock/export` page for generating payroll exports:
+  - Pay period selector dropdown with last 6 periods
+  - Department filter (All or specific department)
+  - Template selector dropdown (shows all templates, marks default)
+  - Format selector with radio buttons: CSV, Excel, PDF Timesheets
+  - Preview table showing first 5 rows of export data
+  - Warning banner when pending entries exist in selected period
+  - Link to /timeclock/approvals from warning banner
+  - Export & Download button that triggers file download
+- Fetches preview data dynamically when filters change
+- Checks pending count from /api/timeclock/pending
+- Downloads file using blob URL and programmatic anchor click
+- Permission check: redirects to / if user lacks canExportPayroll
+
+### Key decisions
+- Generated pay periods locally (biweekly, last 6 periods)
+- Preview uses JSON format response from export API
+- Pending count fetched with same filters as export
+- File download handled entirely client-side
+- Disabled export button when no preview data
+
+### Files created
+- `src/app/timeclock/export/page.tsx` - Export UI page
+
+### Quality checks
+- Build passes successfully
+- All 31 tests pass
+
+---
+
+## COMPLETION
+
+All 27 user stories (TC-001 through TC-027) have been implemented:
+
+Phase 1: Configuration Models (TC-001 to TC-004) - COMPLETE
+Phase 2: Permissions & APIs (TC-005 to TC-010) - COMPLETE
+Phase 3: Overtime Service (TC-011 to TC-014) - COMPLETE
+Phase 4: Employee UI (TC-015 to TC-017) - COMPLETE
+Phase 5: Manager UI (TC-018 to TC-021) - COMPLETE
+Phase 6: Export Features (TC-022 to TC-027) - COMPLETE
+
+The timeclock enhancement project is now complete.
