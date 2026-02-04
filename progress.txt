@@ -274,3 +274,36 @@
 
 ### Quality checks
 - Build passes successfully
+
+---
+
+## Iteration 9 - TC-009: Bulk Approval API
+
+### What was implemented
+- Created `/api/timeclock/bulk-approve` POST endpoint:
+  - Accepts array of entry IDs in request body
+  - Permission check for canApproveEntries
+  - Department assignment check for managers (admins bypass)
+  - Processes all entries in a single transaction
+  - Skips entries that are:
+    - Already approved
+    - Locked (isLocked=true)
+    - Active (no clockOut yet)
+  - Fails entries that are:
+    - Not found
+    - Not in manager's assigned departments
+  - Returns detailed results: approved count, skipped count, failed count
+  - Returns details array with per-entry status and reasons
+  - Audit logging for each approved entry (marked as bulk operation)
+
+### Key decisions
+- Used transaction to ensure all-or-nothing semantics
+- Categorized skip vs fail: skip for valid business reasons, fail for permission/not found
+- Included detailed per-entry results for UI feedback
+- Marked audit logs with bulkOperation=true for traceability
+
+### Files created
+- `src/app/api/timeclock/bulk-approve/route.ts` - Bulk approval endpoint
+
+### Quality checks
+- Build passes successfully

@@ -155,7 +155,7 @@
         "Permission check: requires canApproveEntries",
         "All entries must be in manager's assigned departments"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-010",
