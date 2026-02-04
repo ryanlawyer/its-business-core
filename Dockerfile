@@ -29,7 +29,7 @@ RUN npm run build
 
 # Stage 3: Runner
 FROM node:20-alpine AS runner
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl sqlite
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -56,6 +56,10 @@ RUN mkdir -p /app/data /app/uploads && \
 # Create startup script
 COPY --chown=nextjs:nodejs docker-entrypoint.sh /app/
 RUN chmod +x /app/docker-entrypoint.sh
+
+# Copy backup/restore scripts
+COPY --chown=nextjs:nodejs scripts/ /app/scripts/
+RUN chmod +x /app/scripts/*.sh
 
 USER nextjs
 
