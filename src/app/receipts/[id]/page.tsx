@@ -51,6 +51,21 @@ type POSuggestion = {
   matchReasons: string[];
 };
 
+type BudgetCategory = {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  parentId: string | null;
+};
+
+type CategorySuggestion = {
+  category: BudgetCategory | null;
+  confidence: 'high' | 'medium' | 'low' | 'none';
+  source: 'user_mapping' | 'global_mapping' | 'pattern' | 'none';
+  alternatives: Array<{ categoryId: string; categoryName: string; matchCount: number }>;
+};
+
 const statusColors: Record<string, string> = {
   PENDING: 'bg-gray-100 text-gray-800',
   PROCESSING: 'bg-blue-100 text-blue-800',
@@ -84,6 +99,14 @@ export default function ReceiptDetailPage({ params }: { params: Promise<{ id: st
   const [poSuggestions, setPOSuggestions] = useState<POSuggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [linkingPO, setLinkingPO] = useState(false);
+
+  // Category state
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [categorySuggestion, setCategorySuggestion] = useState<CategorySuggestion | null>(null);
+  const [allCategories, setAllCategories] = useState<BudgetCategory[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [assigningCategory, setAssigningCategory] = useState(false);
+  const [categorySearchTerm, setCategorySearchTerm] = useState('');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -286,6 +309,85 @@ export default function ReceiptDetailPage({ params }: { params: Promise<{ id: st
     setShowPOLinking(true);
     fetchPOSuggestions();
   };
+
+  const fetchCategorySuggestion = async () => {
+    try {
+      setLoadingCategories(true);
+      const res = await fetch(`/api/receipts/${id}/suggest-category`);
+      if (res.ok) {
+        const data = await res.json();
+        setCategorySuggestion(data.suggestion);
+        setAllCategories(data.allCategories || []);
+      }
+    } catch (err) {
+      console.error('Error fetching category suggestion:', err);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  const handleAssignCategory = async (categoryId: string, learnMapping = true) => {
+    try {
+      setAssigningCategory(true);
+      const res = await fetch(`/api/receipts/${id}/category`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ categoryId, learnMapping }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to assign category');
+      }
+
+      // Refresh receipt data
+      await fetchReceipt();
+      setShowCategoryModal(false);
+    } catch (err) {
+      console.error('Error assigning category:', err);
+      alert(err instanceof Error ? err.message : 'Failed to assign category');
+    } finally {
+      setAssigningCategory(false);
+    }
+  };
+
+  const handleRemoveCategory = async () => {
+    if (!confirm('Are you sure you want to remove the category from this receipt?')) {
+      return;
+    }
+
+    try {
+      setAssigningCategory(true);
+      const res = await fetch(`/api/receipts/${id}/category`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to remove category');
+      }
+
+      // Refresh receipt data
+      await fetchReceipt();
+    } catch (err) {
+      console.error('Error removing category:', err);
+      alert(err instanceof Error ? err.message : 'Failed to remove category');
+    } finally {
+      setAssigningCategory(false);
+    }
+  };
+
+  const openCategoryModal = () => {
+    setShowCategoryModal(true);
+    setCategorySearchTerm('');
+    fetchCategorySuggestion();
+  };
+
+  const filteredCategories = allCategories.filter(
+    (cat) =>
+      cat.name.toLowerCase().includes(categorySearchTerm.toLowerCase()) ||
+      cat.code.toLowerCase().includes(categorySearchTerm.toLowerCase())
+  );
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '-';
@@ -720,6 +822,57 @@ export default function ReceiptDetailPage({ params }: { params: Promise<{ id: st
                 )}
               </div>
             </div>
+
+            {/* Budget Category */}
+            <div className="bg-white rounded-lg shadow-md">
+              <div className="p-4 border-b flex justify-between items-center">
+                <h2 className="text-lg font-semibold text-gray-900">Budget Category</h2>
+                {!receipt.budgetCategory && (
+                  <button
+                    onClick={openCategoryModal}
+                    className="text-sm px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700"
+                  >
+                    Assign Category
+                  </button>
+                )}
+              </div>
+              <div className="p-4">
+                {receipt.budgetCategory ? (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium text-gray-900">
+                        {receipt.budgetCategory.code && (
+                          <span className="text-gray-500 mr-2">{receipt.budgetCategory.code}</span>
+                        )}
+                        {receipt.budgetCategory.name}
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Expense categorized for budget tracking
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={openCategoryModal}
+                        className="text-sm px-3 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200"
+                      >
+                        Change
+                      </button>
+                      <button
+                        onClick={handleRemoveCategory}
+                        disabled={assigningCategory}
+                        className="text-sm px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 disabled:opacity-50"
+                      >
+                        {assigningCategory ? 'Removing...' : 'Remove'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">
+                    No category assigned. Click &quot;Assign Category&quot; to categorize this expense.
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -816,6 +969,133 @@ export default function ReceiptDetailPage({ params }: { params: Promise<{ id: st
             <div className="p-4 border-t bg-gray-50">
               <button
                 onClick={() => setShowPOLinking(false)}
+                className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category Assignment Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900">Assign Budget Category</h3>
+              <button
+                onClick={() => setShowCategoryModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto max-h-[60vh]">
+              {loadingCategories ? (
+                <div className="text-center py-8">
+                  <svg className="w-8 h-8 mx-auto animate-spin text-green-600" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  <p className="mt-2 text-gray-500">Loading categories...</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* AI Suggestion */}
+                  {categorySuggestion?.category && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+                        </svg>
+                        <span className="font-medium text-green-800">AI Suggestion</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          categorySuggestion.confidence === 'high'
+                            ? 'bg-green-100 text-green-800'
+                            : categorySuggestion.confidence === 'medium'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {categorySuggestion.confidence} confidence
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium text-gray-900">
+                            {categorySuggestion.category.code && (
+                              <span className="text-gray-500 mr-2">{categorySuggestion.category.code}</span>
+                            )}
+                            {categorySuggestion.category.name}
+                          </span>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Based on {categorySuggestion.source === 'user_mapping' ? 'your previous categorizations' :
+                              categorySuggestion.source === 'global_mapping' ? 'common categorizations' : 'similar merchants'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleAssignCategory(categorySuggestion.category!.id)}
+                          disabled={assigningCategory}
+                          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 text-sm"
+                        >
+                          {assigningCategory ? 'Assigning...' : 'Use This'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Search */}
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Search categories..."
+                      value={categorySearchTerm}
+                      onChange={(e) => setCategorySearchTerm(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
+
+                  {/* Category List */}
+                  <div className="border rounded-lg divide-y max-h-64 overflow-y-auto">
+                    {filteredCategories.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500">
+                        No categories found
+                      </div>
+                    ) : (
+                      filteredCategories.map((cat) => (
+                        <div
+                          key={cat.id}
+                          className="flex items-center justify-between p-3 hover:bg-gray-50 cursor-pointer"
+                          onClick={() => handleAssignCategory(cat.id)}
+                        >
+                          <div>
+                            <span className="font-medium text-gray-900">
+                              {cat.code && (
+                                <span className="text-gray-500 mr-2">{cat.code}</span>
+                              )}
+                              {cat.name}
+                            </span>
+                            {cat.description && (
+                              <p className="text-xs text-gray-500 mt-0.5">{cat.description}</p>
+                            )}
+                          </div>
+                          {receipt.budgetCategory?.id === cat.id && (
+                            <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded">
+                              Current
+                            </span>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t bg-gray-50">
+              <button
+                onClick={() => setShowCategoryModal(false)}
                 className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
               >
                 Cancel
