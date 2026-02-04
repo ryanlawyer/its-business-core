@@ -337,7 +337,7 @@
         "Empty state when no pending entries",
         "Permission check: requires canApproveEntries"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-021",

@@ -703,3 +703,36 @@
 ### Quality checks
 - Build passes successfully
 - All 31 tests pass
+
+---
+
+## Iteration 20 - TC-020: Pending Approvals Page
+
+### What was implemented
+- Created `/timeclock/approvals` page for managers to review pending entries:
+  - Pending count shown in page header title with badge
+  - Period filter matching pay period config
+  - Department filter (shows only assigned departments)
+  - View mode toggle: Grouped by employee or Flat list
+  - Grouped view shows entries nested under each employee with checkboxes
+  - Flat view shows all entries in a table with checkboxes
+  - Select all checkbox in header
+  - Bulk selection by clicking employee checkbox (selects all their entries)
+  - Approve Selected button with loading state
+  - Reject Selected button opens modal for rejection note
+  - Empty state: "All caught up!" when no pending entries
+- Permission check: redirects to / if user lacks canApproveEntries
+- Uses existing /api/timeclock/pending endpoint
+
+### Key decisions
+- View mode defaults to grouped for better organization
+- Indeterminate checkbox state when some but not all employee entries selected
+- Same rejection modal pattern as employee detail page
+- Back button goes to team overview, not main timeclock
+
+### Files created
+- `src/app/timeclock/approvals/page.tsx` - Pending approvals page
+
+### Quality checks
+- Build passes successfully
+- All 31 tests pass
