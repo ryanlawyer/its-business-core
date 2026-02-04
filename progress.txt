@@ -335,3 +335,48 @@
 
 ### Quality checks
 - Build passes successfully
+
+---
+
+## Iteration 11 - TC-011: Overtime Calculation Service
+
+### What was implemented
+- Created `src/lib/overtime.ts` with:
+  - `calculateOvertime()` function accepting entries and OvertimeConfig
+  - Calculates regularMinutes, dailyOvertimeMinutes, weeklyOvertimeMinutes
+  - Daily OT: hours exceeding daily threshold per day
+  - Weekly OT: hours exceeding weekly threshold (after daily OT subtracted)
+  - Handles null thresholds (disabled) - returns all time as regular
+  - Returns EmployeeOvertimeResult per employee with breakdown
+  - Returns OvertimeCalculationResult with totals across all employees
+  - Helper functions: calculateDailyMinutes, calculateWeeklyMinutes
+- Set up vitest testing framework:
+  - Added vitest as dev dependency
+  - Created vitest.config.ts with path aliases
+  - Added test and test:watch scripts
+- Created comprehensive test suite with 18 tests covering:
+  - Null config handling
+  - Both thresholds disabled
+  - Daily overtime calculation
+  - Weekly overtime calculation
+  - Combined daily and weekly overtime
+  - Multiple employees
+  - Edge cases (empty array, missing clockOut, missing duration)
+
+### Key decisions
+- Weekly OT calculated from "daily regular" after daily OT removed
+- Thresholds stored in minutes for precision
+- Week starts on Sunday (standard US payroll)
+- Entries without clockOut or duration are skipped
+
+### Files created
+- `src/lib/overtime.ts` - Overtime calculation service
+- `src/lib/__tests__/overtime.test.ts` - Unit tests (18 tests)
+- `vitest.config.ts` - Test configuration
+
+### Files modified
+- `package.json` - Added vitest dependency and test scripts
+
+### Quality checks
+- Build passes successfully
+- All 18 tests pass

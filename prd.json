@@ -188,7 +188,7 @@
         "Returns totals per employee for period",
         "Unit tests cover edge cases"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-012",
