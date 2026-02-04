@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
 import { createAuditLog, getRequestContext } from '@/lib/audit';
+import { processReceiptWithRetry, isOCRConfigured, OCRServiceError } from '@/lib/ocr';
+import { existsSync } from 'fs';
+import { fileTypeFromFile } from 'file-type';
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -10,13 +13,13 @@ type RouteContext = {
 
 /**
  * POST /api/receipts/[id]/process
- * Trigger OCR processing for a receipt
- * Note: Full OCR implementation will be added in Phase 3
+ * Trigger OCR processing for a receipt using Claude Vision API
  */
 export async function POST(req: NextRequest, context: RouteContext) {
-  try {
-    const { id } = await context.params;
+  const { id } = await context.params;
+  let receiptId = id;
 
+  try {
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -34,9 +37,17 @@ export async function POST(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    // Check if OCR is configured
+    if (!isOCRConfigured()) {
+      return NextResponse.json(
+        { error: 'OCR service is not configured. Please set ANTHROPIC_API_KEY environment variable.' },
+        { status: 503 }
+      );
+    }
+
     // Fetch the receipt
     const receipt = await prisma.receipt.findUnique({
-      where: { id },
+      where: { id: receiptId },
       select: {
         id: true,
         status: true,
@@ -58,6 +69,13 @@ export async function POST(req: NextRequest, context: RouteContext) {
       );
     }
 
+    if (!existsSync(receipt.imageUrl)) {
+      return NextResponse.json(
+        { error: 'Receipt image file not found on disk' },
+        { status: 404 }
+      );
+    }
+
     if (receipt.status === 'PROCESSING') {
       return NextResponse.json(
         { error: 'Receipt is already being processed' },
@@ -67,7 +85,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
 
     // Update status to processing
     await prisma.receipt.update({
-      where: { id },
+      where: { id: receiptId },
       data: { status: 'PROCESSING' },
     });
 
@@ -77,55 +95,128 @@ export async function POST(req: NextRequest, context: RouteContext) {
       userId: session.user.id,
       action: 'RECEIPT_OCR_STARTED',
       entityType: 'Receipt',
-      entityId: id,
+      entityId: receiptId,
       ipAddress,
       userAgent,
     });
 
-    // TODO: Phase 3 - Implement actual OCR processing with Claude Vision
-    // For now, just mark as completed without extracting data
-    // This will be replaced with actual OCR logic
+    // Detect file type
+    const fileType = await fileTypeFromFile(receipt.imageUrl);
+    const mimeType = fileType?.mime || 'image/jpeg';
 
-    // Simulate processing delay (remove in production)
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Process with OCR
+    try {
+      const ocrResult = await processReceiptWithRetry(receipt.imageUrl, mimeType);
 
-    // For now, mark as completed without OCR data
-    const updatedReceipt = await prisma.receipt.update({
-      where: { id },
-      data: {
-        status: 'COMPLETED',
-        // OCR data will be populated in Phase 3
-      },
-      include: {
-        user: { select: { id: true, name: true } },
-        lineItems: true,
-      },
-    });
+      // Update receipt with extracted data
+      const updatedReceipt = await prisma.receipt.update({
+        where: { id: receiptId },
+        data: {
+          status: 'COMPLETED',
+          merchantName: ocrResult.merchantName,
+          receiptDate: ocrResult.date ? new Date(ocrResult.date) : null,
+          totalAmount: ocrResult.totalAmount,
+          currency: ocrResult.currency,
+          taxAmount: ocrResult.taxAmount,
+          rawOcrData: JSON.stringify(ocrResult),
+        },
+        include: {
+          user: { select: { id: true, name: true } },
+          lineItems: true,
+        },
+      });
 
-    await createAuditLog({
-      userId: session.user.id,
-      action: 'RECEIPT_OCR_COMPLETED',
-      entityType: 'Receipt',
-      entityId: id,
-      changes: {
-        after: { status: 'COMPLETED' },
-      },
-      ipAddress,
-      userAgent,
-    });
+      // Create line items if extracted
+      if (ocrResult.lineItems.length > 0) {
+        await prisma.receiptLineItem.createMany({
+          data: ocrResult.lineItems.map(item => ({
+            receiptId: receiptId,
+            description: item.description,
+            quantity: item.quantity || null,
+            unitPrice: item.unitPrice || null,
+            total: item.total,
+          })),
+        });
+      }
 
-    return NextResponse.json({
-      receipt: updatedReceipt,
-      message: 'Receipt processing completed. Note: Full OCR integration pending Phase 3.',
-    });
+      // Fetch updated receipt with line items
+      const finalReceipt = await prisma.receipt.findUnique({
+        where: { id: receiptId },
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+          vendor: { select: { id: true, name: true } },
+          budgetCategory: { select: { id: true, name: true } },
+          lineItems: true,
+        },
+      });
+
+      await createAuditLog({
+        userId: session.user.id,
+        action: 'RECEIPT_OCR_COMPLETED',
+        entityType: 'Receipt',
+        entityId: receiptId,
+        changes: {
+          after: {
+            merchantName: ocrResult.merchantName,
+            totalAmount: ocrResult.totalAmount,
+            lineItemsCount: ocrResult.lineItems.length,
+            confidence: ocrResult.confidence,
+          },
+        },
+        ipAddress,
+        userAgent,
+      });
+
+      return NextResponse.json({
+        receipt: finalReceipt,
+        ocrResult: {
+          confidence: ocrResult.confidence,
+          lineItemsExtracted: ocrResult.lineItems.length,
+        },
+        message: 'Receipt processed successfully',
+      });
+    } catch (ocrError) {
+      // Mark as failed
+      await prisma.receipt.update({
+        where: { id: receiptId },
+        data: {
+          status: 'FAILED',
+          rawOcrData: JSON.stringify({
+            error: ocrError instanceof Error ? ocrError.message : 'Unknown error',
+            code: ocrError instanceof OCRServiceError ? ocrError.code : 'UNKNOWN',
+          }),
+        },
+      });
+
+      await createAuditLog({
+        userId: session.user.id,
+        action: 'RECEIPT_OCR_FAILED',
+        entityType: 'Receipt',
+        entityId: receiptId,
+        changes: {
+          after: {
+            error: ocrError instanceof Error ? ocrError.message : 'Unknown error',
+          },
+        },
+        ipAddress,
+        userAgent,
+      });
+
+      return NextResponse.json(
+        {
+          error: 'OCR processing failed',
+          details: ocrError instanceof Error ? ocrError.message : 'Unknown error',
+        },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error('Error processing receipt:', error);
 
     // Try to mark as failed
     try {
-      const { id } = await context.params;
       await prisma.receipt.update({
-        where: { id },
+        where: { id: receiptId },
         data: { status: 'FAILED' },
       });
     } catch (e) {
