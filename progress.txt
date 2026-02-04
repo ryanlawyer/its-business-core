@@ -418,3 +418,46 @@
 ### Quality checks
 - Build passes successfully
 - All 31 tests pass
+
+---
+
+## Iteration 13 - TC-013: Employee Alert Banner
+
+### What was implemented
+- Created `/api/timeclock/alerts` GET endpoint:
+  - Returns current alert status for authenticated user
+  - Checks notifyEmployee config flag before returning data
+  - Fetches user's entries for current week
+  - Calculates active session minutes for real-time updates
+  - Uses checkAlertStatus function from overtime service
+  - Returns null alertStatus if notifications disabled
+- Created `OvertimeAlertBanner` React component:
+  - Fetches alert status from API on mount
+  - Displays yellow warning banner when approaching thresholds
+  - Displays red warning banner when exceeding thresholds
+  - Shows current hours vs threshold (e.g., "Today: 7h 30m of 8h")
+  - Separate banners for daily and weekly alerts
+  - Dismissable with X button (state resets on page refresh)
+  - Auto-refreshes every 30 seconds
+  - Accepts onUpdate prop to trigger manual refresh
+- Integrated banner into main timeclock page:
+  - Added OvertimeAlertBanner after department widget
+  - Refresh alerts after clock-in/out without page refresh
+  - Uses key prop to force re-render on clock events
+
+### Key decisions
+- Separate API endpoint for alerts to allow independent fetching
+- Component handles its own refresh interval (30 seconds)
+- Dismissed state is local only, reappears on page refresh per requirements
+- Daily and weekly alerts shown separately for clarity
+- Yellow/red color distinction for approaching/exceeded states
+
+### Files created
+- `src/app/api/timeclock/alerts/route.ts` - Alert status API endpoint
+- `src/components/OvertimeAlertBanner.tsx` - Alert banner component
+
+### Files modified
+- `src/app/page.tsx` - Added OvertimeAlertBanner and refresh logic
+
+### Quality checks
+- Build passes successfully

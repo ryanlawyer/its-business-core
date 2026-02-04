@@ -220,7 +220,7 @@
         "Only shows if notifyEmployee is enabled in config",
         "Updates after clock-in/out without page refresh"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-014",

@@ -1,7 +1,8 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { OvertimeAlertBanner } from '@/components/OvertimeAlertBanner';
 
 type TimeclockEntry = {
   id: string;
@@ -20,6 +21,12 @@ export default function TimeclockPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [mounted, setMounted] = useState(false);
   const [isClocking, setIsClocking] = useState(false);
+  const [alertRefreshKey, setAlertRefreshKey] = useState(0);
+
+  // Callback to trigger alert banner refresh
+  const refreshAlerts = useCallback(() => {
+    setAlertRefreshKey((prev) => prev + 1);
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -55,6 +62,7 @@ export default function TimeclockPage() {
       });
       if (res.ok) {
         await fetchEntries();
+        refreshAlerts();
       }
     } catch (error) {
       console.error('Error clocking in:', error);
@@ -72,6 +80,7 @@ export default function TimeclockPage() {
       });
       if (res.ok) {
         await fetchEntries();
+        refreshAlerts();
       }
     } catch (error) {
       console.error('Error clocking out:', error);
@@ -175,6 +184,9 @@ export default function TimeclockPage() {
           </div>
         </div>
       )}
+
+      {/* Overtime Alert Banner */}
+      <OvertimeAlertBanner key={alertRefreshKey} />
 
       {/* Main Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
