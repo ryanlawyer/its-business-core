@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
 import { createAuditLog, getRequestContext, getChanges } from '@/lib/audit';
+import { convertToBaseCurrency, BASE_CURRENCY } from '@/lib/currency';
 import { unlink } from 'fs/promises';
 import { existsSync } from 'fs';
 
@@ -164,6 +165,27 @@ export async function PUT(req: NextRequest, context: RouteContext) {
     if (purchaseOrderId !== undefined) updateData.purchaseOrderId = purchaseOrderId || null;
     if (notes !== undefined) updateData.notes = notes;
     if (status !== undefined) updateData.status = status;
+
+    // Handle currency conversion to base currency
+    const effectiveCurrency = currency || existingReceipt.currency;
+    const effectiveAmount = totalAmount !== undefined ? parseFloat(totalAmount) : existingReceipt.totalAmount;
+
+    if (effectiveAmount && effectiveCurrency && effectiveCurrency !== BASE_CURRENCY) {
+      try {
+        const { convertedAmount, rate } = await convertToBaseCurrency(effectiveAmount, effectiveCurrency);
+        updateData.convertedAmount = convertedAmount;
+        updateData.conversionRate = rate;
+        updateData.targetCurrency = BASE_CURRENCY;
+      } catch (conversionError) {
+        console.error('Currency conversion failed:', conversionError);
+        // Continue without conversion - not a fatal error
+      }
+    } else if (effectiveCurrency === BASE_CURRENCY) {
+      // Clear conversion fields if currency is base currency
+      updateData.convertedAmount = null;
+      updateData.conversionRate = null;
+      updateData.targetCurrency = null;
+    }
 
     // Handle line items update
     if (lineItems !== undefined) {
