@@ -887,6 +887,12 @@ body {
   background: var(--accent-primary-subtle);
 }
 
+.nav-mobile-divider {
+  height: 1px;
+  margin: var(--space-3) 0;
+  background: var(--border-default);
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────
    Animations
    ───────────────────────────────────────────────────────────────────────────── */
