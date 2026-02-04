@@ -912,3 +912,38 @@
 ### Quality checks
 - Build passes successfully
 - All 31 tests pass
+
+---
+
+## Iteration 26 - TC-026: PDF Timesheet Export
+
+### What was implemented
+- Extended `/api/timeclock/export` to support format=pdf:
+  - Uses pdf-lib library for PDF generation
+  - Generates one page per employee (multi-page PDF)
+  - Each page includes:
+    - Header with "TIMESHEET" title
+    - Employee name and department
+    - Period dates (start to end)
+    - Table of entries with: Date, Clock In, Clock Out, Duration, Status
+    - Gray header row for table
+    - Totals section: Regular Hours, Daily OT, Weekly OT, Total Hours
+    - Signature lines at bottom for Employee and Manager
+    - Date fields for signatures
+  - Professional layout with Helvetica font family
+  - Letter size pages (612 x 792 points)
+  - Returns PDF with proper MIME type (application/pdf)
+- Added error response for unsupported formats
+
+### Key decisions
+- One page per employee keeps timesheets separate for printing/signing
+- Used pdf-lib (already in project) rather than adding new dependency
+- Table truncates if too many entries (simplified approach)
+- Signature section always at bottom with standard lines
+
+### Files modified
+- `src/app/api/timeclock/export/route.ts` - Added PDF format support
+
+### Quality checks
+- Build passes successfully
+- All 31 tests pass

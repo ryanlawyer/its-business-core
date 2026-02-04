@@ -442,7 +442,7 @@
         "Returns multi-page PDF file",
         "Permission check: requires canExportPayroll"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-027",

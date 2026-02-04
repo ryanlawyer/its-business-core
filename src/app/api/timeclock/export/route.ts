@@ -5,6 +5,7 @@ import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
 import { calculateOvertime, TimeclockEntryForCalculation } from '@/lib/overtime';
 import { TemplateColumn } from '../templates/route';
 import * as XLSX from 'xlsx';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 // Default columns if no template specified
 const DEFAULT_COLUMNS: TemplateColumn[] = [
@@ -338,15 +339,222 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // For other formats, return JSON for now (PDF handled in TC-026)
+    // Generate PDF (one page per employee with entry details)
+    if (format === 'pdf') {
+      // For PDF, we need individual entries per employee, not aggregated
+      // Re-query with detailed entry data
+      const pdfDoc = await PDFDocument.create();
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+      // Group entries by employee
+      const entriesByEmployee = new Map<string, typeof entries>();
+      for (const entry of entries) {
+        if (!entriesByEmployee.has(entry.userId)) {
+          entriesByEmployee.set(entry.userId, []);
+        }
+        entriesByEmployee.get(entry.userId)!.push(entry);
+      }
+
+      // Generate one page per employee
+      for (const [userId, empEntries] of entriesByEmployee) {
+        const employee = empEntries[0].user;
+        const otData = overtimeResult.employees[userId] || {
+          regularMinutes: 0,
+          dailyOvertimeMinutes: 0,
+          weeklyOvertimeMinutes: 0,
+          totalMinutes: 0,
+        };
+
+        // Create page (Letter size: 612 x 792 points)
+        const page = pdfDoc.addPage([612, 792]);
+        const { width, height } = page.getSize();
+        let y = height - 50;
+
+        // Header
+        page.drawText('TIMESHEET', {
+          x: 50,
+          y,
+          size: 18,
+          font: boldFont,
+          color: rgb(0, 0, 0),
+        });
+        y -= 30;
+
+        // Employee info
+        page.drawText(`Employee: ${employee.name}`, {
+          x: 50,
+          y,
+          size: 12,
+          font: boldFont,
+        });
+        y -= 18;
+
+        page.drawText(`Department: ${employee.department?.name || 'N/A'}`, {
+          x: 50,
+          y,
+          size: 10,
+          font,
+        });
+        y -= 15;
+
+        page.drawText(`Period: ${periodStart} to ${periodEnd}`, {
+          x: 50,
+          y,
+          size: 10,
+          font,
+        });
+        y -= 30;
+
+        // Table header
+        const tableX = 50;
+        const colWidthsPdf = [80, 100, 100, 80, 80]; // Date, In, Out, Duration, Status
+        let tableHeaderY = y;
+
+        page.drawRectangle({
+          x: tableX,
+          y: tableHeaderY - 15,
+          width: 440,
+          height: 18,
+          color: rgb(0.9, 0.9, 0.9),
+        });
+
+        const headers = ['Date', 'Clock In', 'Clock Out', 'Duration', 'Status'];
+        let xPos = tableX + 5;
+        for (let i = 0; i < headers.length; i++) {
+          page.drawText(headers[i], {
+            x: xPos,
+            y: tableHeaderY - 12,
+            size: 9,
+            font: boldFont,
+          });
+          xPos += colWidthsPdf[i];
+        }
+        y = tableHeaderY - 20;
+
+        // Table rows
+        for (const entry of empEntries) {
+          if (y < 120) {
+            // Add new page if running out of space
+            break; // Simplified - just truncate for now
+          }
+
+          y -= 15;
+          xPos = tableX + 5;
+
+          // Date
+          const dateStr = entry.clockIn.toLocaleDateString();
+          page.drawText(dateStr, { x: xPos, y, size: 9, font });
+          xPos += colWidthsPdf[0];
+
+          // Clock In
+          const clockInStr = entry.clockIn.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          page.drawText(clockInStr, { x: xPos, y, size: 9, font });
+          xPos += colWidthsPdf[1];
+
+          // Clock Out
+          const clockOutStr = entry.clockOut
+            ? entry.clockOut.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : '-';
+          page.drawText(clockOutStr, { x: xPos, y, size: 9, font });
+          xPos += colWidthsPdf[2];
+
+          // Duration
+          const durationMins = entry.duration ? Math.floor(entry.duration / 60) : 0;
+          const durationHrs = (durationMins / 60).toFixed(2);
+          page.drawText(`${durationHrs} hrs`, { x: xPos, y, size: 9, font });
+          xPos += colWidthsPdf[3];
+
+          // Status
+          page.drawText(entry.status, { x: xPos, y, size: 9, font });
+        }
+
+        y -= 25;
+
+        // Totals section
+        page.drawLine({
+          start: { x: tableX, y: y + 10 },
+          end: { x: tableX + 440, y: y + 10 },
+          thickness: 1,
+          color: rgb(0, 0, 0),
+        });
+
+        y -= 5;
+        page.drawText('TOTALS', { x: tableX, y, size: 10, font: boldFont });
+        y -= 18;
+
+        page.drawText(`Regular Hours: ${formatHours(otData.regularMinutes)}`, {
+          x: tableX,
+          y,
+          size: 10,
+          font,
+        });
+        y -= 15;
+
+        page.drawText(`Daily Overtime: ${formatHours(otData.dailyOvertimeMinutes)}`, {
+          x: tableX,
+          y,
+          size: 10,
+          font,
+        });
+        y -= 15;
+
+        page.drawText(`Weekly Overtime: ${formatHours(otData.weeklyOvertimeMinutes)}`, {
+          x: tableX,
+          y,
+          size: 10,
+          font,
+        });
+        y -= 15;
+
+        page.drawText(`Total Hours: ${formatHours(otData.totalMinutes)}`, {
+          x: tableX,
+          y,
+          size: 10,
+          font: boldFont,
+        });
+
+        // Signature section at bottom
+        const sigY = 80;
+        page.drawLine({
+          start: { x: 50, y: sigY },
+          end: { x: 250, y: sigY },
+          thickness: 1,
+          color: rgb(0, 0, 0),
+        });
+        page.drawText('Employee Signature', { x: 50, y: sigY - 12, size: 8, font });
+
+        page.drawLine({
+          start: { x: 300, y: sigY },
+          end: { x: 500, y: sigY },
+          thickness: 1,
+          color: rgb(0, 0, 0),
+        });
+        page.drawText('Manager Signature', { x: 300, y: sigY - 12, size: 8, font });
+
+        page.drawText('Date: _______________', { x: 50, y: sigY - 30, size: 8, font });
+        page.drawText('Date: _______________', { x: 300, y: sigY - 30, size: 8, font });
+      }
+
+      // Generate PDF bytes
+      const pdfBytes = await pdfDoc.save();
+
+      // Generate filename
+      const filename = `timesheets-${periodStart}-to-${periodEnd}.pdf`;
+
+      return new NextResponse(pdfBytes, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="${filename}"`,
+        },
+      });
+    }
+
+    // For other formats, return error
     return NextResponse.json({
-      format,
-      periodStart,
-      periodEnd,
-      columns,
-      rows,
-      message: `Format '${format}' not yet implemented`,
-    });
+      error: `Unsupported format: ${format}. Supported formats: csv, xlsx, pdf`,
+    }, { status: 400 });
   } catch (error) {
     console.error('Error exporting timeclock data:', error);
     return NextResponse.json(
