@@ -207,3 +207,33 @@
 
 ### Quality checks
 - Build passes successfully
+
+---
+
+## Iteration 7 - TC-007: Entry Edit API
+
+### What was implemented
+- Created `/api/timeclock/[id]` route with:
+  - GET: Fetch single entry (own entries or with team/all view permission)
+  - PUT: Edit clockIn/clockOut times for managers
+- PUT endpoint features:
+  - Permission check for canEditTeamEntries
+  - Returns 400 if entry is locked (isLocked=true)
+  - Recalculates duration in seconds on edit
+  - Sets lastEditedBy to current user ID
+  - Sets lastEditedAt to current timestamp
+  - Department assignment check for managers (not admins)
+  - Audit logging with before/after values
+  - Returns updated entry with user info
+
+### Key decisions
+- Combined GET and PUT in same route file for REST consistency
+- Validates clockOut cannot be before clockIn
+- Duration set to null if clockOut is cleared
+- Admins (canViewAllEntries) bypass department checks
+
+### Files created
+- `src/app/api/timeclock/[id]/route.ts` - Entry detail and edit API
+
+### Quality checks
+- Build passes successfully
