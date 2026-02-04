@@ -424,6 +424,19 @@ model TimeclockEntry {
   @@map("timeclock_entries")
 }
 
+// Pay period configuration (singleton - only one config per system)
+model PayPeriodConfig {
+  id             String    @id @default(uuid())
+  type           String    @default("biweekly") // "weekly" | "biweekly" | "semimonthly" | "monthly"
+  startDayOfWeek Int?      // 0-6 for weekly/biweekly (0=Sunday)
+  startDate      DateTime? // Reference start date for biweekly
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("pay_period_config")
+}
+
 // ============================================
 // SYSTEM SETTINGS
 // ============================================

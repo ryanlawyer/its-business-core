@@ -8,3 +8,38 @@
 ## Progress Log
 
 ---
+
+## Iteration 1 - TC-001: Pay Period Config Model
+
+### What was implemented
+- Added `PayPeriodConfig` model to Prisma schema with:
+  - id, type, startDayOfWeek, startDate, timestamps
+  - type supports: weekly, biweekly, semimonthly, monthly
+- Extended `UserPermissions` type with `canManageConfig` in timeclock section
+- Created `/api/timeclock/config` API route with:
+  - GET endpoint returning pay period configuration (with singleton auto-creation)
+  - PUT endpoint for updating configuration with validation
+  - Permission check for `canManageConfig`
+  - Audit logging for config changes
+- Created `/admin/timeclock` admin UI page with:
+  - Pay period type selector (radio buttons with descriptions)
+  - Start day of week dropdown (for weekly/biweekly)
+  - Reference start date picker (for biweekly)
+  - Loading skeleton, error/success alerts
+  - Permission-based access control (redirects if unauthorized)
+
+### Key decisions
+- Used singleton pattern for PayPeriodConfig (only one config per system)
+- Auto-create default config on first GET request
+- Start day of week only shown for weekly/biweekly types
+- Reference start date only shown for biweekly type
+
+### Files created/modified
+- `prisma/schema.prisma` - Added PayPeriodConfig model
+- `src/lib/check-permissions.ts` - Added canManageConfig permission
+- `src/app/api/timeclock/config/route.ts` - New API route
+- `src/app/admin/timeclock/page.tsx` - New admin UI page
+
+### Quality checks
+- Build passes successfully
+- Database migration applied without errors

@@ -25,7 +25,7 @@
         "Admin UI section at /admin/timeclock for pay period settings",
         "Only users with canManageConfig permission can access"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-002",

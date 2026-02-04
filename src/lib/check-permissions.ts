@@ -5,6 +5,7 @@ export type UserPermissions = {
   timeclock?: {
     canClockInOut?: boolean;
     canViewOwnEntries?: boolean;
+    canManageConfig?: boolean;
   };
   purchaseOrders?: {
     canCreate?: boolean;
