@@ -437,6 +437,22 @@ model PayPeriodConfig {
   @@map("pay_period_config")
 }
 
+// Overtime configuration (singleton - only one config per system)
+model OvertimeConfig {
+  id                 String  @id @default(uuid())
+  dailyThreshold     Int?    // Minutes before daily OT (null = disabled)
+  weeklyThreshold    Int?    // Minutes before weekly OT (null = disabled)
+  alertBeforeDaily   Int?    // Minutes before daily threshold to alert
+  alertBeforeWeekly  Int?    // Minutes before weekly threshold to alert
+  notifyEmployee     Boolean @default(true)
+  notifyManager      Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("overtime_config")
+}
+
 // ============================================
 // SYSTEM SETTINGS
 // ============================================

@@ -41,7 +41,7 @@
         "Admin UI section for overtime settings with threshold inputs",
         "Checkbox controls for employee/manager notifications"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-003",

@@ -43,3 +43,45 @@
 ### Quality checks
 - Build passes successfully
 - Database migration applied without errors
+
+---
+
+## Iteration 2 - TC-002: Overtime Config Model
+
+### What was implemented
+- Added `OvertimeConfig` model to Prisma schema with:
+  - id, dailyThreshold, weeklyThreshold (nullable Int for minutes)
+  - alertBeforeDaily, alertBeforeWeekly (nullable Int for minutes)
+  - notifyEmployee, notifyManager (Boolean defaults)
+  - timestamps
+- Extended `/api/timeclock/config` API route:
+  - GET now returns both `payPeriodConfig` and `overtimeConfig`
+  - PUT handles overtime fields: dailyThreshold, weeklyThreshold, alertBeforeDaily, alertBeforeWeekly, notifyEmployee, notifyManager
+  - Singleton auto-creation with sensible defaults (8h daily, 40h weekly)
+  - Validation for positive integers or null
+  - Separate audit logging for overtime config changes
+- Extended `/admin/timeclock` admin UI page with:
+  - Tabbed interface (Pay Periods / Overtime Rules)
+  - Daily threshold input (in hours, converted to minutes for API)
+  - Weekly threshold input (in hours, converted to minutes for API)
+  - Alert threshold inputs (in minutes)
+  - Employee notification checkbox
+  - Manager notification checkbox
+  - Helper functions for hours/minutes conversion
+
+### Key decisions
+- Used singleton pattern for OvertimeConfig (matches PayPeriodConfig pattern)
+- Thresholds stored in minutes but displayed in hours for UX
+- Alert thresholds remain in minutes (finer granularity useful)
+- Null values disable the respective threshold
+- Separate save buttons per tab to avoid accidental overwrites
+- Maintained backwards compatibility with `config` field in API response
+
+### Files modified
+- `prisma/schema.prisma` - Added OvertimeConfig model
+- `src/app/api/timeclock/config/route.ts` - Extended for overtime handling
+- `src/app/admin/timeclock/page.tsx` - Added overtime settings tab
+
+### Quality checks
+- Build passes successfully
+- Database migration applied without errors
