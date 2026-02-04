@@ -769,3 +769,46 @@
 ### Quality checks
 - Build passes successfully
 - All 31 tests pass
+
+---
+
+## Iteration 22 - TC-022: Export Template Model
+
+### What was implemented
+- Added `ExportTemplate` model to Prisma schema with:
+  - id, name, columns (JSON string), isDefault, createdById, createdAt, updatedAt
+  - Relation to User model for createdBy tracking
+  - Indexes on createdById and isDefault for query performance
+- Created CRUD API at `/api/timeclock/templates`:
+  - GET - List all templates with parsed columns, returns availableFields list
+  - POST - Create new template with column validation
+  - Validates columns against AVAILABLE_EXPORT_FIELDS
+  - When setting isDefault=true, automatically unsets other defaults
+  - Audit logging for all operations
+  - Permission check: canManageExportTemplates for create/update/delete
+  - Permission check: canExportPayroll allows read-only access
+- Created `/api/timeclock/templates/[id]` for individual template operations:
+  - GET - Fetch single template by ID
+  - PUT - Update template name, columns, or isDefault
+  - DELETE - Remove template with audit log
+- Defined AVAILABLE_EXPORT_FIELDS constant with 14 exportable fields:
+  - employeeId, employeeName, employeeEmail, department
+  - clockIn, clockOut, date
+  - regularHours, dailyOvertimeHours, weeklyOvertimeHours, totalHours
+  - status, approvedBy, approvedAt
+
+### Key decisions
+- Columns stored as JSON string in SQLite (parsed on read, stringified on write)
+- Only one template can be marked as default at a time
+- Users with canExportPayroll can view templates but not modify them
+- Template columns include order field for drag-drop reordering (TC-023)
+
+### Files created/modified
+- `prisma/schema.prisma` - Added ExportTemplate model with User relation
+- `src/app/api/timeclock/templates/route.ts` - GET/POST endpoints
+- `src/app/api/timeclock/templates/[id]/route.ts` - GET/PUT/DELETE endpoints
+
+### Quality checks
+- Database migration applied successfully
+- Build passes successfully
+- All 31 tests pass

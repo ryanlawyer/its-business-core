@@ -77,6 +77,9 @@ model User {
   // Manager assignment relations
   managerAssignments       ManagerAssignment[]
 
+  // Export template relations
+  exportTemplates          ExportTemplate[]
+
   @@index([email])
   @@index([roleId])
   @@index([departmentId])
@@ -484,6 +487,24 @@ model ManagerAssignment {
   @@index([userId])
   @@index([departmentId])
   @@map("manager_assignments")
+}
+
+// Export template for custom payroll export formats
+model ExportTemplate {
+  id        String  @id @default(uuid())
+  name      String
+  columns   String  // JSON array of column configurations
+  isDefault Boolean @default(false)
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([isDefault])
+  @@map("export_templates")
 }
 
 // ============================================

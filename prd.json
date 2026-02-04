@@ -370,7 +370,7 @@
         "Template columns stored as JSON array",
         "Permission check: requires canManageExportTemplates"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-023",
