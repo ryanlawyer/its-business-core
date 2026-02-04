@@ -282,7 +282,7 @@
         "Export own data as CSV (basic)",
         "Permission check: requires canViewOwnEntries"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-018",

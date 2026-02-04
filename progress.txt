@@ -582,3 +582,52 @@
 ### Quality checks
 - Build passes successfully
 - All 31 tests pass
+
+---
+
+## Iteration 17 - TC-017: Employee History Page
+
+### What was implemented
+- Created `/api/timeclock/history` API endpoint:
+  - GET endpoint for paginated timeclock history
+  - Supports preset filters: this_week, last_week, this_month, last_month, this_year
+  - Supports status filter: all, pending, approved, rejected
+  - Supports custom dateFrom/dateTo date ranges
+  - Returns pagination info: page, limit, totalCount, totalPages, hasNextPage, hasPrevPage
+  - Returns summary: totalMinutes, statusCounts (pending, approved, rejected)
+  - Permission check: requires canViewOwnEntries
+- Created `/api/timeclock/history/export` API endpoint:
+  - GET endpoint for CSV export
+  - Same filter parameters as history endpoint
+  - Generates CSV with: Date, Clock In, Clock Out, Duration (h:mm), Status, Rejection Note
+  - Proper CSV escaping for commas and quotes
+  - Returns file with Content-Disposition header
+  - Permission check: requires canViewOwnEntries
+- Created `/timeclock/history` page:
+  - Date range filter with preset dropdown (All Time, This Week, Last Week, This Month, Last Month, This Year)
+  - Status filter dropdown (All Statuses, Pending, Approved, Rejected)
+  - Export CSV button (disabled when no entries)
+  - Summary stats cards: Total Time, Pending count, Approved count, Rejected count
+  - Paginated table showing: Date, Clock In, Clock Out, Duration, Status
+  - Status badges with lock icon for approved entries
+  - Rejection notes displayed inline for rejected entries
+  - Rejected entries highlighted with red background
+  - Loading skeleton while fetching
+  - Empty state when no entries match filters
+  - Pagination controls with Previous/Next buttons
+
+### Key decisions
+- Preset filter takes priority over custom date range (no custom date inputs in UI)
+- History page is at /timeclock/history (not under /dashboard for timeclock-focused app)
+- Back button navigates to main timeclock page (/)
+- Export respects current filters
+- Pagination uses 20 items per page
+
+### Files created
+- `src/app/api/timeclock/history/route.ts` - History API endpoint
+- `src/app/api/timeclock/history/export/route.ts` - CSV export endpoint
+- `src/app/timeclock/history/page.tsx` - History page UI
+
+### Quality checks
+- Build passes successfully
+- All 31 tests pass
