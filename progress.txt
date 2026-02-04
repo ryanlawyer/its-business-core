@@ -849,3 +849,37 @@
 ### Quality checks
 - Build passes successfully
 - All 31 tests pass
+
+---
+
+## Iteration 24 - TC-024: CSV Export
+
+### What was implemented
+- Created `/api/timeclock/export` endpoint for exporting timeclock data:
+  - GET /api/timeclock/export?format=csv with query params
+  - Query params: periodStart, periodEnd, departmentId, templateId
+  - Uses template columns if templateId specified, otherwise default template
+  - Falls back to DEFAULT_COLUMNS if no template found
+  - Only includes approved entries with completed clockOut
+  - Calculates regular/OT hours per employee using overtime.ts
+  - Proper CSV escaping for commas, quotes, and newlines
+  - Returns file with Content-Disposition attachment header
+  - Permission check: requires canExportPayroll
+- CSV export aggregates by employee (one row per employee):
+  - Employee ID, Name, Email, Department
+  - Regular Hours, Daily OT Hours, Weekly OT Hours, Total Hours
+  - All hours formatted to 2 decimal places
+- Default columns defined for when no template specified
+
+### Key decisions
+- Export aggregates by employee rather than per-entry
+- Uses overtime calculation service for accurate hour breakdown
+- Department filter accepts 'all' or specific departmentId
+- Filename includes period dates for easy identification
+
+### Files created
+- `src/app/api/timeclock/export/route.ts` - Export API endpoint
+
+### Quality checks
+- Build passes successfully
+- All 31 tests pass

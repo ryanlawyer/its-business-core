@@ -406,7 +406,7 @@
         "Returns file with Content-Disposition header",
         "Permission check: requires canExportPayroll"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-025",
