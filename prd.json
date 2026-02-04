@@ -266,7 +266,7 @@
         "Rejected entries grouped or flagged for visibility",
         "Employee cannot edit rejected entries directly"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-017",

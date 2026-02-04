@@ -55,6 +55,7 @@ export default function TimeclockPage() {
   const [selectedPeriodIndex, setSelectedPeriodIndex] = useState(0);
   const [periodStats, setPeriodStats] = useState<PeriodStats | null>(null);
   const [todayStats, setTodayStats] = useState<TodayStats | null>(null);
+  const [dismissedRejections, setDismissedRejections] = useState<Set<string>>(new Set());
 
   // Callback to trigger alert banner refresh
   const refreshAlerts = useCallback(() => {
@@ -104,6 +105,10 @@ export default function TimeclockPage() {
     if (period) {
       fetchEntries(period.startDate, period.endDate);
     }
+  };
+
+  const handleDismissRejection = (entryId: string) => {
+    setDismissedRejections((prev) => new Set([...prev, entryId]));
   };
 
   const handleClockIn = async () => {
@@ -416,6 +421,42 @@ export default function TimeclockPage() {
         </div>
       )}
 
+      {/* Rejected Entries Banner */}
+      {periodStats && periodStats.rejectedCount > 0 && (
+        <div
+          className="mb-8 p-4 rounded-lg border animate-fade-in-up"
+          style={{
+            animationDelay: '375ms',
+            background: 'var(--error-bg, rgba(239, 68, 68, 0.1))',
+            borderColor: 'var(--error)',
+          }}
+        >
+          <div className="flex items-start gap-3">
+            <div
+              className="flex-shrink-0 p-2 rounded-full"
+              style={{ background: 'var(--error)', color: 'white' }}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.999L13.732 4.001c-.77-1.333-2.694-1.333-3.464 0L3.34 16.001c-.77 1.332.192 2.999 1.732 2.999z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold" style={{ color: 'var(--error)' }}>
+                {periodStats.rejectedCount} Time {periodStats.rejectedCount === 1 ? 'Entry' : 'Entries'} Rejected
+              </h3>
+              <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+                Your manager has rejected one or more time entries this period.
+                Please contact your manager for correction.
+              </p>
+              <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+                Rejected entries are highlighted in red below with the rejection reason.
+                You cannot edit rejected entries directly.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Clock In/Out Action */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <div className="lg:col-span-1">
@@ -537,9 +578,31 @@ export default function TimeclockPage() {
                             </span>
                           )}
                         </div>
-                        {entry.status === 'rejected' && entry.rejectedNote && (
-                          <div className="mt-1 text-xs" style={{ color: 'var(--error)' }}>
-                            <span className="font-medium">Note:</span> {entry.rejectedNote}
+                        {entry.status === 'rejected' && entry.rejectedNote && !dismissedRejections.has(entry.id) && (
+                          <div
+                            className="mt-2 p-2 rounded text-xs flex items-start gap-2"
+                            style={{
+                              background: 'var(--error-bg, rgba(239, 68, 68, 0.15))',
+                              border: '1px solid var(--error)',
+                            }}
+                          >
+                            <div className="flex-1">
+                              <div className="font-medium" style={{ color: 'var(--error)' }}>Rejection Note:</div>
+                              <div style={{ color: 'var(--text-primary)' }}>{entry.rejectedNote}</div>
+                              <div className="mt-1" style={{ color: 'var(--text-muted)' }}>
+                                Contact your manager for correction
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleDismissRejection(entry.id)}
+                              className="flex-shrink-0 p-1 rounded hover:bg-opacity-20"
+                              style={{ color: 'var(--text-muted)' }}
+                              title="Dismiss this notice"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
                           </div>
                         )}
                       </td>

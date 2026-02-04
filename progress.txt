@@ -549,3 +549,36 @@
 ### Quality checks
 - Build passes successfully
 - All 31 tests pass
+
+---
+
+## Iteration 16 - TC-016: Rejection Notice Display
+
+### What was implemented
+- Added prominent rejection banner when period has rejected entries:
+  - Red warning banner at top of main content area
+  - Shows count of rejected entries
+  - Clear message: "Please contact your manager for correction"
+  - Explains rejected entries are highlighted in red below
+  - States employees cannot edit rejected entries directly
+- Enhanced rejection notice on individual entries:
+  - Styled rejection note box with red border
+  - Shows rejection reason from manager
+  - "Contact your manager for correction" message inline
+  - Dismissable X button per entry (state stored locally)
+  - Dismissed notices reappear on page refresh
+- Rejected entries remain highlighted in red background
+- Employee cannot edit rejected entries (enforced by API isLocked)
+
+### Key decisions
+- Used period-level banner for high visibility of rejections
+- Individual entry notices are dismissable to reduce clutter
+- Dismissal state is local only (reappears on refresh per requirements)
+- Clear guidance to contact manager since employees cannot edit
+
+### Files modified
+- `src/app/page.tsx` - Added rejection banner and enhanced rejection notices
+
+### Quality checks
+- Build passes successfully
+- All 31 tests pass
