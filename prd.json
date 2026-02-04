@@ -140,7 +140,7 @@
         "Cannot approve active entries (no clockOut)",
         "Manager can only approve entries in assigned departments"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-009",

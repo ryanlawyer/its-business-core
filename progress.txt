@@ -237,3 +237,40 @@
 
 ### Quality checks
 - Build passes successfully
+
+---
+
+## Iteration 8 - TC-008: Approval API
+
+### What was implemented
+- Created `/api/timeclock/[id]/approve` POST endpoint:
+  - Permission check for canApproveEntries
+  - Cannot approve active entries (no clockOut yet)
+  - Cannot approve already-approved entries
+  - Department assignment check for managers (admins bypass)
+  - Sets status='approved', approvedBy, approvedAt, isLocked=true
+  - Clears rejectedNote if present
+  - Audit logging for approval action
+- Created `/api/timeclock/[id]/reject` POST endpoint:
+  - Permission check for canApproveEntries
+  - Requires rejectedNote in request body (validated)
+  - Cannot reject active entries (no clockOut yet)
+  - Department assignment check for managers (admins bypass)
+  - Sets status='rejected', isLocked=false to allow edits
+  - Clears approvedBy/approvedAt
+  - Stores rejectedNote for employee visibility
+  - Audit logging for rejection action
+
+### Key decisions
+- Separate routes for approve and reject for clarity
+- Reject requires note to ensure employees understand why
+- isLocked=false on rejection allows manager to edit before re-approval
+- Approval clears rejection note for clean state
+- Both endpoints share similar structure for consistency
+
+### Files created
+- `src/app/api/timeclock/[id]/approve/route.ts` - Approval endpoint
+- `src/app/api/timeclock/[id]/reject/route.ts` - Rejection endpoint
+
+### Quality checks
+- Build passes successfully

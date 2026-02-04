@@ -34,9 +34,7 @@ export default function Navbar() {
   }, [user]);
 
   const isActive = useCallback(
-    (path: string) => {
-      return pathname === path ? 'bg-blue-700' : '';
-    },
+    (path: string) => pathname === path,
     [pathname]
   );
 
@@ -84,108 +82,112 @@ export default function Navbar() {
     canManageBudgetCategories;
 
   return (
-    <nav className="bg-blue-600 text-white shadow-lg sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex justify-between items-center h-16">
+    <>
+      <nav className="nav-bar">
+        <div className="nav-container">
           {/* Logo and Brand */}
-          <Link href="/" className="flex items-center space-x-2 sm:space-x-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded flex items-center justify-center">
-              <span className="text-blue-600 font-bold text-lg">ITS</span>
+          <Link href="/" className="nav-brand group">
+            <div className="nav-brand-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                <path d="M2 17l10 5 10-5" />
+                <path d="M2 12l10 5 10-5" />
+              </svg>
             </div>
-            {/* Desktop/Tablet: Show full name */}
-            <span className="text-lg sm:text-xl font-bold hidden sm:inline">
+            <span className="nav-brand-text hidden sm:block">
               {organizationName}
-            </span>
-            {/* Mobile: Show first word only to save space */}
-            <span className="text-lg font-bold sm:hidden">
-              {organizationName.split(' ')[0]}
             </span>
           </Link>
 
           {/* Desktop Menu */}
-          <div className="hidden lg:flex space-x-2">
+          <div className="nav-menu">
             <Link
               href="/"
-              className={`px-3 py-2 rounded hover:bg-blue-700 transition-colors ${isActive('/')}`}
+              className={`nav-link ${isActive('/') ? 'nav-link-active' : ''}`}
             >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
               Timeclock
             </Link>
 
             {/* Purchasing Dropdown */}
-            <div className="relative group">
-              <button className="px-3 py-2 rounded hover:bg-blue-700 transition-colors flex items-center">
+            <div className="nav-item">
+              <button className="nav-link">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <path d="M16 10a4 4 0 01-8 0" />
+                </svg>
                 Purchasing
-                <svg
-                  className="w-4 h-4 ml-1"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
+                <svg className="w-3 h-3 ml-1 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              <div className="absolute left-0 mt-0 w-48 bg-blue-600 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+              <div className="nav-dropdown">
                 <Link
                   href="/purchase-orders"
-                  className={`block px-4 py-2 hover:bg-blue-700 rounded-t-md ${isActive('/purchase-orders')}`}
+                  className={`nav-dropdown-link ${isActive('/purchase-orders') ? 'nav-dropdown-link-active' : ''}`}
                 >
                   Purchase Orders
                 </Link>
                 <Link
                   href="/receipts"
-                  className={`block px-4 py-2 hover:bg-blue-700 ${isActive('/receipts')}`}
+                  className={`nav-dropdown-link ${isActive('/receipts') ? 'nav-dropdown-link-active' : ''}`}
                 >
                   Receipts
                 </Link>
                 <Link
+                  href="/statements"
+                  className={`nav-dropdown-link ${isActive('/statements') ? 'nav-dropdown-link-active' : ''}`}
+                >
+                  Bank Statements
+                </Link>
+                <Link
                   href="/vendors"
-                  className={`block px-4 py-2 hover:bg-blue-700 rounded-b-md ${isActive('/vendors')}`}
+                  className={`nav-dropdown-link ${isActive('/vendors') ? 'nav-dropdown-link-active' : ''}`}
                 >
                   Vendors
+                </Link>
+                <Link
+                  href="/reports"
+                  className={`nav-dropdown-link ${isActive('/reports') ? 'nav-dropdown-link-active' : ''}`}
+                >
+                  Expense Reports
                 </Link>
               </div>
             </div>
 
             {/* Budget Dropdown */}
-            <div className="relative group">
-              <button className="px-3 py-2 rounded hover:bg-blue-700 transition-colors flex items-center">
+            <div className="nav-item">
+              <button className="nav-link">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="1" x2="12" y2="23" />
+                  <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+                </svg>
                 Budget
-                <svg
-                  className="w-4 h-4 ml-1"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
+                <svg className="w-3 h-3 ml-1 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              <div className="absolute left-0 mt-0 w-48 bg-blue-600 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+              <div className="nav-dropdown">
                 <Link
                   href="/budget-items"
-                  className={`block px-4 py-2 hover:bg-blue-700 ${isActive('/budget-items')}`}
+                  className={`nav-dropdown-link ${isActive('/budget-items') ? 'nav-dropdown-link-active' : ''}`}
                 >
                   Budget Items
                 </Link>
                 <Link
                   href="/admin/budget-dashboard"
-                  className={`block px-4 py-2 hover:bg-blue-700 ${isActive('/admin/budget-dashboard')}`}
+                  className={`nav-dropdown-link ${isActive('/admin/budget-dashboard') ? 'nav-dropdown-link-active' : ''}`}
                 >
                   Dashboard
                 </Link>
                 {canCreateAmendments && (
                   <Link
                     href="/admin/budget-amendments"
-                    className={`block px-4 py-2 hover:bg-blue-700 ${isActive('/admin/budget-amendments')}`}
+                    className={`nav-dropdown-link ${isActive('/admin/budget-amendments') ? 'nav-dropdown-link-active' : ''}`}
                   >
                     Amendments
                   </Link>
@@ -193,7 +195,7 @@ export default function Navbar() {
                 {canManageBudgetCategories && (
                   <Link
                     href="/admin/budget-categories"
-                    className={`block px-4 py-2 hover:bg-blue-700 ${isActive('/admin/budget-categories')}`}
+                    className={`nav-dropdown-link ${isActive('/admin/budget-categories') ? 'nav-dropdown-link-active' : ''}`}
                   >
                     Categories
                   </Link>
@@ -201,7 +203,7 @@ export default function Navbar() {
                 {canManageSettings && (
                   <Link
                     href="/admin/fiscal-years"
-                    className={`block px-4 py-2 hover:bg-blue-700 rounded-b-md ${isActive('/admin/fiscal-years')}`}
+                    className={`nav-dropdown-link ${isActive('/admin/fiscal-years') ? 'nav-dropdown-link-active' : ''}`}
                   >
                     Fiscal Years
                   </Link>
@@ -211,28 +213,22 @@ export default function Navbar() {
 
             {/* Administration Dropdown */}
             {showAdminMenu && (
-              <div className="relative group">
-                <button className="px-3 py-2 rounded hover:bg-blue-700 transition-colors flex items-center">
-                  Administration
-                  <svg
-                    className="w-4 h-4 ml-1"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
+              <div className="nav-item">
+                <button className="nav-link">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+                  </svg>
+                  Admin
+                  <svg className="w-3 h-3 ml-1 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                <div className="absolute left-0 mt-0 w-56 bg-blue-600 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className="nav-dropdown" style={{ minWidth: '220px' }}>
                   {canManageUsers && (
                     <Link
                       href="/users"
-                      className={`block px-4 py-2 hover:bg-blue-700 rounded-t-md ${isActive('/users')}`}
+                      className={`nav-dropdown-link ${isActive('/users') ? 'nav-dropdown-link-active' : ''}`}
                     >
                       User Management
                     </Link>
@@ -240,7 +236,7 @@ export default function Navbar() {
                   {canManageRoles && (
                     <Link
                       href="/admin/roles/manage"
-                      className={`block px-4 py-2 hover:bg-blue-700 ${isActive('/admin/roles')}`}
+                      className={`nav-dropdown-link ${isActive('/admin/roles') ? 'nav-dropdown-link-active' : ''}`}
                     >
                       Role Management
                     </Link>
@@ -248,7 +244,7 @@ export default function Navbar() {
                   {canViewAuditLog && (
                     <Link
                       href="/admin/audit-log"
-                      className={`block px-4 py-2 hover:bg-blue-700 ${isActive('/admin/audit-log')}`}
+                      className={`nav-dropdown-link ${isActive('/admin/audit-log') ? 'nav-dropdown-link-active' : ''}`}
                     >
                       Audit Log
                     </Link>
@@ -256,23 +252,15 @@ export default function Navbar() {
                   {canManageDepartments && (
                     <Link
                       href="/admin/departments"
-                      className={`block px-4 py-2 hover:bg-blue-700 ${isActive('/admin/departments')}`}
+                      className={`nav-dropdown-link ${isActive('/admin/departments') ? 'nav-dropdown-link-active' : ''}`}
                     >
                       Departments
-                    </Link>
-                  )}
-                  {canManageBudgetCategories && (
-                    <Link
-                      href="/admin/budget-categories"
-                      className={`block px-4 py-2 hover:bg-blue-700 ${!canManageSettings ? 'rounded-b-md' : ''} ${isActive('/admin/budget-categories')}`}
-                    >
-                      Budget Categories
                     </Link>
                   )}
                   {canManageSettings && (
                     <Link
                       href="/admin/settings"
-                      className={`block px-4 py-2 hover:bg-blue-700 rounded-b-md ${isActive('/admin/settings')}`}
+                      className={`nav-dropdown-link ${isActive('/admin/settings') ? 'nav-dropdown-link-active' : ''}`}
                     >
                       Settings
                     </Link>
@@ -282,114 +270,130 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="flex items-center space-x-4">
+          {/* User Info & Actions */}
+          <div className="nav-user">
             {/* User Info - Desktop */}
-            <div className="text-right hidden lg:block">
-              <div className="text-white text-sm font-medium">{user.name}</div>
-              <div className="flex items-center justify-end space-x-2">
-                <span
-                  className={`text-xs px-2 py-0.5 rounded ${getRoleBadgeColor(
-                    user.role as any
-                  )}`}
-                >
+            <div className="nav-user-info">
+              <div className="nav-user-name">{user.name}</div>
+              <div className="flex items-center justify-end gap-2">
+                <span className={`badge ${
+                  user.role === 'ADMIN' ? 'badge-accent' :
+                  user.role === 'MANAGER' ? 'badge-info' : 'badge-neutral'
+                }`}>
                   {getRoleDisplay(user.role as any)}
                 </span>
-                {user.departmentName && (
-                  <span className="text-xs text-blue-200">
-                    {user.departmentName}
-                  </span>
-                )}
               </div>
             </div>
 
             <button
               onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-              className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              className="btn btn-secondary btn-sm"
             >
-              Sign Out
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span className="hidden sm:inline">Sign Out</span>
             </button>
 
             {/* Mobile Menu Toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden text-white p-2"
+              className="nav-mobile-toggle"
+              aria-label="Toggle menu"
             >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                {mobileMenuOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                )}
-              </svg>
+              {mobileMenuOpen ? (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
             </button>
           </div>
         </div>
+      </nav>
 
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden pb-4 space-y-1">
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="nav-mobile animate-fade-in-down lg:hidden">
+          <div className="nav-mobile-section">
             <Link
               href="/"
               onClick={() => setMobileMenuOpen(false)}
-              className={`block px-3 py-2 rounded hover:bg-blue-700 ${isActive('/')}`}
+              className={`nav-mobile-link ${isActive('/') ? 'nav-mobile-link-active' : ''}`}
             >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
               Timeclock
             </Link>
-            <div className="text-xs text-blue-200 px-3 py-1 font-semibold">
-              PURCHASING
-            </div>
+          </div>
+
+          <div className="nav-mobile-section">
+            <div className="nav-mobile-section-title">Purchasing</div>
             <Link
               href="/purchase-orders"
               onClick={() => setMobileMenuOpen(false)}
-              className={`block px-3 py-2 rounded hover:bg-blue-700 ${isActive('/purchase-orders')}`}
+              className={`nav-mobile-link ${isActive('/purchase-orders') ? 'nav-mobile-link-active' : ''}`}
             >
               Purchase Orders
             </Link>
             <Link
               href="/receipts"
               onClick={() => setMobileMenuOpen(false)}
-              className={`block px-3 py-2 rounded hover:bg-blue-700 ${isActive('/receipts')}`}
+              className={`nav-mobile-link ${isActive('/receipts') ? 'nav-mobile-link-active' : ''}`}
             >
               Receipts
             </Link>
             <Link
+              href="/statements"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`nav-mobile-link ${isActive('/statements') ? 'nav-mobile-link-active' : ''}`}
+            >
+              Bank Statements
+            </Link>
+            <Link
               href="/vendors"
               onClick={() => setMobileMenuOpen(false)}
-              className={`block px-3 py-2 rounded hover:bg-blue-700 ${isActive('/vendors')}`}
+              className={`nav-mobile-link ${isActive('/vendors') ? 'nav-mobile-link-active' : ''}`}
             >
               Vendors
             </Link>
-            <div className="text-xs text-blue-200 px-3 py-1 font-semibold">
-              BUDGET
-            </div>
+            <Link
+              href="/reports"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`nav-mobile-link ${isActive('/reports') ? 'nav-mobile-link-active' : ''}`}
+            >
+              Expense Reports
+            </Link>
+          </div>
+
+          <div className="nav-mobile-section">
+            <div className="nav-mobile-section-title">Budget</div>
             <Link
               href="/budget-items"
               onClick={() => setMobileMenuOpen(false)}
-              className={`block px-3 py-2 rounded hover:bg-blue-700 ${isActive('/budget-items')}`}
+              className={`nav-mobile-link ${isActive('/budget-items') ? 'nav-mobile-link-active' : ''}`}
             >
               Budget Items
+            </Link>
+            <Link
+              href="/admin/budget-dashboard"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`nav-mobile-link ${isActive('/admin/budget-dashboard') ? 'nav-mobile-link-active' : ''}`}
+            >
+              Dashboard
             </Link>
             {canCreateAmendments && (
               <Link
                 href="/admin/budget-amendments"
                 onClick={() => setMobileMenuOpen(false)}
-                className={`block px-3 py-2 rounded hover:bg-blue-700 ${isActive('/admin/budget-amendments')}`}
+                className={`nav-mobile-link ${isActive('/admin/budget-amendments') ? 'nav-mobile-link-active' : ''}`}
               >
                 Amendments
               </Link>
@@ -398,75 +402,65 @@ export default function Navbar() {
               <Link
                 href="/admin/budget-categories"
                 onClick={() => setMobileMenuOpen(false)}
-                className={`block px-3 py-2 rounded hover:bg-blue-700 ${isActive('/admin/budget-categories')}`}
+                className={`nav-mobile-link ${isActive('/admin/budget-categories') ? 'nav-mobile-link-active' : ''}`}
               >
                 Categories
               </Link>
             )}
-            {showAdminMenu && (
-              <>
-                <div className="text-xs text-blue-200 px-3 py-1 font-semibold">
-                  ADMINISTRATION
-                </div>
-                {canManageUsers && (
-                  <Link
-                    href="/users"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`block px-3 py-2 rounded hover:bg-blue-700 ${isActive('/users')}`}
-                  >
-                    User Management
-                  </Link>
-                )}
-                {canManageRoles && (
-                  <Link
-                    href="/admin/roles/manage"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`block px-3 py-2 rounded hover:bg-blue-700 ${isActive('/admin/roles')}`}
-                  >
-                    Role Management
-                  </Link>
-                )}
-                {canViewAuditLog && (
-                  <Link
-                    href="/admin/audit-log"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`block px-3 py-2 rounded hover:bg-blue-700 ${isActive('/admin/audit-log')}`}
-                  >
-                    Audit Log
-                  </Link>
-                )}
-                {canManageDepartments && (
-                  <Link
-                    href="/admin/departments"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`block px-3 py-2 rounded hover:bg-blue-700 ${isActive('/admin/departments')}`}
-                  >
-                    Departments
-                  </Link>
-                )}
-                {canManageBudgetCategories && (
-                  <Link
-                    href="/admin/budget-categories"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`block px-3 py-2 rounded hover:bg-blue-700 ${isActive('/admin/budget-categories')}`}
-                  >
-                    Budget Categories
-                  </Link>
-                )}
-                {canManageSettings && (
-                  <Link
-                    href="/admin/settings"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`block px-3 py-2 rounded hover:bg-blue-700 ${isActive('/admin/settings')}`}
-                  >
-                    Settings
-                  </Link>
-                )}
-              </>
-            )}
           </div>
-        )}
-      </div>
-    </nav>
+
+          {showAdminMenu && (
+            <div className="nav-mobile-section">
+              <div className="nav-mobile-section-title">Administration</div>
+              {canManageUsers && (
+                <Link
+                  href="/users"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`nav-mobile-link ${isActive('/users') ? 'nav-mobile-link-active' : ''}`}
+                >
+                  User Management
+                </Link>
+              )}
+              {canManageRoles && (
+                <Link
+                  href="/admin/roles/manage"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`nav-mobile-link ${isActive('/admin/roles') ? 'nav-mobile-link-active' : ''}`}
+                >
+                  Role Management
+                </Link>
+              )}
+              {canViewAuditLog && (
+                <Link
+                  href="/admin/audit-log"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`nav-mobile-link ${isActive('/admin/audit-log') ? 'nav-mobile-link-active' : ''}`}
+                >
+                  Audit Log
+                </Link>
+              )}
+              {canManageDepartments && (
+                <Link
+                  href="/admin/departments"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`nav-mobile-link ${isActive('/admin/departments') ? 'nav-mobile-link-active' : ''}`}
+                >
+                  Departments
+                </Link>
+              )}
+              {canManageSettings && (
+                <Link
+                  href="/admin/settings"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`nav-mobile-link ${isActive('/admin/settings') ? 'nav-mobile-link-active' : ''}`}
+                >
+                  Settings
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </>
   );
 }

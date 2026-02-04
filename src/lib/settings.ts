@@ -33,6 +33,43 @@ export interface SystemSettings {
   auditLog: {
     retentionMonths: number; // 0 = keep forever
   };
+  ai: {
+    provider: 'anthropic' | 'openai' | 'none';
+    anthropic: {
+      apiKey: string;
+      model: string;
+    };
+    openai: {
+      apiKey: string;
+      model: string;
+    };
+  };
+  email: {
+    provider: 'gmail' | 'office365' | 'smtp' | 'none';
+    gmail: {
+      clientId: string;
+      clientSecret: string;
+      refreshToken: string;
+    };
+    office365: {
+      clientId: string;
+      clientSecret: string;
+      tenantId: string;
+      refreshToken: string;
+    };
+    smtp: {
+      host: string;
+      port: number;
+      secure: boolean;
+      username: string;
+      password: string;
+      fromAddress: string;
+    };
+    receiptForwarding: {
+      enabled: boolean;
+      forwardingAddress: string;
+    };
+  };
 }
 
 /**
@@ -101,6 +138,43 @@ export function getDefaultSettings(): SystemSettings {
     },
     auditLog: {
       retentionMonths: 0,
+    },
+    ai: {
+      provider: 'none',
+      anthropic: {
+        apiKey: '',
+        model: 'claude-sonnet-4-20250514',
+      },
+      openai: {
+        apiKey: '',
+        model: 'gpt-4o',
+      },
+    },
+    email: {
+      provider: 'none',
+      gmail: {
+        clientId: '',
+        clientSecret: '',
+        refreshToken: '',
+      },
+      office365: {
+        clientId: '',
+        clientSecret: '',
+        tenantId: '',
+        refreshToken: '',
+      },
+      smtp: {
+        host: '',
+        port: 587,
+        secure: false,
+        username: '',
+        password: '',
+        fromAddress: '',
+      },
+      receiptForwarding: {
+        enabled: false,
+        forwardingAddress: '',
+      },
     },
   };
 }

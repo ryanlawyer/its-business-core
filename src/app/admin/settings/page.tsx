@@ -12,7 +12,9 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'organization' | 'security' | 'purchaseOrders' | 'fiscal' | 'audit'>('organization');
+  const [activeTab, setActiveTab] = useState<'organization' | 'security' | 'purchaseOrders' | 'fiscal' | 'audit' | 'ai' | 'email'>('organization');
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [testingEmail, setTestingEmail] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -140,6 +142,26 @@ export default function SettingsPage() {
                 }`}
               >
                 Audit Log
+              </button>
+              <button
+                onClick={() => setActiveTab('ai')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'ai'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                AI / OCR
+              </button>
+              <button
+                onClick={() => setActiveTab('email')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'email'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Email
               </button>
             </nav>
           </div>
@@ -531,6 +553,655 @@ export default function SettingsPage() {
                   <p className="text-sm text-gray-500 mt-1">
                     Set to 0 to keep audit logs forever. Otherwise, logs older than this period will be automatically purged.
                   </p>
+                </div>
+              </div>
+            )}
+
+            {/* AI / OCR Tab */}
+            {activeTab === 'ai' && (
+              <div className="space-y-8">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Provider for OCR & Receipt Processing</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Configure the AI provider used for optical character recognition (OCR) to extract data from receipts and documents.
+                  </p>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        AI Provider
+                      </label>
+                      <select
+                        value={settings.ai?.provider || 'none'}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            ai: {
+                              ...settings.ai,
+                              provider: e.target.value as 'anthropic' | 'openai' | 'none',
+                            },
+                          })
+                        }
+                        className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      >
+                        <option value="none">None (Disabled)</option>
+                        <option value="anthropic">Anthropic (Claude)</option>
+                        <option value="openai">OpenAI (GPT-4)</option>
+                      </select>
+                    </div>
+
+                    {settings.ai?.provider === 'anthropic' && (
+                      <div className="border-l-4 border-blue-500 pl-4 space-y-4">
+                        <h4 className="font-medium text-gray-900">Anthropic Configuration</h4>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            API Key
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type={showApiKey ? 'text' : 'password'}
+                              value={settings.ai.anthropic?.apiKey || ''}
+                              onChange={(e) =>
+                                setSettings({
+                                  ...settings,
+                                  ai: {
+                                    ...settings.ai,
+                                    anthropic: {
+                                      ...settings.ai.anthropic,
+                                      apiKey: e.target.value,
+                                    },
+                                  },
+                                })
+                              }
+                              placeholder="sk-ant-..."
+                              className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowApiKey(!showApiKey)}
+                              className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900"
+                            >
+                              {showApiKey ? 'Hide' : 'Show'}
+                            </button>
+                          </div>
+                          <p className="text-sm text-gray-500 mt-1">
+                            Get your API key from <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">console.anthropic.com</a>
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Model
+                          </label>
+                          <select
+                            value={settings.ai.anthropic?.model || 'claude-sonnet-4-20250514'}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                ai: {
+                                  ...settings.ai,
+                                  anthropic: {
+                                    ...settings.ai.anthropic,
+                                    model: e.target.value,
+                                  },
+                                },
+                              })
+                            }
+                            className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          >
+                            <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (Recommended)</option>
+                            <option value="claude-opus-4-20250514">Claude Opus 4 (Most Capable)</option>
+                            <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                            <option value="claude-3-haiku-20240307">Claude 3 Haiku (Fastest)</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
+
+                    {settings.ai?.provider === 'openai' && (
+                      <div className="border-l-4 border-green-500 pl-4 space-y-4">
+                        <h4 className="font-medium text-gray-900">OpenAI Configuration</h4>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            API Key
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type={showApiKey ? 'text' : 'password'}
+                              value={settings.ai.openai?.apiKey || ''}
+                              onChange={(e) =>
+                                setSettings({
+                                  ...settings,
+                                  ai: {
+                                    ...settings.ai,
+                                    openai: {
+                                      ...settings.ai.openai,
+                                      apiKey: e.target.value,
+                                    },
+                                  },
+                                })
+                              }
+                              placeholder="sk-..."
+                              className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowApiKey(!showApiKey)}
+                              className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900"
+                            >
+                              {showApiKey ? 'Hide' : 'Show'}
+                            </button>
+                          </div>
+                          <p className="text-sm text-gray-500 mt-1">
+                            Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">platform.openai.com</a>
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Model
+                          </label>
+                          <select
+                            value={settings.ai.openai?.model || 'gpt-4o'}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                ai: {
+                                  ...settings.ai,
+                                  openai: {
+                                    ...settings.ai.openai,
+                                    model: e.target.value,
+                                  },
+                                },
+                              })
+                            }
+                            className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          >
+                            <option value="gpt-4o">GPT-4o (Recommended)</option>
+                            <option value="gpt-4o-mini">GPT-4o Mini (Faster)</option>
+                            <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Email Tab */}
+            {activeTab === 'email' && (
+              <div className="space-y-8">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Email Configuration</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Configure email settings for sending notifications and receiving forwarded receipts via email.
+                  </p>
+
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Email Provider
+                      </label>
+                      <select
+                        value={settings.email?.provider || 'none'}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            email: {
+                              ...settings.email,
+                              provider: e.target.value as 'gmail' | 'office365' | 'smtp' | 'none',
+                            },
+                          })
+                        }
+                        className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      >
+                        <option value="none">None (Disabled)</option>
+                        <option value="gmail">Gmail / Google Workspace</option>
+                        <option value="office365">Microsoft 365 / Outlook</option>
+                        <option value="smtp">Custom SMTP</option>
+                      </select>
+                    </div>
+
+                    {settings.email?.provider === 'gmail' && (
+                      <div className="border-l-4 border-red-500 pl-4 space-y-4">
+                        <h4 className="font-medium text-gray-900">Gmail / Google Workspace OAuth</h4>
+                        <p className="text-sm text-gray-600">
+                          Configure OAuth credentials from the <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Cloud Console</a>
+                        </p>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Client ID
+                          </label>
+                          <input
+                            type="text"
+                            value={settings.email.gmail?.clientId || ''}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                email: {
+                                  ...settings.email,
+                                  gmail: {
+                                    ...settings.email.gmail,
+                                    clientId: e.target.value,
+                                  },
+                                },
+                              })
+                            }
+                            placeholder="xxxxx.apps.googleusercontent.com"
+                            className="w-full max-w-lg px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Client Secret
+                          </label>
+                          <input
+                            type="password"
+                            value={settings.email.gmail?.clientSecret || ''}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                email: {
+                                  ...settings.email,
+                                  gmail: {
+                                    ...settings.email.gmail,
+                                    clientSecret: e.target.value,
+                                  },
+                                },
+                              })
+                            }
+                            placeholder="GOCSPX-..."
+                            className="w-full max-w-lg px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Refresh Token
+                          </label>
+                          <input
+                            type="password"
+                            value={settings.email.gmail?.refreshToken || ''}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                email: {
+                                  ...settings.email,
+                                  gmail: {
+                                    ...settings.email.gmail,
+                                    refreshToken: e.target.value,
+                                  },
+                                },
+                              })
+                            }
+                            placeholder="1//..."
+                            className="w-full max-w-lg px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          />
+                          <p className="text-sm text-gray-500 mt-1">
+                            Obtain by completing OAuth flow with Gmail API
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {settings.email?.provider === 'office365' && (
+                      <div className="border-l-4 border-blue-600 pl-4 space-y-4">
+                        <h4 className="font-medium text-gray-900">Microsoft 365 / Outlook OAuth</h4>
+                        <p className="text-sm text-gray-600">
+                          Configure OAuth credentials from the <a href="https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Azure Portal</a>
+                        </p>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Client ID (Application ID)
+                          </label>
+                          <input
+                            type="text"
+                            value={settings.email.office365?.clientId || ''}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                email: {
+                                  ...settings.email,
+                                  office365: {
+                                    ...settings.email.office365,
+                                    clientId: e.target.value,
+                                  },
+                                },
+                              })
+                            }
+                            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                            className="w-full max-w-lg px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Tenant ID
+                          </label>
+                          <input
+                            type="text"
+                            value={settings.email.office365?.tenantId || ''}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                email: {
+                                  ...settings.email,
+                                  office365: {
+                                    ...settings.email.office365,
+                                    tenantId: e.target.value,
+                                  },
+                                },
+                              })
+                            }
+                            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                            className="w-full max-w-lg px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Client Secret
+                          </label>
+                          <input
+                            type="password"
+                            value={settings.email.office365?.clientSecret || ''}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                email: {
+                                  ...settings.email,
+                                  office365: {
+                                    ...settings.email.office365,
+                                    clientSecret: e.target.value,
+                                  },
+                                },
+                              })
+                            }
+                            placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                            className="w-full max-w-lg px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Refresh Token
+                          </label>
+                          <input
+                            type="password"
+                            value={settings.email.office365?.refreshToken || ''}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                email: {
+                                  ...settings.email,
+                                  office365: {
+                                    ...settings.email.office365,
+                                    refreshToken: e.target.value,
+                                  },
+                                },
+                              })
+                            }
+                            placeholder="0.xxxxx..."
+                            className="w-full max-w-lg px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          />
+                          <p className="text-sm text-gray-500 mt-1">
+                            Obtain by completing OAuth flow with Microsoft Graph API
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {settings.email?.provider === 'smtp' && (
+                      <div className="border-l-4 border-gray-500 pl-4 space-y-4">
+                        <h4 className="font-medium text-gray-900">Custom SMTP Configuration</h4>
+
+                        <div className="grid grid-cols-2 gap-4 max-w-lg">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              SMTP Host
+                            </label>
+                            <input
+                              type="text"
+                              value={settings.email.smtp?.host || ''}
+                              onChange={(e) =>
+                                setSettings({
+                                  ...settings,
+                                  email: {
+                                    ...settings.email,
+                                    smtp: {
+                                      ...settings.email.smtp,
+                                      host: e.target.value,
+                                    },
+                                  },
+                                })
+                              }
+                              placeholder="smtp.example.com"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Port
+                            </label>
+                            <input
+                              type="number"
+                              value={settings.email.smtp?.port || 587}
+                              onChange={(e) =>
+                                setSettings({
+                                  ...settings,
+                                  email: {
+                                    ...settings.email,
+                                    smtp: {
+                                      ...settings.email.smtp,
+                                      port: parseInt(e.target.value),
+                                    },
+                                  },
+                                })
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                            />
+                          </div>
+                        </div>
+
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={settings.email.smtp?.secure || false}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                email: {
+                                  ...settings.email,
+                                  smtp: {
+                                    ...settings.email.smtp,
+                                    secure: e.target.checked,
+                                  },
+                                },
+                              })
+                            }
+                            className="mr-2"
+                          />
+                          <span className="text-sm text-gray-700">Use SSL/TLS (recommended for port 465)</span>
+                        </label>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Username
+                          </label>
+                          <input
+                            type="text"
+                            value={settings.email.smtp?.username || ''}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                email: {
+                                  ...settings.email,
+                                  smtp: {
+                                    ...settings.email.smtp,
+                                    username: e.target.value,
+                                  },
+                                },
+                              })
+                            }
+                            placeholder="user@example.com"
+                            className="w-full max-w-lg px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Password
+                          </label>
+                          <input
+                            type="password"
+                            value={settings.email.smtp?.password || ''}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                email: {
+                                  ...settings.email,
+                                  smtp: {
+                                    ...settings.email.smtp,
+                                    password: e.target.value,
+                                  },
+                                },
+                              })
+                            }
+                            className="w-full max-w-lg px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            From Address
+                          </label>
+                          <input
+                            type="email"
+                            value={settings.email.smtp?.fromAddress || ''}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                email: {
+                                  ...settings.email,
+                                  smtp: {
+                                    ...settings.email.smtp,
+                                    fromAddress: e.target.value,
+                                  },
+                                },
+                              })
+                            }
+                            placeholder="noreply@example.com"
+                            className="w-full max-w-lg px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Receipt Forwarding Section */}
+                    {settings.email?.provider && settings.email.provider !== 'none' && (
+                      <div className="border-t pt-6 mt-6">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Receipt Email Forwarding</h4>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Forward receipts to a dedicated email address to automatically import them into the system.
+                        </p>
+
+                        <div className="space-y-4">
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={settings.email.receiptForwarding?.enabled || false}
+                              onChange={(e) =>
+                                setSettings({
+                                  ...settings,
+                                  email: {
+                                    ...settings.email,
+                                    receiptForwarding: {
+                                      ...settings.email.receiptForwarding,
+                                      enabled: e.target.checked,
+                                    },
+                                  },
+                                })
+                              }
+                              className="mr-2"
+                            />
+                            <span className="text-sm font-medium text-gray-700">Enable Receipt Email Forwarding</span>
+                          </label>
+
+                          {settings.email.receiptForwarding?.enabled && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Forwarding Email Address
+                              </label>
+                              <input
+                                type="email"
+                                value={settings.email.receiptForwarding?.forwardingAddress || ''}
+                                onChange={(e) =>
+                                  setSettings({
+                                    ...settings,
+                                    email: {
+                                      ...settings.email,
+                                      receiptForwarding: {
+                                        ...settings.email.receiptForwarding,
+                                        forwardingAddress: e.target.value,
+                                      },
+                                    },
+                                  })
+                                }
+                                placeholder="receipts@yourcompany.com"
+                                className="w-full max-w-lg px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                              />
+                              <p className="text-sm text-gray-500 mt-1">
+                                Forward digital receipts to this address to automatically create expense entries
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Test Email Button */}
+                    {settings.email?.provider && settings.email.provider !== 'none' && (
+                      <div className="border-t pt-6">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setTestingEmail(true);
+                            try {
+                              const res = await fetch('/api/settings/test-email', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ settings: settings.email }),
+                              });
+                              const data = await res.json();
+                              if (res.ok) {
+                                alert('Test email sent successfully!');
+                              } else {
+                                alert(`Failed to send test email: ${data.error}`);
+                              }
+                            } catch (error) {
+                              alert('Failed to send test email');
+                            } finally {
+                              setTestingEmail(false);
+                            }
+                          }}
+                          disabled={testingEmail}
+                          className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
+                        >
+                          {testingEmail ? 'Sending...' : 'Send Test Email'}
+                        </button>
+                        <p className="text-sm text-gray-500 mt-2">
+                          Save your settings first, then click to send a test email to verify the configuration.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
