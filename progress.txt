@@ -307,3 +307,31 @@
 
 ### Quality checks
 - Build passes successfully
+
+---
+
+## Iteration 10 - TC-010: Pending Approvals API
+
+### What was implemented
+- Created `/api/timeclock/pending` GET endpoint:
+  - Permission check for canApproveEntries
+  - Department assignment check for managers (admins bypass)
+  - Returns only pending entries (status='pending')
+  - Excludes active entries (no clockOut yet)
+  - Query params: departmentId, periodStart, periodEnd
+  - Sorted by clockIn ascending (oldest first)
+  - Returns totalCount of pending entries
+  - Returns accessible departments list for filter dropdown
+  - Includes employee name and department with each entry
+
+### Key decisions
+- Returns departments list for UI filter dropdown
+- Period filters use clockIn date for consistency
+- Admins see all departments, managers see only assigned
+- Specific department filter validates access before query
+
+### Files created
+- `src/app/api/timeclock/pending/route.ts` - Pending approvals endpoint
+
+### Quality checks
+- Build passes successfully

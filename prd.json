@@ -171,7 +171,7 @@
         "Permission check: requires canApproveEntries",
         "Includes employee name and department with each entry"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-011",
