@@ -251,7 +251,7 @@
         "Sessions completed count for current period",
         "Loading skeleton while fetching data"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-016",

@@ -4,11 +4,37 @@ import { useSession } from 'next-auth/react';
 import { useState, useEffect, useCallback } from 'react';
 import { OvertimeAlertBanner } from '@/components/OvertimeAlertBanner';
 
+type PayPeriod = {
+  startDate: string;
+  endDate: string;
+  label: string;
+  type: string;
+};
+
 type TimeclockEntry = {
   id: string;
   clockIn: string;
   clockOut: string | null;
   duration: number | null;
+  status: string;
+  isLocked: boolean;
+  rejectedNote: string | null;
+};
+
+type PeriodStats = {
+  totalMinutes: number;
+  regularMinutes: number;
+  dailyOvertimeMinutes: number;
+  weeklyOvertimeMinutes: number;
+  sessionsCompleted: number;
+  pendingCount: number;
+  approvedCount: number;
+  rejectedCount: number;
+};
+
+type TodayStats = {
+  totalSeconds: number;
+  sessionsCompleted: number;
 };
 
 export default function TimeclockPage() {
@@ -22,6 +48,13 @@ export default function TimeclockPage() {
   const [mounted, setMounted] = useState(false);
   const [isClocking, setIsClocking] = useState(false);
   const [alertRefreshKey, setAlertRefreshKey] = useState(0);
+
+  // Period state
+  const [currentPeriod, setCurrentPeriod] = useState<PayPeriod | null>(null);
+  const [availablePeriods, setAvailablePeriods] = useState<PayPeriod[]>([]);
+  const [selectedPeriodIndex, setSelectedPeriodIndex] = useState(0);
+  const [periodStats, setPeriodStats] = useState<PeriodStats | null>(null);
+  const [todayStats, setTodayStats] = useState<TodayStats | null>(null);
 
   // Callback to trigger alert banner refresh
   const refreshAlerts = useCallback(() => {
@@ -41,16 +74,35 @@ export default function TimeclockPage() {
     return () => clearInterval(timer);
   }, []);
 
-  const fetchEntries = async () => {
+  const fetchEntries = async (periodStart?: string, periodEnd?: string) => {
     try {
-      const res = await fetch('/api/timeclock');
+      setLoading(true);
+      let url = '/api/timeclock';
+      if (periodStart && periodEnd) {
+        url += `?periodStart=${periodStart}&periodEnd=${periodEnd}`;
+      }
+
+      const res = await fetch(url);
       const data = await res.json();
+
       setEntries(data.entries || []);
       setActiveEntry(data.activeEntry || null);
+      setCurrentPeriod(data.currentPeriod || null);
+      setAvailablePeriods(data.availablePeriods || []);
+      setPeriodStats(data.periodStats || null);
+      setTodayStats(data.todayStats || null);
     } catch (error) {
       console.error('Error fetching entries:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePeriodChange = (index: number) => {
+    setSelectedPeriodIndex(index);
+    const period = availablePeriods[index];
+    if (period) {
+      fetchEntries(period.startDate, period.endDate);
     }
   };
 
@@ -96,17 +148,19 @@ export default function TimeclockPage() {
     return `${hours}h ${minutes}m`;
   };
 
+  const formatMinutes = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours === 0) return `${mins}m`;
+    if (mins === 0) return `${hours}h`;
+    return `${hours}h ${mins}m`;
+  };
+
   const getCurrentDuration = () => {
     if (!activeEntry) return 0;
     const start = new Date(activeEntry.clockIn);
     const diff = Math.floor((currentTime.getTime() - start.getTime()) / 1000);
     return diff;
-  };
-
-  const getTotalTime = () => {
-    const completedEntries = entries.filter(e => e.clockOut && e.duration);
-    const total = completedEntries.reduce((sum, entry) => sum + (entry.duration || 0), 0);
-    return total;
   };
 
   const formatDateTime = (dateString: string) => {
@@ -117,6 +171,35 @@ export default function TimeclockPage() {
     return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const getStatusBadge = (entry: TimeclockEntry) => {
+    if (!entry.clockOut) {
+      return <span className="badge badge-accent badge-dot">Active</span>;
+    }
+
+    const statusConfig: Record<string, { class: string; icon?: JSX.Element }> = {
+      pending: { class: 'badge badge-warning badge-dot' },
+      approved: {
+        class: 'badge badge-success',
+        icon: entry.isLocked ? (
+          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0110 0v4" />
+          </svg>
+        ) : undefined,
+      },
+      rejected: { class: 'badge badge-error badge-dot' },
+    };
+
+    const config = statusConfig[entry.status] || { class: 'badge' };
+
+    return (
+      <span className={config.class}>
+        {config.icon}
+        {entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}
+      </span>
+    );
+  };
+
   // Loading state
   if (!mounted || loading) {
     return (
@@ -125,15 +208,24 @@ export default function TimeclockPage() {
           <h1 className="page-title font-display">Timeclock</h1>
           <p className="page-subtitle">Loading your time entries...</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="stat-card">
+              <div className="skeleton h-6 w-6 rounded-full mb-3"></div>
+              <div className="skeleton h-8 w-24 mb-2"></div>
+              <div className="skeleton h-4 w-32"></div>
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="card">
-            <div className="skeleton h-8 w-48 mb-4"></div>
+            <div className="skeleton h-6 w-48 mb-4"></div>
             <div className="skeleton h-16 w-32 mb-4"></div>
             <div className="skeleton h-12 w-full"></div>
           </div>
-          <div className="card">
-            <div className="skeleton h-8 w-48 mb-4"></div>
-            <div className="skeleton h-16 w-32 mb-4"></div>
+          <div className="lg:col-span-2 card">
+            <div className="skeleton h-6 w-48 mb-4"></div>
+            <div className="skeleton h-48 w-full"></div>
           </div>
         </div>
       </div>
@@ -164,9 +256,45 @@ export default function TimeclockPage() {
         </div>
       </header>
 
+      {/* Period Selector */}
+      {availablePeriods.length > 0 && (
+        <div className="card-highlight mb-6 animate-fade-in-up" style={{ animationDelay: '50ms' }}>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="stat-icon stat-icon-info flex-shrink-0" style={{ width: '2.5rem', height: '2.5rem' }}>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Pay Period</h3>
+                <p className="text-lg font-medium" style={{ color: 'var(--accent-primary)' }}>
+                  {currentPeriod?.label || 'Current Period'}
+                </p>
+              </div>
+            </div>
+            <select
+              value={selectedPeriodIndex}
+              onChange={(e) => handlePeriodChange(parseInt(e.target.value))}
+              className="input w-full sm:w-auto"
+              style={{ maxWidth: '250px' }}
+            >
+              {availablePeriods.map((period, index) => (
+                <option key={index} value={index}>
+                  {period.label} {index === 0 ? '(Current)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
       {/* Department Assignment Widget */}
       {user?.departmentName && (
-        <div className="card-highlight mb-8 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+        <div className="card-highlight mb-6 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
           <div className="flex items-start gap-4">
             <div className="stat-icon stat-icon-accent flex-shrink-0">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -205,18 +333,20 @@ export default function TimeclockPage() {
           <div className="stat-label">{activeEntry ? 'Currently Clocked In' : 'Clock In to Start'}</div>
         </div>
 
-        {/* Current Session Card */}
+        {/* Today's Total Card */}
         <div className="stat-card stat-card-info animate-fade-in-up" style={{ animationDelay: '200ms' }}>
           <div className="stat-icon stat-icon-info">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
             </svg>
           </div>
-          <div className="stat-value font-mono">{activeEntry ? formatDuration(getCurrentDuration()) : '--'}</div>
-          <div className="stat-label">Current Session</div>
+          <div className="stat-value font-mono">
+            {formatDuration((todayStats?.totalSeconds || 0) + (activeEntry ? getCurrentDuration() : 0))}
+          </div>
+          <div className="stat-label">Today's Total</div>
         </div>
 
-        {/* Total Today Card */}
+        {/* Period Regular Hours */}
         <div className="stat-card stat-card-success animate-fade-in-up" style={{ animationDelay: '250ms' }}>
           <div className="stat-icon stat-icon-success">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -224,27 +354,72 @@ export default function TimeclockPage() {
               <polyline points="17 6 23 6 23 12" />
             </svg>
           </div>
-          <div className="stat-value font-mono">{formatDuration(getTotalTime())}</div>
-          <div className="stat-label">Total Time Today</div>
+          <div className="stat-value font-mono">
+            {formatMinutes(periodStats?.regularMinutes || 0)}
+          </div>
+          <div className="stat-label">Period Regular Hours</div>
         </div>
 
-        {/* Sessions Card */}
+        {/* Period OT Hours */}
         <div className="stat-card animate-fade-in-up" style={{ animationDelay: '300ms' }}>
-          <div className="stat-icon" style={{ background: 'var(--bg-surface)', color: 'var(--text-secondary)' }}>
+          <div
+            className="stat-icon"
+            style={{
+              background:
+                (periodStats?.dailyOvertimeMinutes || 0) + (periodStats?.weeklyOvertimeMinutes || 0) > 0
+                  ? 'var(--warning-bg, rgba(234, 179, 8, 0.1))'
+                  : 'var(--bg-surface)',
+              color:
+                (periodStats?.dailyOvertimeMinutes || 0) + (periodStats?.weeklyOvertimeMinutes || 0) > 0
+                  ? 'var(--warning)'
+                  : 'var(--text-secondary)',
+            }}
+          >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
-              <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+              <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.999L13.732 4.001c-.77-1.333-2.694-1.333-3.464 0L3.34 16.001c-.77 1.332.192 2.999 1.732 2.999z" />
             </svg>
           </div>
-          <div className="stat-value font-mono">{entries.filter(e => e.clockOut).length}</div>
-          <div className="stat-label">Sessions Completed</div>
+          <div className="stat-value font-mono">
+            {formatMinutes((periodStats?.dailyOvertimeMinutes || 0) + (periodStats?.weeklyOvertimeMinutes || 0))}
+          </div>
+          <div className="stat-label">Period Overtime</div>
         </div>
       </div>
+
+      {/* Period Summary Row */}
+      {periodStats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 animate-fade-in-up" style={{ animationDelay: '350ms' }}>
+          <div className="card text-center p-4">
+            <div className="text-2xl font-bold font-mono" style={{ color: 'var(--text-primary)' }}>
+              {periodStats.sessionsCompleted}
+            </div>
+            <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Sessions</div>
+          </div>
+          <div className="card text-center p-4">
+            <div className="text-2xl font-bold font-mono" style={{ color: 'var(--warning)' }}>
+              {periodStats.pendingCount}
+            </div>
+            <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Pending</div>
+          </div>
+          <div className="card text-center p-4">
+            <div className="text-2xl font-bold font-mono" style={{ color: 'var(--success)' }}>
+              {periodStats.approvedCount}
+            </div>
+            <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Approved</div>
+          </div>
+          <div className="card text-center p-4">
+            <div className="text-2xl font-bold font-mono" style={{ color: 'var(--error)' }}>
+              {periodStats.rejectedCount}
+            </div>
+            <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Rejected</div>
+          </div>
+        </div>
+      )}
 
       {/* Clock In/Out Action */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <div className="lg:col-span-1">
-          <div className="card animate-fade-in-up" style={{ animationDelay: '350ms' }}>
+          <div className="card animate-fade-in-up" style={{ animationDelay: '400ms' }}>
             <h2 className="text-lg font-display font-medium mb-4" style={{ color: 'var(--text-primary)' }}>
               {activeEntry ? 'End Your Session' : 'Start Your Day'}
             </h2>
@@ -254,6 +429,9 @@ export default function TimeclockPage() {
                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Clocked in at</p>
                 <p className="text-xl font-mono font-bold" style={{ color: 'var(--text-primary)' }}>
                   {formatTime(activeEntry.clockIn)}
+                </p>
+                <p className="text-2xl font-mono font-bold mt-2" style={{ color: 'var(--success)' }}>
+                  {formatDuration(getCurrentDuration())}
                 </p>
                 <div className="mt-2 flex items-center gap-2">
                   <span className="relative flex h-2 w-2">
@@ -299,11 +477,11 @@ export default function TimeclockPage() {
         </div>
 
         {/* Time Entries Table */}
-        <div className="lg:col-span-2 animate-fade-in-up" style={{ animationDelay: '400ms' }}>
+        <div className="lg:col-span-2 animate-fade-in-up" style={{ animationDelay: '450ms' }}>
           <div className="table-container">
             <div className="p-4 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
               <h2 className="text-lg font-display font-medium" style={{ color: 'var(--text-primary)' }}>
-                Today's Time Entries
+                Period Time Entries
               </h2>
             </div>
 
@@ -317,7 +495,7 @@ export default function TimeclockPage() {
                 </div>
                 <div className="empty-state-title">No time entries yet</div>
                 <div className="empty-state-description">
-                  Clock in to start tracking your time for today.
+                  Clock in to start tracking your time for this period.
                 </div>
               </div>
             ) : (
@@ -332,7 +510,14 @@ export default function TimeclockPage() {
                 </thead>
                 <tbody>
                   {entries.map((entry, index) => (
-                    <tr key={entry.id} className="animate-fade-in" style={{ animationDelay: `${450 + index * 50}ms` }}>
+                    <tr
+                      key={entry.id}
+                      className={`animate-fade-in ${entry.status === 'rejected' ? 'row-rejected' : ''}`}
+                      style={{
+                        animationDelay: `${500 + index * 50}ms`,
+                        background: entry.status === 'rejected' ? 'var(--error-bg, rgba(239, 68, 68, 0.1))' : undefined,
+                      }}
+                    >
                       <td className="font-mono">{formatDateTime(entry.clockIn)}</td>
                       <td className="font-mono">
                         {entry.clockOut ? formatDateTime(entry.clockOut) : '—'}
@@ -341,10 +526,21 @@ export default function TimeclockPage() {
                         {entry.clockOut ? formatDuration(entry.duration) : '—'}
                       </td>
                       <td>
-                        {entry.clockOut ? (
-                          <span className="badge badge-success badge-dot">Completed</span>
-                        ) : (
-                          <span className="badge badge-accent badge-dot">Active</span>
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(entry)}
+                          {entry.isLocked && entry.status === 'approved' && (
+                            <span title="Locked - cannot be modified">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" style={{ color: 'var(--text-muted)' }}>
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                <path d="M7 11V7a5 5 0 0110 0v4" />
+                              </svg>
+                            </span>
+                          )}
+                        </div>
+                        {entry.status === 'rejected' && entry.rejectedNote && (
+                          <div className="mt-1 text-xs" style={{ color: 'var(--error)' }}>
+                            <span className="font-medium">Note:</span> {entry.rejectedNote}
+                          </div>
                         )}
                       </td>
                     </tr>

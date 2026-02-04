@@ -500,3 +500,52 @@
 
 ### Quality checks
 - Build passes successfully
+
+---
+
+## Iteration 15 - TC-015: Enhanced Employee Dashboard
+
+### What was implemented
+- Created `src/lib/pay-period.ts` pay period utility:
+  - getCurrentPayPeriod() - calculates current period based on config
+  - getPayPeriodForDate() - calculates period for any date
+  - getRecentPeriods() - returns last N periods for dropdown
+  - Supports weekly, biweekly, semimonthly, monthly period types
+  - Handles week start day configuration
+  - Biweekly uses reference start date for alignment
+- Enhanced `/api/timeclock` GET endpoint:
+  - Returns currentPeriod and availablePeriods for period selector
+  - Accepts periodStart/periodEnd query params for period filtering
+  - Calculates periodStats: regularMinutes, dailyOvertimeMinutes, weeklyOvertimeMinutes
+  - Calculates todayStats: totalSeconds, sessionsCompleted
+  - Integrates with calculateOvertime service
+  - Returns status counts: pendingCount, approvedCount, rejectedCount
+  - Returns overtimeConfig for display
+- Enhanced main timeclock page (page.tsx):
+  - Period selector dropdown showing current pay period dates
+  - Period stats card row: Sessions, Pending, Approved, Rejected
+  - Today's totals prominently displayed with active session tracking
+  - Period regular hours and overtime hours in stat cards
+  - Status badges on entries: pending (yellow), approved (green), rejected (red)
+  - Lock icon on approved entries (inline and in status badge)
+  - Loading skeleton while fetching data (improved with proper layout)
+  - Rejection notes displayed inline with rejected entries
+
+### Key decisions
+- Period selector shows last 6 periods by default
+- Stats cards show period totals, not today-only totals
+- Today's total shown separately and prominently
+- Rejection notes displayed inline for visibility
+- Lock icon shown both in badge and as separate indicator
+- Loading skeleton matches final layout structure
+
+### Files created
+- `src/lib/pay-period.ts` - Pay period calculation utility
+
+### Files modified
+- `src/app/api/timeclock/route.ts` - Enhanced with period data and stats
+- `src/app/page.tsx` - Redesigned with period selector and status badges
+
+### Quality checks
+- Build passes successfully
+- All 31 tests pass
