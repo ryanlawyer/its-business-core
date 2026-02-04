@@ -461,3 +461,42 @@
 
 ### Quality checks
 - Build passes successfully
+
+---
+
+## Iteration 14 - TC-014: Manager OT Flags
+
+### What was implemented
+- Updated `/api/timeclock/team` endpoint to include OT calculations:
+  - Integrates with calculateOvertime service
+  - Returns otFlags on each entry: exceedsDailyThreshold, hasEmployeeOvertime,
+    dailyOvertimeMinutes, weeklyOvertimeMinutes
+  - Employee totals now include actual regularMinutes and overtimeMinutes
+  - Added hasOvertime, dailyOvertimeMinutes, weeklyOvertimeMinutes to employee totals
+  - Returns overtimeConfig for threshold display
+  - Flags based on all completed entries (approved and pending)
+- Created OvertimeIndicator component:
+  - Warning icon with tooltip showing OT amounts
+  - Yellow for daily OT, red for weekly OT
+  - Configurable size (sm, md, lg)
+  - Hover tooltip with breakdown
+- Created OvertimeBadge component:
+  - Badge showing "OT: Xh Ym" with variant styling
+  - Variants: default, daily, weekly
+  - Yellow for daily, red for weekly
+
+### Key decisions
+- OT flags calculated on every API call for real-time accuracy
+- Both approved and pending entries contribute to OT calculation
+- Individual entries flagged if they alone exceed daily threshold
+- Employee-level flag if any OT across the period
+- Color distinction: yellow for daily OT, red for weekly OT
+
+### Files created
+- `src/components/OvertimeIndicator.tsx` - OT indicator icon and badge components
+
+### Files modified
+- `src/app/api/timeclock/team/route.ts` - Added OT calculation integration
+
+### Quality checks
+- Build passes successfully

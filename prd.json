@@ -235,7 +235,7 @@
         "Flags based on approved and pending entries",
         "Updates when entries are approved/edited"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-015",

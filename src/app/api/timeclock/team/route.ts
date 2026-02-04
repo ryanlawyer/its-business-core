@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
+import { calculateOvertime, TimeclockEntryForCalculation } from '@/lib/overtime';
 
 /**
  * GET /api/timeclock/team
@@ -197,11 +198,65 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // For now, regular = total (OT calculation will be added in TC-011)
+    // Calculate overtime using the overtime service
+    const overtimeConfig = await prisma.overtimeConfig.findFirst();
+
+    // Convert entries to calculation format
+    const calcEntries: TimeclockEntryForCalculation[] = entries
+      .filter((e) => e.clockOut && e.duration) // Only completed entries
+      .map((e) => ({
+        id: e.id,
+        userId: e.userId,
+        clockIn: new Date(e.clockIn),
+        clockOut: e.clockOut ? new Date(e.clockOut) : null,
+        duration: e.duration,
+        status: e.status,
+      }));
+
+    const overtimeResult = calculateOvertime(calcEntries, overtimeConfig);
+
+    // Update employee totals with OT breakdown
     for (const userId in employeeTotals) {
-      employeeTotals[userId].regularMinutes = employeeTotals[userId].totalMinutes;
-      employeeTotals[userId].overtimeMinutes = 0;
+      const otResult = overtimeResult.employees[userId];
+      if (otResult) {
+        employeeTotals[userId].regularMinutes = otResult.regularMinutes;
+        employeeTotals[userId].overtimeMinutes =
+          otResult.dailyOvertimeMinutes + otResult.weeklyOvertimeMinutes;
+      } else {
+        employeeTotals[userId].regularMinutes = employeeTotals[userId].totalMinutes;
+        employeeTotals[userId].overtimeMinutes = 0;
+      }
     }
+
+    // Add OT flags to individual entries
+    const entriesWithOTFlags = entries.map((entry) => {
+      // Calculate if this individual entry exceeds daily threshold
+      let exceedsDailyThreshold = false;
+      if (
+        overtimeConfig?.dailyThreshold &&
+        entry.duration &&
+        entry.clockOut
+      ) {
+        const entryMinutes = Math.floor(entry.duration / 60);
+        exceedsDailyThreshold = entryMinutes > overtimeConfig.dailyThreshold;
+      }
+
+      // Check if employee has any overtime
+      const employeeOT = overtimeResult.employees[entry.userId];
+      const hasOvertime =
+        employeeOT &&
+        (employeeOT.dailyOvertimeMinutes > 0 || employeeOT.weeklyOvertimeMinutes > 0);
+
+      return {
+        ...entry,
+        otFlags: {
+          exceedsDailyThreshold,
+          hasEmployeeOvertime: hasOvertime,
+          dailyOvertimeMinutes: employeeOT?.dailyOvertimeMinutes || 0,
+          weeklyOvertimeMinutes: employeeOT?.weeklyOvertimeMinutes || 0,
+        },
+      };
+    });
 
     // Get list of departments the manager can access
     let accessibleDepartments: { id: string; name: string }[] = [];
@@ -222,11 +277,25 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // Add hasOvertime flag to employee totals
+    const employeeTotalsWithFlags = Object.values(employeeTotals).map((emp) => ({
+      ...emp,
+      hasOvertime: emp.overtimeMinutes > 0,
+      dailyOvertimeMinutes: overtimeResult.employees[emp.userId]?.dailyOvertimeMinutes || 0,
+      weeklyOvertimeMinutes: overtimeResult.employees[emp.userId]?.weeklyOvertimeMinutes || 0,
+    }));
+
     return NextResponse.json({
-      entries,
-      employeeTotals: Object.values(employeeTotals),
+      entries: entriesWithOTFlags,
+      employeeTotals: employeeTotalsWithFlags,
       accessibleDepartments,
       totalEntries: entries.length,
+      overtimeConfig: overtimeConfig
+        ? {
+            dailyThreshold: overtimeConfig.dailyThreshold,
+            weeklyThreshold: overtimeConfig.weeklyThreshold,
+          }
+        : null,
     });
   } catch (error) {
     console.error('Error fetching team entries:', error);
