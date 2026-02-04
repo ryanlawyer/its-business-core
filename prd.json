@@ -299,7 +299,7 @@
         "Approve All Pending button for quick bulk approval",
         "Permission check: requires canViewTeamEntries"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-019",

@@ -631,3 +631,39 @@
 ### Quality checks
 - Build passes successfully
 - All 31 tests pass
+
+---
+
+## Iteration 18 - TC-018: Team Overview Page
+
+### What was implemented
+- Created `/timeclock/team` page for managers to view team time summary:
+  - Pay period selector dropdown matching pay period config
+  - Department filter dropdown (shows only assigned departments for managers)
+  - Summary stats cards: Total Employees, Approved, Pending, Rejected counts
+  - Employee list table with columns: Employee, Department, Regular Hours, OT Hours, Status
+  - Employee rows show name, email, OT badge if employee has overtime
+  - Status column shows badges for approved/pending/rejected counts per employee
+  - Click employee row to navigate to detail page (/timeclock/team/[userId])
+  - "Approve All Pending" button for quick bulk approval
+  - Pending Approvals button with badge count links to /timeclock/approvals
+  - Back button navigates to main timeclock page
+  - Loading skeleton while fetching data
+  - Empty state when no employees have entries for the period
+- Permission check: redirects to / if user lacks canViewTeamEntries permission
+- Uses existing /api/timeclock/team endpoint for data
+- Uses existing /api/timeclock/bulk-approve endpoint for bulk approval
+
+### Key decisions
+- Reuses existing team API which already calculates OT breakdown per employee
+- Period selector uses same availablePeriods from main timeclock API
+- Bulk approve targets only pending entries with clockOut (completed entries)
+- Employee click navigates to detail page (TC-019 will implement it)
+- OT badge shown inline with employee name for visibility
+
+### Files created
+- `src/app/timeclock/team/page.tsx` - Team overview page
+
+### Quality checks
+- Build passes successfully
+- All 31 tests pass
