@@ -126,3 +126,31 @@
 ### Quality checks
 - Build passes successfully
 - Database migration applied without errors
+
+---
+
+## Iteration 4 - TC-004: TimeclockEntry Schema Updates
+
+### What was implemented
+- Extended `TimeclockEntry` model in Prisma schema with:
+  - `status` field (String, default: "pending") for approval workflow
+  - `approvedBy` (String?) for tracking who approved
+  - `approvedAt` (DateTime?) for tracking when approved
+  - `rejectedNote` (String?) for rejection reason
+  - `isLocked` (Boolean, default: false) for preventing edits after approval
+  - `lastEditedBy` (String?) for audit trail
+  - `lastEditedAt` (DateTime?) for audit trail
+  - Index on `status` field for query performance
+
+### Key decisions
+- Used String for status instead of enum for flexibility
+- Existing entries default to "pending" status (SQLite default behavior)
+- approvedBy stores user ID (not a relation) for simplicity
+- isLocked defaults to false, set to true when approved
+
+### Files modified
+- `prisma/schema.prisma` - Extended TimeclockEntry model with approval and audit fields
+
+### Quality checks
+- Build passes successfully
+- Database migration applied without errors

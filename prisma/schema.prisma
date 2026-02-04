@@ -420,11 +420,23 @@ model TimeclockEntry {
   clockOut DateTime?
   duration Int? // Duration in seconds
 
+  // Approval workflow fields
+  status       String  @default("pending") // "pending" | "approved" | "rejected"
+  approvedBy   String?
+  approvedAt   DateTime?
+  rejectedNote String?
+  isLocked     Boolean @default(false)
+
+  // Audit trail fields
+  lastEditedBy String?
+  lastEditedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([clockIn])
+  @@index([status])
   @@map("timeclock_entries")
 }
 

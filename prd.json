@@ -74,7 +74,7 @@
         "Migration runs without errors",
         "Existing entries default to pending status"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-005",
