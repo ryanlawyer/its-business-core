@@ -180,3 +180,30 @@
 
 ### Quality checks
 - Build passes successfully
+
+---
+
+## Iteration 6 - TC-006: Team Entries API
+
+### What was implemented
+- Created `/api/timeclock/team` GET endpoint with:
+  - Permission check for canViewTeamEntries or canViewAllEntries
+  - Respects ManagerAssignment - only shows assigned departments for managers
+  - Admins with canViewAllEntries can see all departments
+  - Query params: userId, departmentId, status, periodStart, periodEnd
+  - Returns entries with user and department info
+  - Calculates employee totals (total/regular/OT minutes, entry counts by status)
+  - Returns accessible departments list for filtering
+  - Returns 403 if manager has no department assignments
+
+### Key decisions
+- Admins bypass department assignment check with canViewAllEntries
+- OT minutes placeholder (0) until TC-011 implements overtime calculation
+- Returns employeeTotals as aggregated data per employee
+- Filters by user's department (the employee's assigned department)
+
+### Files created
+- `src/app/api/timeclock/team/route.ts` - New team entries API endpoint
+
+### Quality checks
+- Build passes successfully

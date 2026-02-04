@@ -106,7 +106,7 @@
         "Permission check: requires canViewTeamEntries",
         "Returns 403 if user has no department assignments"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-007",
