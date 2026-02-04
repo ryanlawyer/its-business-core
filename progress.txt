@@ -85,3 +85,44 @@
 ### Quality checks
 - Build passes successfully
 - Database migration applied without errors
+
+---
+
+## Iteration 3 - TC-003: Manager Assignment Model
+
+### What was implemented
+- Added `ManagerAssignment` model to Prisma schema with:
+  - userId, departmentId with unique constraint
+  - Relations to User and Department models
+  - Cascade delete on both relations
+  - Indexes on userId and departmentId
+- Added `canAssignManagers` permission to UserPermissions type
+- Created `/api/timeclock/manager-assignments` API route with:
+  - GET: List all assignments (with optional userId/departmentId filter)
+  - POST: Create new assignment with validation
+  - DELETE: Remove assignment by userId and departmentId
+  - Permission check for `canAssignManagers`
+  - Audit logging for assignment changes
+- Created `/admin/timeclock/managers` admin UI page with:
+  - Form to add new manager-department assignment
+  - User and department dropdowns
+  - Grouped view showing managers and their assigned departments
+  - Department overview table showing which managers are assigned
+  - Remove assignment with confirmation
+  - Loading skeleton and error/success alerts
+
+### Key decisions
+- Used composite unique constraint on (userId, departmentId)
+- Grouped assignments by user in UI for cleaner display
+- Included department overview table for quick visibility
+- Used chips with X button for easy removal of assignments
+
+### Files created/modified
+- `prisma/schema.prisma` - Added ManagerAssignment model and relations
+- `src/lib/check-permissions.ts` - Added canAssignManagers permission
+- `src/app/api/timeclock/manager-assignments/route.ts` - New API route
+- `src/app/admin/timeclock/managers/page.tsx` - New admin UI page
+
+### Quality checks
+- Build passes successfully
+- Database migration applied without errors

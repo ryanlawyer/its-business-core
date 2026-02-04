@@ -57,7 +57,7 @@
         "Can assign manager to multiple departments",
         "Only users with canAssignManagers permission can access"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-004",

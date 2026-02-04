@@ -74,6 +74,9 @@ model User {
   merchantCategoryMappings MerchantCategoryMapping[]
   bankStatements           BankStatement[]
 
+  // Manager assignment relations
+  managerAssignments       ManagerAssignment[]
+
   @@index([email])
   @@index([roleId])
   @@index([departmentId])
@@ -104,6 +107,7 @@ model Department {
   budgetItems           BudgetItem[]
   budgetTargets         DepartmentBudgetTarget[]
   purchaseOrders        PurchaseOrder[]
+  managerAssignments    ManagerAssignment[]
 
   @@index([parentId])
   @@map("departments")
@@ -451,6 +455,23 @@ model OvertimeConfig {
   updatedAt DateTime @updatedAt
 
   @@map("overtime_config")
+}
+
+// Manager-Department assignments for multi-department oversight
+model ManagerAssignment {
+  id           String     @id @default(uuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, departmentId])
+  @@index([userId])
+  @@index([departmentId])
+  @@map("manager_assignments")
 }
 
 // ============================================
