@@ -380,3 +380,41 @@
 ### Quality checks
 - Build passes successfully
 - All 18 tests pass
+
+---
+
+## Iteration 12 - TC-012: Alert Threshold Checking
+
+### What was implemented
+- Added `checkAlertStatus()` function to `src/lib/overtime.ts`:
+  - Checks current day total against daily threshold
+  - Checks current week total against weekly threshold
+  - Returns AlertStatus object with daily/weekly sections
+  - Each section contains: currentMinutes, thresholdMinutes, approaching, exceeded
+  - `approaching` = within alertBefore minutes of threshold
+  - `exceeded` = at or over threshold
+  - Uses alertBeforeDaily/alertBeforeWeekly config for approaching calculation
+  - Accepts optional activeMinutes for in-progress clock-in
+  - Returns null if both thresholds disabled or no config
+- Added 13 new tests for checkAlertStatus covering:
+  - Null config handling
+  - Both thresholds disabled
+  - Daily alert states (under/approaching/exceeded)
+  - Weekly alert states (under/approaching/exceeded)
+  - Active minutes inclusion
+  - Combined daily and weekly alerts
+  - Edge cases (no alert window, empty entries)
+
+### Key decisions
+- activeMinutes parameter allows real-time updates for in-progress sessions
+- approaching is only true if NOT exceeded (mutually exclusive states)
+- When alertBefore is null, approaching is always false
+- Returns both daily and weekly status in single call for efficiency
+
+### Files modified
+- `src/lib/overtime.ts` - Added checkAlertStatus function and AlertStatus interface
+- `src/lib/__tests__/overtime.test.ts` - Added 13 new tests (now 31 total)
+
+### Quality checks
+- Build passes successfully
+- All 31 tests pass

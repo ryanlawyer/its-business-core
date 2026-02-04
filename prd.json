@@ -204,7 +204,7 @@
         "Called on clock-in and clock-out events",
         "Returns null if thresholds disabled"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-013",

@@ -237,3 +237,92 @@ export function calculateWeeklyMinutes(
     return sum;
   }, 0);
 }
+
+// Alert status result
+export interface AlertStatus {
+  daily: {
+    currentMinutes: number;
+    thresholdMinutes: number | null;
+    approaching: boolean;
+    exceeded: boolean;
+  };
+  weekly: {
+    currentMinutes: number;
+    thresholdMinutes: number | null;
+    approaching: boolean;
+    exceeded: boolean;
+  };
+}
+
+/**
+ * Check alert status for overtime thresholds
+ *
+ * Returns alert flags for both daily and weekly thresholds.
+ * "approaching" = within alertBefore minutes of threshold
+ * "exceeded" = at or over threshold
+ *
+ * @param entries - Employee's entries (completed or in progress)
+ * @param config - Overtime configuration with thresholds and alert settings
+ * @param referenceDate - Date to check against (usually now)
+ * @param activeMinutes - Minutes from currently active clock-in (optional)
+ * @returns AlertStatus object or null if both thresholds disabled
+ */
+export function checkAlertStatus(
+  entries: TimeclockEntryForCalculation[],
+  config: OvertimeConfig | null,
+  referenceDate: Date = new Date(),
+  activeMinutes: number = 0
+): AlertStatus | null {
+  // Return null if no config or both thresholds disabled
+  if (!config) return null;
+  if (config.dailyThreshold === null && config.weeklyThreshold === null) {
+    return null;
+  }
+
+  // Calculate current day total
+  const dailyMinutesCompleted = calculateDailyMinutes(entries, referenceDate);
+  const dailyTotal = dailyMinutesCompleted + activeMinutes;
+
+  // Calculate current week total
+  const weeklyMinutesCompleted = calculateWeeklyMinutes(entries, referenceDate);
+  const weeklyTotal = weeklyMinutesCompleted + activeMinutes;
+
+  // Check daily threshold
+  const dailyStatus = {
+    currentMinutes: dailyTotal,
+    thresholdMinutes: config.dailyThreshold,
+    approaching: false,
+    exceeded: false,
+  };
+
+  if (config.dailyThreshold !== null) {
+    dailyStatus.exceeded = dailyTotal >= config.dailyThreshold;
+
+    if (!dailyStatus.exceeded && config.alertBeforeDaily !== null) {
+      const alertThreshold = config.dailyThreshold - config.alertBeforeDaily;
+      dailyStatus.approaching = dailyTotal >= alertThreshold;
+    }
+  }
+
+  // Check weekly threshold
+  const weeklyStatus = {
+    currentMinutes: weeklyTotal,
+    thresholdMinutes: config.weeklyThreshold,
+    approaching: false,
+    exceeded: false,
+  };
+
+  if (config.weeklyThreshold !== null) {
+    weeklyStatus.exceeded = weeklyTotal >= config.weeklyThreshold;
+
+    if (!weeklyStatus.exceeded && config.alertBeforeWeekly !== null) {
+      const alertThreshold = config.weeklyThreshold - config.alertBeforeWeekly;
+      weeklyStatus.approaching = weeklyTotal >= alertThreshold;
+    }
+  }
+
+  return {
+    daily: dailyStatus,
+    weekly: weeklyStatus,
+  };
+}

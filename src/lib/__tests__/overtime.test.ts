@@ -3,6 +3,7 @@ import {
   calculateOvertime,
   calculateDailyMinutes,
   calculateWeeklyMinutes,
+  checkAlertStatus,
   TimeclockEntryForCalculation,
 } from '../overtime';
 import { OvertimeConfig } from '@prisma/client';
@@ -327,5 +328,187 @@ describe('calculateWeeklyMinutes', () => {
     const minutes = calculateWeeklyMinutes(entries, new Date('2024-01-15'));
 
     expect(minutes).toBe(480);
+  });
+});
+
+// Helper to create config with alert settings
+function createConfigWithAlerts(
+  dailyThreshold: number | null,
+  weeklyThreshold: number | null,
+  alertBeforeDaily: number | null,
+  alertBeforeWeekly: number | null
+): OvertimeConfig {
+  return {
+    id: 'config-1',
+    dailyThreshold,
+    weeklyThreshold,
+    alertBeforeDaily,
+    alertBeforeWeekly,
+    notifyEmployee: true,
+    notifyManager: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
+describe('checkAlertStatus', () => {
+  describe('when config is null', () => {
+    it('returns null', () => {
+      const entries = [createEntry('user1', '2024-01-15T08:00:00', 420)];
+      const result = checkAlertStatus(entries, null, new Date('2024-01-15'));
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('when both thresholds are disabled', () => {
+    it('returns null', () => {
+      const config = createConfigWithAlerts(null, null, null, null);
+      const entries = [createEntry('user1', '2024-01-15T08:00:00', 420)];
+      const result = checkAlertStatus(entries, config, new Date('2024-01-15'));
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('daily alerts', () => {
+    it('returns not exceeded and not approaching when under threshold', () => {
+      const config = createConfigWithAlerts(480, null, 60, null); // 8h threshold, 1h alert before
+      const entries = [createEntry('user1', '2024-01-15T08:00:00', 360)]; // 6 hours
+
+      const result = checkAlertStatus(entries, config, new Date('2024-01-15'));
+
+      expect(result?.daily.exceeded).toBe(false);
+      expect(result?.daily.approaching).toBe(false);
+      expect(result?.daily.currentMinutes).toBe(360);
+    });
+
+    it('returns approaching when within alert threshold', () => {
+      const config = createConfigWithAlerts(480, null, 60, null); // 8h threshold, 1h alert
+      const entries = [createEntry('user1', '2024-01-15T08:00:00', 430)]; // 7h 10m
+
+      const result = checkAlertStatus(entries, config, new Date('2024-01-15'));
+
+      expect(result?.daily.exceeded).toBe(false);
+      expect(result?.daily.approaching).toBe(true);
+    });
+
+    it('returns exceeded when at or over threshold', () => {
+      const config = createConfigWithAlerts(480, null, 60, null);
+      const entries = [createEntry('user1', '2024-01-15T08:00:00', 500)]; // 8h 20m
+
+      const result = checkAlertStatus(entries, config, new Date('2024-01-15'));
+
+      expect(result?.daily.exceeded).toBe(true);
+      expect(result?.daily.approaching).toBe(false); // Not approaching if exceeded
+    });
+
+    it('includes active minutes in calculation', () => {
+      const config = createConfigWithAlerts(480, null, 60, null);
+      const entries = [createEntry('user1', '2024-01-15T08:00:00', 400)]; // 6h 40m completed
+
+      const result = checkAlertStatus(entries, config, new Date('2024-01-15'), 90); // +1h 30m active
+
+      expect(result?.daily.currentMinutes).toBe(490);
+      expect(result?.daily.exceeded).toBe(true);
+    });
+  });
+
+  describe('weekly alerts', () => {
+    it('returns not exceeded and not approaching when under threshold', () => {
+      const config = createConfigWithAlerts(null, 2400, null, 120); // 40h threshold, 2h alert
+      const entries = [
+        createEntry('user1', '2024-01-15T08:00:00', 480),
+        createEntry('user1', '2024-01-16T08:00:00', 480),
+      ]; // 16 hours
+
+      const result = checkAlertStatus(entries, config, new Date('2024-01-15'));
+
+      expect(result?.weekly.exceeded).toBe(false);
+      expect(result?.weekly.approaching).toBe(false);
+      expect(result?.weekly.currentMinutes).toBe(960);
+    });
+
+    it('returns approaching when within alert threshold', () => {
+      const config = createConfigWithAlerts(null, 2400, null, 120); // 40h, 2h alert before
+      const entries = [
+        createEntry('user1', '2024-01-15T08:00:00', 480),
+        createEntry('user1', '2024-01-16T08:00:00', 480),
+        createEntry('user1', '2024-01-17T08:00:00', 480),
+        createEntry('user1', '2024-01-18T08:00:00', 480),
+        createEntry('user1', '2024-01-19T08:00:00', 400), // Total: 38h 40m
+      ];
+
+      const result = checkAlertStatus(entries, config, new Date('2024-01-19'));
+
+      expect(result?.weekly.exceeded).toBe(false);
+      expect(result?.weekly.approaching).toBe(true);
+    });
+
+    it('returns exceeded when at or over threshold', () => {
+      const config = createConfigWithAlerts(null, 2400, null, 120);
+      const entries = [
+        createEntry('user1', '2024-01-15T08:00:00', 480),
+        createEntry('user1', '2024-01-16T08:00:00', 480),
+        createEntry('user1', '2024-01-17T08:00:00', 480),
+        createEntry('user1', '2024-01-18T08:00:00', 480),
+        createEntry('user1', '2024-01-19T08:00:00', 500), // Total: 41h 20m
+      ];
+
+      const result = checkAlertStatus(entries, config, new Date('2024-01-19'));
+
+      expect(result?.weekly.exceeded).toBe(true);
+      expect(result?.weekly.approaching).toBe(false);
+    });
+  });
+
+  describe('combined daily and weekly alerts', () => {
+    it('returns status for both thresholds', () => {
+      const config = createConfigWithAlerts(480, 2400, 60, 120);
+      const entries = [
+        createEntry('user1', '2024-01-15T08:00:00', 450), // Day: 7h 30m, approaching
+        createEntry('user1', '2024-01-16T08:00:00', 480),
+        createEntry('user1', '2024-01-17T08:00:00', 480),
+        createEntry('user1', '2024-01-18T08:00:00', 480),
+        createEntry('user1', '2024-01-19T08:00:00', 480), // Total: 39h 30m, approaching
+      ];
+
+      // Check on Jan 15 (reference for daily)
+      const resultDay1 = checkAlertStatus(entries, config, new Date('2024-01-15'));
+      expect(resultDay1?.daily.approaching).toBe(true);
+      expect(resultDay1?.daily.exceeded).toBe(false);
+
+      // Check on Jan 19 for weekly (reference date doesn't affect week calc, just day)
+      const resultDay5 = checkAlertStatus(entries, config, new Date('2024-01-19'));
+      expect(resultDay5?.weekly.approaching).toBe(true);
+      expect(resultDay5?.weekly.exceeded).toBe(false);
+    });
+  });
+
+  describe('edge cases', () => {
+    it('handles no alert threshold set (still checks exceeded)', () => {
+      const config = createConfigWithAlerts(480, null, null, null); // No alert window
+      const entries = [createEntry('user1', '2024-01-15T08:00:00', 450)];
+
+      const result = checkAlertStatus(entries, config, new Date('2024-01-15'));
+
+      expect(result?.daily.exceeded).toBe(false);
+      expect(result?.daily.approaching).toBe(false); // No alert before = never approaching
+    });
+
+    it('handles empty entries array', () => {
+      const config = createConfigWithAlerts(480, 2400, 60, 120);
+      const result = checkAlertStatus([], config, new Date('2024-01-15'));
+
+      expect(result?.daily.currentMinutes).toBe(0);
+      expect(result?.daily.exceeded).toBe(false);
+      expect(result?.daily.approaching).toBe(false);
+    });
+
+    it('uses active minutes correctly with empty entries', () => {
+      const config = createConfigWithAlerts(480, 2400, 60, 120);
+      const result = checkAlertStatus([], config, new Date('2024-01-15'), 430);
+
+      expect(result?.daily.currentMinutes).toBe(430);
+      expect(result?.daily.approaching).toBe(true);
+    });
   });
 });
