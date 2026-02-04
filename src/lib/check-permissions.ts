@@ -50,6 +50,22 @@ export type UserPermissions = {
   settings?: {
     canManage?: boolean;
   };
+  receipts?: {
+    canUpload?: boolean;
+    canViewOwn?: boolean;
+    canViewAll?: boolean;
+    canEdit?: boolean;
+    canDelete?: boolean;
+    canProcess?: boolean;
+    canExport?: boolean;
+  };
+  bankStatements?: {
+    canUpload?: boolean;
+    canViewOwn?: boolean;
+    canViewAll?: boolean;
+    canDelete?: boolean;
+    canMatch?: boolean;
+  };
 };
 
 /**

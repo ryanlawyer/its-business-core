@@ -47,7 +47,22 @@ export type AuditAction =
   | 'PASSWORD_RESET_REQUESTED'
   | 'PASSWORD_RESET_COMPLETED'
   // Settings actions
-  | 'SETTINGS_UPDATED';
+  | 'SETTINGS_UPDATED'
+  // Receipt actions
+  | 'RECEIPT_UPLOADED'
+  | 'RECEIPT_UPDATED'
+  | 'RECEIPT_DELETED'
+  | 'RECEIPT_OCR_STARTED'
+  | 'RECEIPT_OCR_COMPLETED'
+  | 'RECEIPT_OCR_FAILED'
+  | 'RECEIPT_LINKED_TO_PO'
+  | 'RECEIPT_UNLINKED_FROM_PO'
+  // Bank statement actions
+  | 'BANK_STATEMENT_UPLOADED'
+  | 'BANK_STATEMENT_PARSED'
+  | 'BANK_STATEMENT_DELETED'
+  | 'BANK_TRANSACTION_MATCHED'
+  | 'BANK_TRANSACTION_UNMATCHED';
 
 export type AuditEntityType =
   | 'User'
@@ -58,7 +73,10 @@ export type AuditEntityType =
   | 'BudgetItem'
   | 'Vendor'
   | 'Settings'
-  | 'Auth';
+  | 'Auth'
+  | 'Receipt'
+  | 'BankStatement'
+  | 'BankTransaction';
 
 interface AuditLogData {
   userId?: string;
