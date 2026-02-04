@@ -137,6 +137,12 @@ export default function Navbar() {
                   Purchase Orders
                 </Link>
                 <Link
+                  href="/receipts"
+                  className={`block px-4 py-2 hover:bg-blue-700 ${isActive('/receipts')}`}
+                >
+                  Receipts
+                </Link>
+                <Link
                   href="/vendors"
                   className={`block px-4 py-2 hover:bg-blue-700 rounded-b-md ${isActive('/vendors')}`}
                 >
@@ -354,6 +360,13 @@ export default function Navbar() {
               className={`block px-3 py-2 rounded hover:bg-blue-700 ${isActive('/purchase-orders')}`}
             >
               Purchase Orders
+            </Link>
+            <Link
+              href="/receipts"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`block px-3 py-2 rounded hover:bg-blue-700 ${isActive('/receipts')}`}
+            >
+              Receipts
             </Link>
             <Link
               href="/vendors"
