@@ -1,0 +1,467 @@
+{
+  "project": {
+    "name": "ITS Business Core - Timeclock Enhancements",
+    "description": "Transform basic clock-in/out into full timesheet management with manager oversight, approval workflows, and payroll exports",
+    "designDoc": "docs/plans/2026-02-04-timeclock-enhancements-design.md",
+    "techStack": {
+      "frontend": "Next.js 15 (App Router) + TypeScript + Tailwind CSS 4",
+      "backend": "Next.js API Routes + Prisma ORM",
+      "database": "SQLite",
+      "auth": "NextAuth.js 5"
+    }
+  },
+  "userStories": [
+    {
+      "id": "TC-001",
+      "phase": 1,
+      "title": "Pay Period Config Model",
+      "description": "Create PayPeriodConfig model for configurable pay periods",
+      "acceptanceCriteria": [
+        "PayPeriodConfig model in schema.prisma with id, type, startDayOfWeek, startDate, timestamps",
+        "type supports: weekly, biweekly, semimonthly, monthly",
+        "Migration runs without errors",
+        "GET /api/timeclock/config returns pay period config",
+        "PUT /api/timeclock/config updates pay period config",
+        "Admin UI section at /admin/timeclock for pay period settings",
+        "Only users with canManageConfig permission can access"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-002",
+      "phase": 1,
+      "title": "Overtime Config Model",
+      "description": "Create OvertimeConfig model for configurable overtime rules",
+      "acceptanceCriteria": [
+        "OvertimeConfig model in schema.prisma with dailyThreshold, weeklyThreshold, alertBefore fields, notify flags",
+        "Thresholds stored in minutes, nullable to disable",
+        "Migration runs without errors",
+        "GET /api/timeclock/config includes overtime config",
+        "PUT /api/timeclock/config updates overtime config",
+        "Admin UI section for overtime settings with threshold inputs",
+        "Checkbox controls for employee/manager notifications"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-003",
+      "phase": 1,
+      "title": "Manager Assignment Model",
+      "description": "Create ManagerAssignment model for multi-department oversight",
+      "acceptanceCriteria": [
+        "ManagerAssignment model with userId, departmentId, unique constraint",
+        "Relations to User and Department models",
+        "Migration runs without errors",
+        "CRUD API at /api/timeclock/manager-assignments",
+        "Admin UI at /admin/timeclock/managers showing manager-department grid",
+        "Can assign manager to multiple departments",
+        "Only users with canAssignManagers permission can access"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-004",
+      "phase": 1,
+      "title": "TimeclockEntry Schema Updates",
+      "description": "Add approval and audit fields to TimeclockEntry model",
+      "acceptanceCriteria": [
+        "status field added: pending, approved, rejected (default: pending)",
+        "approvedBy, approvedAt fields for approval tracking",
+        "rejectedNote field for rejection reason",
+        "isLocked boolean field (default: false)",
+        "lastEditedBy, lastEditedAt fields for audit trail",
+        "Index on status field for query performance",
+        "Migration runs without errors",
+        "Existing entries default to pending status"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-005",
+      "phase": 2,
+      "title": "Extended Timeclock Permissions",
+      "description": "Add new timeclock permissions to the permission system",
+      "acceptanceCriteria": [
+        "UserPermissions type extended with: canViewTeamEntries, canEditTeamEntries, canApproveEntries",
+        "UserPermissions type extended with: canViewAllEntries, canManageConfig, canManageExportTemplates",
+        "UserPermissions type extended with: canExportPayroll, canAssignManagers",
+        "Default USER role: canClockInOut, canViewOwnEntries only",
+        "Default MANAGER role: adds canViewTeamEntries, canEditTeamEntries, canApproveEntries, canExportPayroll",
+        "Default ADMIN role: all timeclock permissions enabled",
+        "Permission checks work in middleware and API routes"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-006",
+      "phase": 2,
+      "title": "Team Entries API",
+      "description": "API endpoint for managers to view team timeclock entries",
+      "acceptanceCriteria": [
+        "GET /api/timeclock/team returns entries for assigned departments",
+        "Respects ManagerAssignment - only shows assigned departments",
+        "Query params: userId, departmentId, status, periodStart, periodEnd",
+        "Returns employee info with each entry",
+        "Includes period totals (regular, OT, total hours)",
+        "Permission check: requires canViewTeamEntries",
+        "Returns 403 if user has no department assignments"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-007",
+      "phase": 2,
+      "title": "Entry Edit API",
+      "description": "API endpoint for managers to edit timeclock entries",
+      "acceptanceCriteria": [
+        "PUT /api/timeclock/[id] allows editing clockIn, clockOut times",
+        "Permission check: requires canEditTeamEntries",
+        "Cannot edit locked entries - returns 400",
+        "Recalculates duration on edit",
+        "Sets lastEditedBy to current user ID",
+        "Sets lastEditedAt to current timestamp",
+        "Manager can only edit entries in their assigned departments",
+        "Returns updated entry with audit fields"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-008",
+      "phase": 2,
+      "title": "Approval API",
+      "description": "API endpoints for approving and rejecting entries",
+      "acceptanceCriteria": [
+        "POST /api/timeclock/[id]/approve sets status to approved",
+        "Sets approvedBy, approvedAt, isLocked=true",
+        "POST /api/timeclock/[id]/reject sets status to rejected",
+        "Reject requires rejectedNote in body",
+        "Reject sets isLocked=false to allow edits",
+        "Permission check: requires canApproveEntries",
+        "Cannot approve active entries (no clockOut)",
+        "Manager can only approve entries in assigned departments"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-009",
+      "phase": 2,
+      "title": "Bulk Approval API",
+      "description": "API endpoint for approving multiple entries at once",
+      "acceptanceCriteria": [
+        "POST /api/timeclock/bulk-approve accepts array of entry IDs",
+        "Approves all valid pending entries in one transaction",
+        "Skips entries that are already approved, locked, or active",
+        "Returns count of approved, skipped, and failed entries",
+        "Permission check: requires canApproveEntries",
+        "All entries must be in manager's assigned departments"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-010",
+      "phase": 2,
+      "title": "Pending Approvals API",
+      "description": "API endpoint for pending approvals queue",
+      "acceptanceCriteria": [
+        "GET /api/timeclock/pending returns pending entries for assigned departments",
+        "Excludes active entries (no clockOut yet)",
+        "Query params: departmentId, periodStart, periodEnd",
+        "Returns count of total pending entries",
+        "Sorted by clockIn date ascending (oldest first)",
+        "Permission check: requires canApproveEntries",
+        "Includes employee name and department with each entry"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-011",
+      "phase": 3,
+      "title": "Overtime Calculation Service",
+      "description": "Service to calculate regular and overtime hours",
+      "acceptanceCriteria": [
+        "lib/overtime.ts exports calculateOvertime function",
+        "Accepts employee entries and OvertimeConfig",
+        "Calculates regularMinutes, dailyOvertimeMinutes, weeklyOvertimeMinutes",
+        "Daily OT: hours exceeding daily threshold per day",
+        "Weekly OT: hours exceeding weekly threshold (after daily OT)",
+        "Handles null thresholds (disabled) correctly",
+        "Returns totals per employee for period",
+        "Unit tests cover edge cases"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-012",
+      "phase": 3,
+      "title": "Alert Threshold Checking",
+      "description": "Service to check overtime alert thresholds",
+      "acceptanceCriteria": [
+        "lib/overtime.ts exports checkAlertStatus function",
+        "Checks current day total against daily threshold",
+        "Checks current week total against weekly threshold",
+        "Returns alert object with: approaching, exceeded flags for daily/weekly",
+        "Uses alertBeforeDaily/alertBeforeWeekly for approaching calculation",
+        "Called on clock-in and clock-out events",
+        "Returns null if thresholds disabled"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-013",
+      "phase": 3,
+      "title": "Employee Alert Banner",
+      "description": "Display overtime alerts on employee timeclock page",
+      "acceptanceCriteria": [
+        "Alert banner appears when approaching or exceeding thresholds",
+        "Yellow warning for approaching threshold",
+        "Red warning for exceeded threshold",
+        "Shows current hours vs threshold (e.g., 7h 15m of 8h)",
+        "Banner dismissable but reappears on page refresh",
+        "Only shows if notifyEmployee is enabled in config",
+        "Updates after clock-in/out without page refresh"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-014",
+      "phase": 3,
+      "title": "Manager OT Flags",
+      "description": "Display overtime indicators on manager views",
+      "acceptanceCriteria": [
+        "OT warning icon on team list for employees with overtime",
+        "OT flag on individual entries that exceed daily threshold",
+        "Tooltip shows overtime amount on hover",
+        "Visual distinction between daily and weekly OT",
+        "Flags based on approved and pending entries",
+        "Updates when entries are approved/edited"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-015",
+      "phase": 4,
+      "title": "Enhanced Employee Dashboard",
+      "description": "Improve employee timeclock page with period totals and status",
+      "acceptanceCriteria": [
+        "Period selector showing current pay period dates",
+        "Period totals: regular hours, OT hours, total hours",
+        "Status badges on entries: pending, approved, rejected",
+        "Lock icon on approved entries",
+        "Today's totals prominently displayed",
+        "Sessions completed count for current period",
+        "Loading skeleton while fetching data"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-016",
+      "phase": 4,
+      "title": "Rejection Notice Display",
+      "description": "Show rejection notices to employees",
+      "acceptanceCriteria": [
+        "Rejected entries highlighted in red/warning color",
+        "Rejection note displayed inline with entry",
+        "Clear message: Contact your manager for correction",
+        "Rejection notice dismissable per entry",
+        "Rejected entries grouped or flagged for visibility",
+        "Employee cannot edit rejected entries directly"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-017",
+      "phase": 4,
+      "title": "Employee History Page",
+      "description": "Full timeclock history page for employees",
+      "acceptanceCriteria": [
+        "Page at /timeclock/history",
+        "Date range filter with preset options (this week, last week, this month, etc.)",
+        "Status filter: all, pending, approved, rejected",
+        "Paginated list of all entries",
+        "Shows status, duration, and any rejection notes",
+        "Export own data as CSV (basic)",
+        "Permission check: requires canViewOwnEntries"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-018",
+      "phase": 5,
+      "title": "Team Overview Page",
+      "description": "Manager page showing team time summary",
+      "acceptanceCriteria": [
+        "Page at /timeclock/team",
+        "Period selector matching pay period config",
+        "Department filter (shows only assigned departments)",
+        "Employee list with: name, department, regular hours, OT hours, status count",
+        "Summary row: total employees, approved count, pending count, rejected count",
+        "Click employee row to navigate to detail page",
+        "Approve All Pending button for quick bulk approval",
+        "Permission check: requires canViewTeamEntries"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-019",
+      "phase": 5,
+      "title": "Employee Detail Page",
+      "description": "Manager page for individual employee entries",
+      "acceptanceCriteria": [
+        "Page at /timeclock/team/[userId]",
+        "Back button to team overview",
+        "Period selector and totals for this employee",
+        "Entry list with checkboxes for selection",
+        "Inline edit: click entry to expand edit form",
+        "Edit form shows clockIn, clockOut time inputs",
+        "Save changes updates entry with audit trail",
+        "Approve/Reject buttons for selected entries",
+        "Reject shows modal for rejection note",
+        "Locked entries show lock icon, cannot be edited"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-020",
+      "phase": 5,
+      "title": "Pending Approvals Page",
+      "description": "Queue page for pending approvals",
+      "acceptanceCriteria": [
+        "Page at /timeclock/approvals",
+        "Shows all pending entries across assigned departments",
+        "Grouped by employee or flat list (toggle)",
+        "Checkbox selection for bulk actions",
+        "Approve Selected and Reject Selected buttons",
+        "Department filter dropdown",
+        "Period filter",
+        "Pending count in page header",
+        "Empty state when no pending entries",
+        "Permission check: requires canApproveEntries"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-021",
+      "phase": 5,
+      "title": "Navbar Updates",
+      "description": "Update navigation with timeclock menu",
+      "acceptanceCriteria": [
+        "Timeclock dropdown menu in navbar",
+        "My Time link (/) - all users",
+        "My History link (/timeclock/history) - all users",
+        "Separator line for manager items",
+        "Team Overview link (/timeclock/team) - canViewTeamEntries",
+        "Approvals link (/timeclock/approvals) with pending count badge - canApproveEntries",
+        "Export link (/timeclock/export) - canExportPayroll",
+        "Menu items hide based on permissions"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-022",
+      "phase": 6,
+      "title": "Export Template Model",
+      "description": "Create ExportTemplate model for custom export formats",
+      "acceptanceCriteria": [
+        "ExportTemplate model in schema.prisma",
+        "Fields: id, name, columns (JSON), isDefault, createdBy, createdAt",
+        "Migration runs without errors",
+        "CRUD API at /api/timeclock/templates",
+        "One template can be marked as default",
+        "Template columns stored as JSON array",
+        "Permission check: requires canManageExportTemplates"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-023",
+      "phase": 6,
+      "title": "Template Editor UI",
+      "description": "UI for creating and editing export templates",
+      "acceptanceCriteria": [
+        "Page at /admin/timeclock/templates",
+        "List of existing templates with edit/delete",
+        "Create new template form",
+        "Column mapper: select source field, set header name",
+        "Available fields dropdown with all supported fields",
+        "Drag-drop reorder of columns",
+        "Preview of column headers",
+        "Set as default checkbox",
+        "Save and cancel buttons",
+        "Permission check: requires canManageExportTemplates"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-024",
+      "phase": 6,
+      "title": "CSV Export",
+      "description": "Export timeclock data as CSV",
+      "acceptanceCriteria": [
+        "GET /api/timeclock/export?format=csv",
+        "Query params: periodStart, periodEnd, departmentId, templateId",
+        "Uses template columns or default if not specified",
+        "Only includes approved entries",
+        "Calculates regular/OT hours per employee",
+        "Proper CSV escaping for commas and quotes",
+        "Returns file with Content-Disposition header",
+        "Permission check: requires canExportPayroll"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-025",
+      "phase": 6,
+      "title": "Excel Export",
+      "description": "Export timeclock data as Excel",
+      "acceptanceCriteria": [
+        "GET /api/timeclock/export?format=xlsx",
+        "Uses xlsx library for generation",
+        "Same query params as CSV export",
+        "Formatted header row with bold text",
+        "Auto-width columns",
+        "Number formatting for hours (2 decimal places)",
+        "Date formatting for date columns",
+        "Returns .xlsx file with proper MIME type",
+        "Permission check: requires canExportPayroll"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-026",
+      "phase": 6,
+      "title": "PDF Timesheet Export",
+      "description": "Export per-employee PDF timesheets",
+      "acceptanceCriteria": [
+        "GET /api/timeclock/export?format=pdf",
+        "Generates one page per employee",
+        "Shows employee name, department, period dates",
+        "Table of entries: date, in, out, duration, status",
+        "Totals row: regular hours, OT hours, total",
+        "Signature line at bottom",
+        "Professional layout with headers",
+        "Returns multi-page PDF file",
+        "Permission check: requires canExportPayroll"
+      ],
+      "passes": false
+    },
+    {
+      "id": "TC-027",
+      "phase": 6,
+      "title": "Export UI Page",
+      "description": "UI for generating payroll exports",
+      "acceptanceCriteria": [
+        "Page at /timeclock/export",
+        "Period selector dropdown with pay periods",
+        "Department filter (All or specific)",
+        "Template selector dropdown",
+        "Format selector: CSV, Excel, PDF Timesheets",
+        "Preview table showing first 5 rows",
+        "Warning banner if pending entries exist in period",
+        "Link to view pending entries from warning",
+        "Export & Download button",
+        "Permission check: requires canExportPayroll"
+      ],
+      "passes": false
+    }
+  ]
+}

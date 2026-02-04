@@ -1,0 +1,10 @@
+# Timeclock Enhancements Progress
+
+## Overview
+- Design Doc: docs/plans/2026-02-04-timeclock-enhancements-design.md
+- Total Stories: 27
+- Phases: 6
+
+## Progress Log
+
+---
