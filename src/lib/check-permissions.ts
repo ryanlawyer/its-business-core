@@ -3,9 +3,18 @@ import { prisma } from '@/lib/prisma';
 export type UserPermissions = {
   _isAdmin?: boolean;
   timeclock?: {
+    // Basic permissions (all users)
     canClockInOut?: boolean;
     canViewOwnEntries?: boolean;
+    // Manager permissions
+    canViewTeamEntries?: boolean;
+    canEditTeamEntries?: boolean;
+    canApproveEntries?: boolean;
+    canExportPayroll?: boolean;
+    // Admin permissions
+    canViewAllEntries?: boolean;
     canManageConfig?: boolean;
+    canManageExportTemplates?: boolean;
     canAssignManagers?: boolean;
   };
   purchaseOrders?: {

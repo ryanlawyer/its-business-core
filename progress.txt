@@ -154,3 +154,29 @@
 ### Quality checks
 - Build passes successfully
 - Database migration applied without errors
+
+---
+
+## Iteration 5 - TC-005: Extended Timeclock Permissions
+
+### What was implemented
+- Extended `UserPermissions` type in check-permissions.ts with new timeclock permissions:
+  - Manager permissions: canViewTeamEntries, canEditTeamEntries, canApproveEntries, canExportPayroll
+  - Admin permissions: canViewAllEntries, canManageConfig, canManageExportTemplates, canAssignManagers
+- Updated seed.ts with default role permissions:
+  - USER role: canClockInOut and canViewOwnEntries only (all others disabled)
+  - MANAGER role: adds canViewTeamEntries, canEditTeamEntries, canApproveEntries, canExportPayroll
+  - ADMIN role: all timeclock permissions enabled (_isAdmin flag provides override)
+
+### Key decisions
+- Kept existing hasPermission function which already handles permission checking
+- canManageConfig and canAssignManagers were already added in previous stories
+- Permission checks already work via the hasPermission helper function
+- Seed file updated to ensure fresh installs have correct default permissions
+
+### Files modified
+- `src/lib/check-permissions.ts` - Extended UserPermissions type with all timeclock permissions
+- `prisma/seed.ts` - Updated role permission defaults for timeclock
+
+### Quality checks
+- Build passes successfully

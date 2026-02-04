@@ -90,7 +90,7 @@
         "Default ADMIN role: all timeclock permissions enabled",
         "Permission checks work in middleware and API routes"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-006",

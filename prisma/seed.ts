@@ -33,8 +33,19 @@ async function main() {
       permissions: JSON.stringify({
         _isAdmin: true, // Special flag for admin override
         timeclock: {
+          // Basic permissions
           canClockInOut: true,
           canViewOwnEntries: true,
+          // Manager permissions
+          canViewTeamEntries: true,
+          canEditTeamEntries: true,
+          canApproveEntries: true,
+          canExportPayroll: true,
+          // Admin permissions
+          canViewAllEntries: true,
+          canManageConfig: true,
+          canManageExportTemplates: true,
+          canAssignManagers: true,
         },
         purchaseOrders: {
           canCreate: true,
@@ -93,8 +104,19 @@ async function main() {
       isSystem: true,
       permissions: JSON.stringify({
         timeclock: {
+          // Basic permissions
           canClockInOut: true,
           canViewOwnEntries: true,
+          // Manager permissions
+          canViewTeamEntries: true,
+          canEditTeamEntries: true,
+          canApproveEntries: true,
+          canExportPayroll: true,
+          // Admin permissions (disabled for managers)
+          canViewAllEntries: false,
+          canManageConfig: false,
+          canManageExportTemplates: false,
+          canAssignManagers: false,
         },
         purchaseOrders: {
           canCreate: true,
@@ -153,8 +175,19 @@ async function main() {
       isSystem: true,
       permissions: JSON.stringify({
         timeclock: {
+          // Basic permissions only
           canClockInOut: true,
           canViewOwnEntries: true,
+          // Manager permissions (disabled for users)
+          canViewTeamEntries: false,
+          canEditTeamEntries: false,
+          canApproveEntries: false,
+          canExportPayroll: false,
+          // Admin permissions (disabled for users)
+          canViewAllEntries: false,
+          canManageConfig: false,
+          canManageExportTemplates: false,
+          canAssignManagers: false,
         },
         purchaseOrders: {
           canCreate: true,
