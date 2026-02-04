@@ -39,6 +39,17 @@ export async function GET(
             },
           },
         },
+        receipts: {
+          select: {
+            id: true,
+            merchantName: true,
+            receiptDate: true,
+            totalAmount: true,
+            currency: true,
+            status: true,
+            thumbnailUrl: true,
+          },
+        },
       },
     });
 

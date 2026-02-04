@@ -36,6 +36,21 @@ type Receipt = {
   updatedAt: string;
 };
 
+type POSuggestion = {
+  purchaseOrder: {
+    id: string;
+    poNumber: string;
+    poDate: string;
+    totalAmount: number | null;
+    status: string;
+    vendor: { id: string; name: string } | null;
+    requestedBy: { id: string; name: string } | null;
+    linkedReceiptCount: number;
+  };
+  matchScore: number;
+  matchReasons: string[];
+};
+
 const statusColors: Record<string, string> = {
   PENDING: 'bg-gray-100 text-gray-800',
   PROCESSING: 'bg-blue-100 text-blue-800',
@@ -65,6 +80,10 @@ export default function ReceiptDetailPage({ params }: { params: Promise<{ id: st
   const [saving, setSaving] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [showFullImage, setShowFullImage] = useState(false);
+  const [showPOLinking, setShowPOLinking] = useState(false);
+  const [poSuggestions, setPOSuggestions] = useState<POSuggestion[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [linkingPO, setLinkingPO] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -190,6 +209,82 @@ export default function ReceiptDetailPage({ params }: { params: Promise<{ id: st
     } finally {
       setProcessing(false);
     }
+  };
+
+  const fetchPOSuggestions = async () => {
+    try {
+      setLoadingSuggestions(true);
+      const res = await fetch(`/api/receipts/${id}/suggest-po`);
+      if (res.ok) {
+        const data = await res.json();
+        setPOSuggestions(data.suggestions || []);
+      }
+    } catch (err) {
+      console.error('Error fetching PO suggestions:', err);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  const handleLinkPO = async (purchaseOrderId: string) => {
+    try {
+      setLinkingPO(true);
+      const res = await fetch(`/api/receipts/${id}/link-po`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ purchaseOrderId }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to link PO');
+      }
+
+      const data = await res.json();
+      if (data.warning) {
+        alert(`Linked successfully. Note: ${data.warning}`);
+      }
+
+      // Refresh receipt data
+      await fetchReceipt();
+      setShowPOLinking(false);
+    } catch (err) {
+      console.error('Error linking PO:', err);
+      alert(err instanceof Error ? err.message : 'Failed to link PO');
+    } finally {
+      setLinkingPO(false);
+    }
+  };
+
+  const handleUnlinkPO = async () => {
+    if (!confirm('Are you sure you want to unlink this receipt from the purchase order?')) {
+      return;
+    }
+
+    try {
+      setLinkingPO(true);
+      const res = await fetch(`/api/receipts/${id}/link-po`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to unlink PO');
+      }
+
+      // Refresh receipt data
+      await fetchReceipt();
+    } catch (err) {
+      console.error('Error unlinking PO:', err);
+      alert(err instanceof Error ? err.message : 'Failed to unlink PO');
+    } finally {
+      setLinkingPO(false);
+    }
+  };
+
+  const openPOLinking = () => {
+    setShowPOLinking(true);
+    fetchPOSuggestions();
   };
 
   const formatDate = (dateString: string | null) => {
@@ -562,17 +657,6 @@ export default function ReceiptDetailPage({ params }: { params: Promise<{ id: st
                     </span>
                   </div>
                 )}
-                {receipt.purchaseOrder && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Purchase Order</span>
-                    <Link
-                      href={`/purchase-orders/${receipt.purchaseOrder.id}`}
-                      className="text-sm font-medium text-blue-600 hover:underline"
-                    >
-                      {receipt.purchaseOrder.poNumber}
-                    </Link>
-                  </div>
-                )}
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-500">Uploaded By</span>
                   <span className="text-sm font-medium text-gray-900">
@@ -593,9 +677,153 @@ export default function ReceiptDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               </div>
             </div>
+
+            {/* Purchase Order Linking */}
+            <div className="bg-white rounded-lg shadow-md">
+              <div className="p-4 border-b flex justify-between items-center">
+                <h2 className="text-lg font-semibold text-gray-900">Purchase Order</h2>
+                {!receipt.purchaseOrder && (
+                  <button
+                    onClick={openPOLinking}
+                    className="text-sm px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Link to PO
+                  </button>
+                )}
+              </div>
+              <div className="p-4">
+                {receipt.purchaseOrder ? (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Link
+                        href={`/purchase-orders/${receipt.purchaseOrder.id}`}
+                        className="text-blue-600 hover:underline font-medium"
+                      >
+                        {receipt.purchaseOrder.poNumber}
+                      </Link>
+                      <p className="text-sm text-gray-500 mt-1">
+                        This receipt is linked to a purchase order
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleUnlinkPO}
+                      disabled={linkingPO}
+                      className="text-sm px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 disabled:opacity-50"
+                    >
+                      {linkingPO ? 'Unlinking...' : 'Unlink'}
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">
+                    No purchase order linked. Click &quot;Link to PO&quot; to find matching purchase orders.
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* PO Linking Modal */}
+      {showPOLinking && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900">Link to Purchase Order</h3>
+              <button
+                onClick={() => setShowPOLinking(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto max-h-[60vh]">
+              {loadingSuggestions ? (
+                <div className="text-center py-8">
+                  <svg className="w-8 h-8 mx-auto animate-spin text-blue-600" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  <p className="mt-2 text-gray-500">Finding matching purchase orders...</p>
+                </div>
+              ) : poSuggestions.length === 0 ? (
+                <div className="text-center py-8">
+                  <svg className="w-12 h-12 mx-auto text-gray-300" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                  </svg>
+                  <p className="mt-2 text-gray-500">No matching purchase orders found</p>
+                  <p className="text-sm text-gray-400">Try adding a vendor to this receipt for better matches</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-600 mb-4">
+                    We found {poSuggestions.length} potential match{poSuggestions.length > 1 ? 'es' : ''} based on vendor, amount, and date:
+                  </p>
+                  {poSuggestions.map((suggestion) => (
+                    <div
+                      key={suggestion.purchaseOrder.id}
+                      className="border rounded-lg p-4 hover:border-blue-500 transition-colors"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-gray-900">
+                              {suggestion.purchaseOrder.poNumber}
+                            </span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              suggestion.matchScore >= 60
+                                ? 'bg-green-100 text-green-800'
+                                : suggestion.matchScore >= 40
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {suggestion.matchScore}% match
+                            </span>
+                          </div>
+                          <div className="mt-1 text-sm text-gray-600">
+                            {suggestion.purchaseOrder.vendor?.name || 'No vendor'} &bull; {
+                              suggestion.purchaseOrder.totalAmount !== null
+                                ? formatAmount(suggestion.purchaseOrder.totalAmount, receipt.currency)
+                                : 'No amount'
+                            } &bull; {formatDate(suggestion.purchaseOrder.poDate)}
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {suggestion.matchReasons.map((reason, idx) => (
+                              <span
+                                key={idx}
+                                className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded"
+                              >
+                                {reason}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleLinkPO(suggestion.purchaseOrder.id)}
+                          disabled={linkingPO}
+                          className="ml-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
+                        >
+                          {linkingPO ? 'Linking...' : 'Link'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t bg-gray-50">
+              <button
+                onClick={() => setShowPOLinking(false)}
+                className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Full Image Modal */}
       {showFullImage && receipt.imageUrl && (
