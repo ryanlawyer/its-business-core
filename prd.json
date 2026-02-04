@@ -318,7 +318,7 @@
         "Reject shows modal for rejection note",
         "Locked entries show lock icon, cannot be edited"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-020",

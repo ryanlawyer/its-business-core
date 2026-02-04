@@ -667,3 +667,39 @@
 ### Quality checks
 - Build passes successfully
 - All 31 tests pass
+
+---
+
+## Iteration 19 - TC-019: Employee Detail Page
+
+### What was implemented
+- Created `/timeclock/team/[userId]` page for managers to view and manage individual employee entries:
+  - Back button to team overview (/timeclock/team)
+  - Period selector matching pay period config
+  - Period totals for this employee: Regular, Overtime, Total hours
+  - Entry list with checkboxes for selection (only selectable if not locked and has clockOut)
+  - Inline edit: click edit button to expand edit form below entry
+  - Edit form shows clockIn and clockOut datetime-local inputs
+  - Save changes calls PUT /api/timeclock/[id] with audit trail
+  - Approve Selected button for bulk approval of selected entries
+  - Reject Selected button opens modal for rejection note
+  - Reject modal requires reason text, submits to POST /api/timeclock/[id]/reject
+  - Locked entries show lock icon, checkbox disabled, cannot be edited
+  - Status badges with rejection notes shown inline
+  - Rejected entries highlighted with red background
+  - Select all checkbox for convenience
+- Permission check: redirects to /timeclock/team if user lacks access
+
+### Key decisions
+- Only entries with clockOut can be selected/approved/rejected (no active entries)
+- Edit form appears as new row below the entry being edited
+- Rejection requires modal to force entering a reason
+- Bulk reject applies same note to all selected entries
+- Uses existing API endpoints for all operations
+
+### Files created
+- `src/app/timeclock/team/[userId]/page.tsx` - Employee detail page
+
+### Quality checks
+- Build passes successfully
+- All 31 tests pass
