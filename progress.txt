@@ -812,3 +812,40 @@
 - Database migration applied successfully
 - Build passes successfully
 - All 31 tests pass
+
+---
+
+## Iteration 23 - TC-023: Template Editor UI
+
+### What was implemented
+- Created `/admin/timeclock/templates` page for managing export templates:
+  - List view showing all templates with name, column count, default status, creator
+  - Edit and Delete buttons for each template
+  - Create Template button opens editor form
+- Template editor form with:
+  - Template name input field
+  - Set as default checkbox
+  - Column mapper section with add/remove column functionality
+  - Source field dropdown populated from AVAILABLE_EXPORT_FIELDS
+  - Custom header name input for each column
+  - Drag-and-drop reordering of columns (native HTML5 drag/drop)
+  - Drag handle icon on each column row
+  - Auto-update header name when source field changes
+- Preview section showing table header with configured column names
+- Save and Cancel buttons with loading states
+- Permission check: redirects to / if user lacks canManageExportTemplates
+- Error and success alert messages
+
+### Key decisions
+- Used native HTML5 drag/drop API for column reordering
+- Auto-populate header name from field label when source field changes
+- Show field name in preview row to indicate data mapping
+- Delete confirmation dialog before removing template
+- Empty state with prompt to create first template
+
+### Files created
+- `src/app/admin/timeclock/templates/page.tsx` - Template editor page
+
+### Quality checks
+- Build passes successfully
+- All 31 tests pass

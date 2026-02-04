@@ -389,7 +389,7 @@
         "Save and cancel buttons",
         "Permission check: requires canManageExportTemplates"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "TC-024",
