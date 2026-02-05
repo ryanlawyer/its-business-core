@@ -1,53 +1,153 @@
-# ITS Business System - Core Edition
+# ITS Business Core
 
 > **Lightweight SMB solution for 1-250 employees**
 
 A streamlined business management system built for small to medium businesses. Replaces Excel spreadsheets and paper receipts with a simple, powerful web application.
 
-## 🎯 **Core Philosophy**
+## Quick Start (Docker)
 
-- **Simple**: 3 user roles, 4-state workflow, no complexity
-- **Fast**: SQLite database, runs on NAS devices
-- **Essential**: Only the features SMBs actually use daily
+**One command to deploy:**
 
-## ✨ **Features**
+```bash
+docker run -d \
+  --name its-core \
+  -p 3000:3000 \
+  -v its-data:/app/data \
+  -v its-uploads:/app/uploads \
+  ghcr.io/yourusername/its-business-core:latest
+```
+
+Open http://your-server:3000 and complete the setup wizard.
+
+**That's it!** No database to configure, no config files to edit.
+
+## First-Run Setup
+
+On first launch, you'll be guided through a 5-step setup wizard:
+
+1. **Welcome** - Introduction to the system
+2. **Admin Account** - Create your administrator login
+3. **Organization** - Company name, timezone, fiscal year
+4. **Integrations** - Optional AI receipt scanning and email (can configure later)
+5. **Review** - Confirm settings and complete setup
+
+After setup, log in with your admin credentials and start using the system.
+
+## Features
 
 ### Timeclock
-- ⏰ Clock in/out tracking
-- 📊 Daily summaries
-- 📝 Time history
+- Clock in/out tracking with approval workflow
+- Overtime calculation and alerts
+- Manager approvals and team views
+- Payroll export (CSV, Excel, PDF)
 
 ### Purchase Orders
-- 📑 Create and manage POs
-- 💰 Budget tracking per line item
-- 📎 Attach receipts (eliminates paper!)
-- 🖨️ Print-friendly templates
+- Create and manage POs with multi-line items
+- Budget tracking per line item
+- Attach receipts (eliminates paper!)
 - Simple workflow: Draft → Pending → Approved → Completed
 
 ### Budget Management
-- 💵 Budget line items with spend tracking
-- 🏢 Department organization (optional)
-- 📊 Real-time encumbered and actual spend tracking
-- 📅 Fiscal year support
-- 🗂️ Budget categories and amendments
-- 📈 Budget dashboard with remaining funds
+- Budget line items with spend tracking
+- Department organization
+- Real-time encumbered and actual spend
+- Fiscal year support with amendments
 
-### Vendors
-- 📋 Vendor directory
-- 🔍 Quick search
-- 📞 Contact information
+### Receipt Management
+- Upload and attach receipts to POs
+- AI-powered OCR extraction (optional)
+- Automatic categorization suggestions
 
 ### User Management
-- 👥 3 roles: Admin, Manager, User
-- ✅ Active/inactive status
-- 🔑 Simple permissions
+- 3 roles: Admin, Manager, User
+- Granular permissions per feature
+- Department assignments
 
-### System Features
-- 📋 Audit logging (track all changes)
-- ⚙️ System settings management
-- 🔍 Activity monitoring
+## Backup & Restore
 
-## 🚀 **Quick Start**
+### Quick Backup (CLI)
+```bash
+docker exec its-core /app/scripts/backup.sh data > backup.tar.gz
+```
+
+### Full Backup (for migration)
+```bash
+docker exec its-core /app/scripts/backup.sh full > backup-full.tar.gz
+```
+
+### Restore
+```bash
+docker exec -i its-core /app/scripts/restore.sh < backup.tar.gz
+```
+
+### Web UI
+Admins can download backups and restore from **Settings → Backup & Restore**.
+
+See [docs/backup-restore.md](docs/backup-restore.md) for detailed documentation.
+
+## Deployment Options
+
+### Docker (Recommended)
+```bash
+docker run -d \
+  --name its-core \
+  -p 3000:3000 \
+  -v its-data:/app/data \
+  -v its-uploads:/app/uploads \
+  --restart unless-stopped \
+  ghcr.io/yourusername/its-business-core:latest
+```
+
+### Docker Compose
+```yaml
+services:
+  its-core:
+    image: ghcr.io/yourusername/its-business-core:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - its-data:/app/data
+      - its-uploads:/app/uploads
+    restart: unless-stopped
+
+volumes:
+  its-data:
+  its-uploads:
+```
+
+See [docs/deployment.md](docs/deployment.md) for:
+- Reverse proxy setup (nginx, Caddy, Traefik)
+- SSL/HTTPS configuration
+- Proxmox LXC deployment
+- NAS deployment (Synology, QNAP)
+
+## Environment Variables
+
+All settings can be configured through the setup wizard or admin panel. Environment variables are optional overrides:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NEXTAUTH_SECRET` | JWT signing key | Auto-generated |
+| `NEXTAUTH_URL` | Public URL | Auto-detected |
+| `ANTHROPIC_API_KEY` | Claude API key for OCR | None (optional) |
+
+## Tech Stack
+
+- **Framework**: Next.js 15 (App Router)
+- **Database**: SQLite (embedded, no server needed)
+- **Auth**: NextAuth.js 5
+- **Styling**: Tailwind CSS 4
+- **Language**: TypeScript
+
+## User Roles
+
+| Role | Capabilities |
+|------|-------------|
+| **User** | Clock in/out, view own data, create draft POs |
+| **Manager** | Approve timeclock/POs, view team data, manage budgets |
+| **Admin** | Full access, user management, system settings |
+
+## Development
 
 ```bash
 # Install dependencies
@@ -55,84 +155,33 @@ npm install
 
 # Setup database
 npx prisma db push
-npx prisma db seed
 
 # Start development server
 npm run dev
 ```
 
-Visit [http://localhost:3000](http://localhost:3000)
+Visit http://localhost:3000
 
-**Default login**: admin@example.com / admin123
+## Updating
 
-## 📦 **Tech Stack**
-
-- **Framework**: Next.js 15
-- **Database**: SQLite (via Prisma)
-- **Auth**: NextAuth.js
-- **Styling**: Tailwind CSS
-- **Language**: TypeScript
-
-## 🎭 **User Roles**
-
-| Role | Permissions |
-|------|------------|
-| **User** | Clock in/out, view own POs, create draft POs |
-| **Manager** | All User + approve POs, manage budgets, view department data |
-| **Admin** | Full access + user management |
-
-## 📊 **PO Workflow**
-
-```
-Draft → Pending Approval → Approved → Completed
-           ↓
-      (Cancelled)
-```
-
-## 🗂️ **Database Schema**
-
-**Core Models**:
-1. User - Staff accounts and authentication
-2. Role - Permission management (Admin, Manager, User)
-3. Department - Organizational structure (flat)
-4. FiscalYear - Budget year management
-5. BudgetCategory - Budget organization
-6. BudgetItem - Individual budget line items with tracking
-7. BudgetAmendment - Budget adjustment history
-8. Vendor - Supplier directory
-9. PurchaseOrder - PO management with workflow
-10. POLineItem - PO line items linked to budgets
-11. TimeclockEntry - Time tracking
-12. Document - File attachments
-13. AuditLog - Activity tracking
-14. SystemSettings - Application configuration
-
-## 🐳 **Docker Deployment**
-
-Deploy with Docker for production environments:
+Pull the latest image and restart:
 
 ```bash
-# Development/Testing (port 3003)
-docker-compose -f docker-compose.local.yml up -d
-
-# Production
-docker-compose up -d
+docker pull ghcr.io/yourusername/its-business-core:latest
+docker stop its-core
+docker rm its-core
+docker run -d \
+  --name its-core \
+  -p 3000:3000 \
+  -v its-data:/app/data \
+  -v its-uploads:/app/uploads \
+  --restart unless-stopped \
+  ghcr.io/yourusername/its-business-core:latest
 ```
 
-**Features**:
-- Persistent data volumes for database and uploads
-- Automatic database initialization and seeding
-- Health checks and auto-restart
-- Ready for NAS deployment (Synology/QNAP)
-- No separate database server required (SQLite)
+Your data persists in the volumes.
 
-## 📈 **Upgrade Path**
-
-This is **Tier 1: Core**. Future tiers available:
-- **Tier 2: Standard** - Advanced approvals, reporting
-- **Tier 3: Enterprise** - Multi-region, complex permissions
-
-## 📝 **License**
+## License
 
 Private/Proprietary
 
