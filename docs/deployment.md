@@ -25,7 +25,7 @@ docker run -d \
   -v its-data:/app/data \
   -v its-uploads:/app/uploads \
   --restart unless-stopped \
-  ghcr.io/yourusername/its-business-core:latest
+  ghcr.io/ryanlawyer/its-business-core:latest
 ```
 
 ### Volume Descriptions
@@ -51,7 +51,7 @@ For more control and easier management:
 # docker-compose.yml
 services:
   its-core:
-    image: ghcr.io/yourusername/its-business-core:latest
+    image: ghcr.io/ryanlawyer/its-business-core:latest
     container_name: its-core
     ports:
       - "3000:3000"
@@ -151,7 +151,7 @@ Caddy automatically handles SSL certificates via Let's Encrypt.
 # docker-compose.yml with Traefik
 services:
   its-core:
-    image: ghcr.io/yourusername/its-business-core:latest
+    image: ghcr.io/ryanlawyer/its-business-core:latest
     volumes:
       - its-data:/app/data
       - its-uploads:/app/uploads
@@ -228,7 +228,7 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
      -v its-data:/app/data \
      -v its-uploads:/app/uploads \
      --restart unless-stopped \
-     ghcr.io/yourusername/its-business-core:latest
+     ghcr.io/ryanlawyer/its-business-core:latest
    ```
 
 ### Option 2: VM with Docker
@@ -253,7 +253,7 @@ docker exec its-core /app/scripts/backup.sh full > /var/backups/its-core-$(date 
 ### Synology (Container Manager / Docker)
 
 1. Open **Container Manager** (or Docker package)
-2. Go to **Registry** → Search for `ghcr.io/yourusername/its-business-core`
+2. Go to **Registry** → Search for `ghcr.io/ryanlawyer/its-business-core`
 3. Download the `latest` tag
 4. Go to **Image** → Select the image → **Launch**
 5. Configure:
@@ -274,7 +274,7 @@ docker exec its-core /app/scripts/backup.sh full > /var/backups/its-core-$(date 
 ```yaml
 services:
   its-core:
-    image: ghcr.io/yourusername/its-business-core:latest
+    image: ghcr.io/ryanlawyer/its-business-core:latest
     ports:
       - "3000:3000"
     volumes:

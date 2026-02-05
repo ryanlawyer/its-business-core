@@ -14,7 +14,7 @@ docker run -d \
   -p 3000:3000 \
   -v its-data:/app/data \
   -v its-uploads:/app/uploads \
-  ghcr.io/yourusername/its-business-core:latest
+  ghcr.io/ryanlawyer/its-business-core:latest
 ```
 
 Open http://your-server:3000 and complete the setup wizard.
@@ -95,14 +95,14 @@ docker run -d \
   -v its-data:/app/data \
   -v its-uploads:/app/uploads \
   --restart unless-stopped \
-  ghcr.io/yourusername/its-business-core:latest
+  ghcr.io/ryanlawyer/its-business-core:latest
 ```
 
 ### Docker Compose
 ```yaml
 services:
   its-core:
-    image: ghcr.io/yourusername/its-business-core:latest
+    image: ghcr.io/ryanlawyer/its-business-core:latest
     ports:
       - "3000:3000"
     volumes:
@@ -167,7 +167,7 @@ Visit http://localhost:3000
 Pull the latest image and restart:
 
 ```bash
-docker pull ghcr.io/yourusername/its-business-core:latest
+docker pull ghcr.io/ryanlawyer/its-business-core:latest
 docker stop its-core
 docker rm its-core
 docker run -d \
@@ -176,7 +176,7 @@ docker run -d \
   -v its-data:/app/data \
   -v its-uploads:/app/uploads \
   --restart unless-stopped \
-  ghcr.io/yourusername/its-business-core:latest
+  ghcr.io/ryanlawyer/its-business-core:latest
 ```
 
 Your data persists in the volumes.

@@ -266,7 +266,7 @@ docker run -d \
   -p 3000:3000 \
   -v its-data:/app/data \
   -v its-uploads:/app/uploads \
-  ghcr.io/yourusername/its-business-core:latest
+  ghcr.io/ryanlawyer/its-business-core:latest
 
 # Wait for container to initialize (about 10 seconds)
 sleep 10
@@ -291,7 +291,7 @@ Same process as above. The backup contains everything needed.
 docker exec its-core /app/scripts/backup.sh full > pre-upgrade-backup.tar.gz
 
 # Pull new image
-docker pull ghcr.io/yourusername/its-business-core:latest
+docker pull ghcr.io/ryanlawyer/its-business-core:latest
 
 # Stop and remove old container (volumes preserved)
 docker stop its-core
@@ -304,7 +304,7 @@ docker run -d \
   -v its-data:/app/data \
   -v its-uploads:/app/uploads \
   --restart unless-stopped \
-  ghcr.io/yourusername/its-business-core:latest
+  ghcr.io/ryanlawyer/its-business-core:latest
 ```
 
 The entrypoint automatically runs database migrations.
