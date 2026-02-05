@@ -2,6 +2,9 @@ import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+// Force Node.js runtime to support Prisma and file system access
+export const runtime = "nodejs";
+
 // Setup status is cached in memory to avoid DB calls on every request
 // It's invalidated when setup completes (requires app restart or cache clear)
 let setupCompleteCache: boolean | null = null;
