@@ -13,7 +13,8 @@ interface SetupData {
     name: string;
   };
   organization: {
-    name: string;
+    name?: string;
+    organizationName?: string; // Frontend uses this field name
     logo?: string;
     departmentName: string;
     timezone: string;
@@ -32,7 +33,9 @@ function validateSetupData(data: SetupData): { valid: boolean; errors: string[] 
   if (!data.admin?.email) errors.push('Admin email is required');
   if (!data.admin?.password) errors.push('Admin password is required');
   if (!data.admin?.name) errors.push('Admin name is required');
-  if (!data.organization?.name) errors.push('Organization name is required');
+  // Accept either 'name' or 'organizationName' from frontend
+  const orgName = data.organization?.name || data.organization?.organizationName;
+  if (!orgName) errors.push('Organization name is required');
   if (!data.organization?.departmentName) errors.push('Department name is required');
 
   if (data.admin?.password && data.admin.password.length < 8) {
@@ -252,7 +255,8 @@ export async function POST(req: NextRequest) {
 
     // Update system settings
     const settings = getDefaultSettings();
-    settings.organization.name = data.organization.name;
+    // Accept either 'name' or 'organizationName' from frontend
+    settings.organization.name = data.organization.name || data.organization.organizationName || '';
     settings.organization.logo = data.organization.logo || null;
     settings.fiscalYear.startMonth = data.organization.fiscalYearStartMonth || 1;
 
