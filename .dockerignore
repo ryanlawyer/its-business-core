@@ -41,9 +41,20 @@ Thumbs.db
 # Testing
 coverage
 .nyc_output
+**/__tests__
+*.test.ts
+*.test.tsx
+vitest.config.ts
 
 # Uploads
 uploads/
+
+# CI/CD
+.github
+
+# Planning docs
+.planning
+docs/plans
 
 # Misc
 .turbo
