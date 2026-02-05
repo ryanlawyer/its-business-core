@@ -46,6 +46,12 @@ export default auth(async (req) => {
     return NextResponse.next();
   }
 
+  // Always allow auth API routes (needed for session checks during setup)
+  const isAuthApi = pathname.startsWith("/api/auth");
+  if (isAuthApi) {
+    return NextResponse.next();
+  }
+
   // Check if setup is complete
   const isSetupComplete = await checkSetupComplete();
 
