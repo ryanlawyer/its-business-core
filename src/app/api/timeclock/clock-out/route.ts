@@ -2,6 +2,8 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
+import { processClockOut } from '@/lib/timeclock-rules';
+import { createAuditLog } from '@/lib/audit';
 
 
 export async function POST() {
@@ -43,15 +45,39 @@ export async function POST() {
     }
 
     const clockIn = new Date(entry.clockIn);
-    const durationSeconds = Math.floor((now.getTime() - clockIn.getTime()) / 1000);
+    const rawDurationSeconds = Math.floor((now.getTime() - clockIn.getTime()) / 1000);
+
+    // Process through rules engine: break deduction -> rounding -> min duration -> auto-approve
+    const result = await processClockOut(rawDurationSeconds, userId);
+
+    // Build update data with processed values
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updateData: any = {
+      clockOut: now,
+      duration: result.finalDuration,
+      rawDuration: result.rawDuration,
+      breakDeducted: result.breakDeducted > 0 ? result.breakDeducted : null,
+      flagReason: result.flagReason,
+      autoApproved: result.autoApproved,
+      status: result.status,
+      rejectedNote: result.rejectedNote,
+      updatedAt: now,
+    };
+
+    // If auto-approved, set approval fields
+    if (result.autoApproved) {
+      updateData.approvedAt = now;
+      updateData.approvedBy = 'system';
+      updateData.isLocked = true;
+    }
 
     // Use updateMany to atomically update only entries with clockOut IS NULL
-    const result = await prisma.timeclockEntry.updateMany({
+    const updateResult = await prisma.timeclockEntry.updateMany({
       where: { userId, clockOut: null },
-      data: { clockOut: now, duration: durationSeconds, updatedAt: now },
+      data: updateData,
     });
 
-    if (result.count === 0) {
+    if (updateResult.count === 0) {
       return NextResponse.json(
         { error: 'Not clocked in' },
         { status: 400 }
@@ -62,6 +88,38 @@ export async function POST() {
     const updated = await prisma.timeclockEntry.findUnique({
       where: { id: entry.id },
     });
+
+    // Audit log for auto-approve/auto-reject events
+    if (result.autoApproved) {
+      createAuditLog({
+        userId: 'system',
+        action: 'TIMECLOCK_ENTRY_AUTO_APPROVED',
+        entityType: 'TimeclockEntry',
+        entityId: entry.id,
+        changes: {
+          after: {
+            duration: result.finalDuration,
+            rawDuration: result.rawDuration,
+            breakDeducted: result.breakDeducted,
+            autoApproved: true,
+          },
+        },
+      });
+    } else if (result.status === 'rejected') {
+      createAuditLog({
+        userId: 'system',
+        action: 'TIMECLOCK_ENTRY_AUTO_REJECTED',
+        entityType: 'TimeclockEntry',
+        entityId: entry.id,
+        changes: {
+          after: {
+            duration: result.finalDuration,
+            flagReason: result.flagReason,
+            rejectedNote: result.rejectedNote,
+          },
+        },
+      });
+    }
 
     return NextResponse.json({ entry: updated });
   } catch (error) {

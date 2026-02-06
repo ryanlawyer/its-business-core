@@ -8,6 +8,10 @@ type TimeclockEntry = {
   clockIn: string;
   clockOut: string | null;
   duration: number | null;
+  rawDuration: number | null;
+  breakDeducted: number | null;
+  autoApproved: boolean;
+  flagReason: string | null;
   status: string;
   isLocked: boolean;
   rejectedNote: string | null;
@@ -43,6 +47,7 @@ const DATE_PRESETS = [
 const STATUS_OPTIONS = [
   { value: 'all', label: 'All Statuses' },
   { value: 'pending', label: 'Pending' },
+  { value: 'submitted', label: 'Submitted' },
   { value: 'approved', label: 'Approved' },
   { value: 'rejected', label: 'Rejected' },
 ];
@@ -134,9 +139,10 @@ export default function TimeclockHistoryPage() {
     return new Date(dateString).toLocaleString();
   };
 
-  const getStatusBadge = (status: string, isLocked: boolean) => {
+  const getStatusBadge = (status: string, isLocked: boolean, autoApproved?: boolean) => {
     const config: Record<string, { class: string }> = {
       pending: { class: 'badge badge-warning badge-dot' },
+      submitted: { class: 'badge badge-accent badge-dot' },
       approved: { class: 'badge badge-success' },
       rejected: { class: 'badge badge-error badge-dot' },
     };
@@ -144,14 +150,21 @@ export default function TimeclockHistoryPage() {
     const style = config[status] || { class: 'badge' };
 
     return (
-      <span className={style.class}>
-        {status === 'approved' && isLocked && (
-          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-            <path d="M7 11V7a5 5 0 0110 0v4" />
-          </svg>
+      <span className="inline-flex items-center gap-1">
+        <span className={style.class}>
+          {status === 'approved' && isLocked && (
+            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0110 0v4" />
+            </svg>
+          )}
+          {status.charAt(0).toUpperCase() + status.slice(1)}
+        </span>
+        {autoApproved && (
+          <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--success-subtle, rgba(34, 197, 94, 0.1))', color: 'var(--success)' }}>
+            Auto
+          </span>
         )}
-        {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
   };
@@ -330,7 +343,7 @@ export default function TimeclockHistoryPage() {
                   <h3 className="text-lg font-bold text-[var(--text-primary)] font-mono">
                     {new Date(entry.clockIn).toLocaleDateString()}
                   </h3>
-                  {getStatusBadge(entry.status, entry.isLocked)}
+                  {getStatusBadge(entry.status, entry.isLocked, entry.autoApproved)}
                 </div>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
@@ -353,6 +366,16 @@ export default function TimeclockHistoryPage() {
                       {entry.clockOut ? formatDuration(entry.duration) : '—'}
                     </span>
                   </div>
+                  {entry.breakDeducted && entry.breakDeducted > 0 && (
+                    <div className="text-xs" style={{ color: 'var(--info)' }}>
+                      {Math.round(entry.breakDeducted / 60)}m break deducted
+                    </div>
+                  )}
+                  {entry.rawDuration !== null && entry.duration !== null && entry.rawDuration !== entry.duration && !entry.breakDeducted && (
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                      Rounded from {formatDuration(entry.rawDuration)}
+                    </div>
+                  )}
                 </div>
                 {entry.status === 'rejected' && entry.rejectedNote && (
                   <div className="mt-3 pt-3 border-t border-[var(--border-default)] text-xs" style={{ color: 'var(--error)' }}>
@@ -397,10 +420,22 @@ export default function TimeclockHistoryPage() {
                         : '—'}
                     </td>
                     <td className="font-mono font-medium">
-                      {entry.clockOut ? formatDuration(entry.duration) : '—'}
+                      <div>
+                        {entry.clockOut ? formatDuration(entry.duration) : '—'}
+                        {entry.breakDeducted && entry.breakDeducted > 0 && (
+                          <div className="text-xs font-normal" style={{ color: 'var(--info)' }}>
+                            -{Math.round(entry.breakDeducted / 60)}m break
+                          </div>
+                        )}
+                        {entry.rawDuration !== null && entry.duration !== null && entry.rawDuration !== entry.duration && !entry.breakDeducted && (
+                          <div className="text-xs font-normal" style={{ color: 'var(--text-muted)' }}>
+                            Rounded from {formatDuration(entry.rawDuration)}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td>
-                      {getStatusBadge(entry.status, entry.isLocked)}
+                      {getStatusBadge(entry.status, entry.isLocked, entry.autoApproved)}
                       {entry.status === 'rejected' && entry.rejectedNote && (
                         <div className="mt-1 text-xs" style={{ color: 'var(--error)' }}>
                           <span className="font-medium">Note:</span> {entry.rejectedNote}

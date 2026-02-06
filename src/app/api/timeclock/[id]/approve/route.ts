@@ -81,6 +81,16 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       );
     }
 
+    // When attestation is enabled, entry must be 'submitted' (not just 'pending')
+    const { getTimeclockRulesConfig } = await import('@/lib/timeclock-rules');
+    const rulesConfig = await getTimeclockRulesConfig();
+    if (rulesConfig.attestationEnabled && entry.status === 'pending') {
+      return NextResponse.json(
+        { error: 'Entry must be submitted by the employee before approval (attestation required)' },
+        { status: 400 }
+      );
+    }
+
     // Check department assignment if not admin
     if (!canViewAll) {
       const assignments = await prisma.managerAssignment.findMany({

@@ -61,6 +61,28 @@ export const rejectedNoteSchema = z.object({
   rejectedNote: z.string().max(1000).optional(),
 });
 
+export const timeclockRulesConfigSchema = z.object({
+  autoApproveEnabled: z.boolean().optional(),
+  autoApproveMinHours: z.number().min(0).max(24).optional(),
+  autoApproveMaxHours: z.number().min(0).max(24).optional(),
+  autoApproveBlockOnOT: z.boolean().optional(),
+  missedPunchEnabled: z.boolean().optional(),
+  missedPunchThresholdHours: z.number().min(1).max(72).optional(),
+  roundingMode: z.enum(['none', '5min', '6min', '7min', '15min']).optional(),
+  minDurationEnabled: z.boolean().optional(),
+  minDurationSeconds: z.number().int().min(0).max(3600).optional(),
+  minDurationAction: z.enum(['flag', 'reject']).optional(),
+  attestationEnabled: z.boolean().optional(),
+  breakDeductionEnabled: z.boolean().optional(),
+  breakDeductionMinutes: z.number().int().min(0).max(120).optional(),
+  breakDeductionAfterHours: z.number().min(0).max(24).optional(),
+});
+
+export const payPeriodLockSchema = z.object({
+  periodStart: z.string().datetime(),
+  periodEnd: z.string().datetime(),
+});
+
 // Helper to parse and return validation errors
 export function parseWithErrors<T>(schema: z.ZodSchema<T>, data: unknown): { success: true; data: T } | { success: false; error: string } {
   const result = schema.safeParse(data);

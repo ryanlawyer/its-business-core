@@ -63,6 +63,15 @@ export type AuditAction =
   | 'BANK_STATEMENT_DELETED'
   | 'BANK_TRANSACTION_MATCHED'
   | 'BANK_TRANSACTION_UNMATCHED'
+  // Timeclock workflow actions
+  | 'TIMECLOCK_ENTRY_APPROVED'
+  | 'TIMECLOCK_ENTRY_REJECTED'
+  | 'TIMECLOCK_ENTRY_AUTO_APPROVED'
+  | 'TIMECLOCK_ENTRY_AUTO_REJECTED'
+  | 'TIMECLOCK_ENTRY_SUBMITTED'
+  | 'PAY_PERIOD_LOCKED'
+  | 'PAY_PERIOD_UNLOCKED'
+  | 'TIMECLOCK_RULES_CONFIG_UPDATED'
   // System actions
   | 'BACKUP_DOWNLOADED'
   | 'BACKUP_RESTORED';
@@ -85,6 +94,8 @@ export type AuditEntityType =
   | 'OvertimeConfig'
   | 'ManagerAssignment'
   | 'ExportTemplate'
+  | 'TimeclockRulesConfig'
+  | 'PayPeriodLock'
   | 'System';
 
 interface AuditLogData {

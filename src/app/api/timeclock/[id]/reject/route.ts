@@ -160,6 +160,19 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       userAgent,
     });
 
+    // Fire-and-forget email notification to the employee
+    import('@/lib/email').then(({ sendRejectionNotification }) => {
+      if (entry.user.email) {
+        sendRejectionNotification(
+          entry.user.email,
+          entry.user.name,
+          new Date(entry.clockIn).toLocaleDateString(),
+          rejectedNote.trim(),
+          userWithPerms.user.name,
+        );
+      }
+    });
+
     return NextResponse.json({ entry: updatedEntry });
   } catch (error) {
     console.error('Error rejecting timeclock entry:', error);

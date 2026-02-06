@@ -421,10 +421,16 @@ model TimeclockEntry {
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   clockIn  DateTime
   clockOut DateTime?
-  duration Int? // Duration in seconds
+  duration Int? // Duration in seconds (final, after rounding/break deduction)
+
+  // Workflow processing fields
+  rawDuration    Int?     // Original duration before rounding/break deduction
+  breakDeducted  Int?     // Seconds deducted for break
+  autoApproved   Boolean  @default(false)
+  flagReason     String?  // "missed_punch" | "min_duration"
 
   // Approval workflow fields
-  status       String  @default("pending") // "pending" | "approved" | "rejected"
+  status       String  @default("pending") // "pending" | "submitted" | "approved" | "rejected"
   approvedBy   String?
   approvedAt   DateTime?
   rejectedNote String?
@@ -470,6 +476,59 @@ model OvertimeConfig {
   updatedAt DateTime @updatedAt
 
   @@map("overtime_config")
+}
+
+// Timeclock rules configuration (singleton - all workflow feature toggles)
+model TimeclockRulesConfig {
+  id                     String  @id @default(uuid())
+
+  // Auto-approve
+  autoApproveEnabled     Boolean @default(false)
+  autoApproveMinHours    Float   @default(0.25)  // 15 min minimum
+  autoApproveMaxHours    Float   @default(12)
+  autoApproveBlockOnOT   Boolean @default(true)
+
+  // Missed punch detection
+  missedPunchEnabled         Boolean @default(true)
+  missedPunchThresholdHours  Float   @default(12)
+
+  // Time rounding
+  roundingMode           String  @default("none") // "none" | "5min" | "6min" | "7min" | "15min"
+
+  // Minimum duration filter
+  minDurationEnabled     Boolean @default(false)
+  minDurationSeconds     Int     @default(120)
+  minDurationAction      String  @default("flag") // "flag" | "reject"
+
+  // Employee attestation
+  attestationEnabled     Boolean @default(false)
+
+  // Break deduction
+  breakDeductionEnabled  Boolean @default(false)
+  breakDeductionMinutes  Int     @default(30)
+  breakDeductionAfterHours Float @default(6)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("timeclock_rules_config")
+}
+
+// Pay period lock (one record per locked period)
+model PayPeriodLock {
+  id          String   @id @default(uuid())
+  periodStart DateTime
+  periodEnd   DateTime
+  lockedAt    DateTime @default(now())
+  lockedBy    String
+  isActive    Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([periodStart, periodEnd])
+  @@index([isActive])
+  @@map("pay_period_locks")
 }
 
 // Manager-Department assignments for multi-department oversight
