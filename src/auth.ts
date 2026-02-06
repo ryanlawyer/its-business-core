@@ -4,8 +4,10 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
 // Validate NEXTAUTH_SECRET at startup - reject placeholder values
+// Skip validation during Next.js build phase (page data collection)
 const secret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET;
-if (process.env.NODE_ENV === 'production' && (!secret || secret === 'change-this-to-a-random-secret-in-production')) {
+const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build';
+if (!isBuildPhase && process.env.NODE_ENV === 'production' && (!secret || secret === 'change-this-to-a-random-secret-in-production')) {
   throw new Error('NEXTAUTH_SECRET must be set to a strong random value in production');
 }
 
