@@ -238,18 +238,27 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Create department
-      const department = await tx.department.create({
-        data: {
+      // Create or find department (handles partial previous setup)
+      const department = await tx.department.upsert({
+        where: { name: data.organization.departmentName },
+        update: {},
+        create: {
           name: data.organization.departmentName,
           description: 'Initial department',
         },
       });
 
-      // Create admin user
+      // Create or update admin user (handles partial previous setup)
       const hashedPassword = await bcrypt.hash(data.admin.password, 10);
-      await tx.user.create({
-        data: {
+      await tx.user.upsert({
+        where: { email: data.admin.email },
+        update: {
+          password: hashedPassword,
+          name: data.admin.name,
+          roleId: adminRole.id,
+          departmentId: department.id,
+        },
+        create: {
           email: data.admin.email,
           password: hashedPassword,
           name: data.admin.name,

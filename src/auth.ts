@@ -172,5 +172,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     strategy: "jwt",
     maxAge: 8 * 60 * 60, // 8 hours
   },
-  trustHost: process.env.NODE_ENV === 'development',
+  trustHost: true, // Self-hosted appliance; CSRF handled by middleware Origin/Referer checks
 });
