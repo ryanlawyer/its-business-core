@@ -49,9 +49,9 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 # Copy all node_modules to support seeding with bcryptjs
 COPY --from=builder /app/node_modules ./node_modules
 
-# Create directories for SQLite database and uploads
-RUN mkdir -p /app/data /app/uploads && \
-    chown -R nextjs:nodejs /app/data /app/uploads
+# Create directories for SQLite database, uploads, and config
+RUN mkdir -p /app/data /app/uploads /app/config && \
+    chown -R nextjs:nodejs /app/data /app/uploads /app/config
 
 # Create startup script
 COPY --chown=nextjs:nodejs docker-entrypoint.sh /app/
