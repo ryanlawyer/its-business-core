@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 
     const hasPerms = hasPermission(
       userWithPerms.permissions,
-      resource,
+      resource as keyof Omit<typeof userWithPerms.permissions, '_isAdmin'>,
       permission
     );
 

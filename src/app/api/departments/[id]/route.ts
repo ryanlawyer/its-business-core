@@ -50,11 +50,11 @@ export async function GET(
 
     // Get PO statistics for this department
     const poCount = await prisma.purchaseOrder.count({
-      where: { department: department.name },
+      where: { departmentId: department.id },
     });
 
     const poStats = await prisma.purchaseOrder.aggregate({
-      where: { department: department.name },
+      where: { departmentId: department.id },
       _sum: { totalAmount: true },
     });
 
@@ -65,7 +65,7 @@ export async function GET(
           userCount: department.users.length,
           budgetItemCount: department.budgetItems.length,
           poCount,
-          totalSpend: poStats._sum.totalAmount || 0,
+          totalSpend: poStats._sum?.totalAmount ?? 0,
         },
       },
     });

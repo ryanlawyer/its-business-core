@@ -100,7 +100,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
               merchantName: true,
               totalAmount: true,
               receiptDate: true,
-              imagePath: true,
+              imageUrl: true,
             },
           },
           matchedPurchaseOrder: {

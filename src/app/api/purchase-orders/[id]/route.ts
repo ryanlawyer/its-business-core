@@ -143,7 +143,7 @@ export async function PUT(
 
     // Delete existing line items and recreate in a transaction
     const updatedPO = await prisma.$transaction(async (tx) => {
-      await tx.poLineItem.deleteMany({
+      await tx.pOLineItem.deleteMany({
         where: { purchaseOrderId: id },
       });
 
@@ -247,7 +247,7 @@ export async function DELETE(
     }
 
     // Delete line items first
-    await prisma.poLineItem.deleteMany({
+    await prisma.pOLineItem.deleteMany({
       where: { purchaseOrderId: id },
     });
 

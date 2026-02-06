@@ -87,6 +87,9 @@ export async function POST(
 
     // 2. Permission check
     const userWithPerms = await getUserWithPermissions(session.user.id);
+    if (!userWithPerms) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const canUpload = hasPermission(
       userWithPerms.permissions,
       'purchaseOrders',
@@ -334,6 +337,9 @@ export async function DELETE(
 
     // Permission check
     const userWithPerms = await getUserWithPermissions(session.user.id);
+    if (!userWithPerms) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const canUpload = hasPermission(
       userWithPerms.permissions,
       'purchaseOrders',

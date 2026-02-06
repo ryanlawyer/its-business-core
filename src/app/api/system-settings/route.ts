@@ -16,6 +16,10 @@ export async function GET(req: NextRequest) {
     }
 
     const userWithPerms = await getUserWithPermissions(session.user.id);
+    if (!userWithPerms) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const canManage = hasPermission(
       userWithPerms.permissions,
       'settings',
@@ -55,6 +59,10 @@ export async function PUT(req: NextRequest) {
     }
 
     const userWithPerms = await getUserWithPermissions(session.user.id);
+    if (!userWithPerms) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const canManage = hasPermission(
       userWithPerms.permissions,
       'settings',
@@ -151,6 +159,10 @@ export async function POST(req: NextRequest) {
     }
 
     const userWithPerms = await getUserWithPermissions(session.user.id);
+    if (!userWithPerms) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const canManage = hasPermission(
       userWithPerms.permissions,
       'settings',

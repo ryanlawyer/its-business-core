@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
             description: true,
             quantity: true,
             unitPrice: true,
-            amount: true,
+            total: true,
           },
         },
       },
@@ -243,7 +243,7 @@ export async function GET(req: NextRequest) {
           Description: item.description || '',
           Quantity: item.quantity,
           'Unit Price': item.unitPrice,
-          Amount: item.amount,
+          Amount: item.total,
         });
       }
     }

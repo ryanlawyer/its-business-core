@@ -174,7 +174,7 @@ export async function addWatermark(
     `;
 
     // Calculate position based on image size
-    let gravity: keyof sharp.Gravity;
+    let gravity: string;
     switch (position) {
       case 'bottom-right':
         gravity = 'southeast';

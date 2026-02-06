@@ -17,6 +17,9 @@ export async function GET(req: NextRequest) {
 
     // Check permission
     const userWithPerms = await getUserWithPermissions(session.user.id);
+    if (!userWithPerms) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const canView = hasPermission(
       userWithPerms.permissions,
       'budgetItems',
@@ -69,6 +72,9 @@ export async function POST(req: NextRequest) {
 
     // Check permission
     const userWithPerms = await getUserWithPermissions(session.user.id);
+    if (!userWithPerms) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const canManage = hasPermission(
       userWithPerms.permissions,
       'budgetItems',

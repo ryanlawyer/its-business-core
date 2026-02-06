@@ -61,6 +61,10 @@ export type UserPermissions = {
   settings?: {
     canManage?: boolean;
   };
+  reports?: {
+    canView?: boolean;
+    canExport?: boolean;
+  };
   receipts?: {
     canUpload?: boolean;
     canViewOwn?: boolean;

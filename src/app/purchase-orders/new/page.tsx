@@ -403,7 +403,7 @@ export default function NewPurchaseOrderPage() {
                         departments={departments}
                         selectedBudgetItemId={item.budgetItemId}
                         onChange={(budgetItemId) =>
-                          updateLineItem(item.id, 'budgetItemId', budgetItemId)
+                          updateLineItem(item.id, 'budgetItemId', budgetItemId ?? '')
                         }
                         userDepartmentId={session?.user?.departmentId}
                         userDepartmentName={session?.user?.departmentName}

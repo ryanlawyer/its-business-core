@@ -96,7 +96,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
     const contentType = fileType?.mime || 'application/octet-stream';
 
     // Return the image with proper headers
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(buffer), {
       headers: {
         'Content-Type': contentType,
         'Content-Length': buffer.length.toString(),

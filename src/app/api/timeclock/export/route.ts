@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
 import { calculateOvertime, TimeclockEntryForCalculation } from '@/lib/overtime';
 import { getSystemConfig } from '@/lib/setup-status';
-import { TemplateColumn } from '../templates/route';
+import { TemplateColumn } from '../templates/shared';
 import { escapeCSV } from '@/lib/csv-sanitize';
 import * as XLSX from 'xlsx';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
@@ -571,7 +571,7 @@ export async function GET(req: NextRequest) {
       // Generate filename
       const filename = `timesheets-${periodStart}-to-${periodEnd}.pdf`;
 
-      return new NextResponse(pdfBytes, {
+      return new NextResponse(pdfBytes as unknown as BodyInit, {
         status: 200,
         headers: {
           'Content-Type': 'application/pdf',

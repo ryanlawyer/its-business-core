@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
-import { createAuditLog, getRequestContext } from '@/lib/audit';
+import { createAuditLog, getRequestContext, type AuditAction } from '@/lib/audit';
 
 /**
  * GET /api/fiscal-years/[id]
@@ -10,15 +10,19 @@ import { createAuditLog, getRequestContext } from '@/lib/audit';
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const userWithPerms = await getUserWithPermissions(session.user.id);
+    if (!userWithPerms) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const canView = hasPermission(
       userWithPerms.permissions,
       'budgetItems',
@@ -33,7 +37,7 @@ export async function GET(
     }
 
     const fiscalYear = await prisma.fiscalYear.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: {
         closedBy: {
           select: { id: true, name: true, email: true },
@@ -64,20 +68,24 @@ export async function GET(
  */
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const userWithPerms = await getUserWithPermissions(session.user.id);
+    if (!userWithPerms) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const body = await req.json();
     const { status } = body;
 
     const existing = await prisma.fiscalYear.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     if (!existing) {
@@ -138,7 +146,7 @@ export async function PUT(
     }
 
     const fiscalYear = await prisma.fiscalYear.update({
-      where: { id: params.id },
+      where: { id: id },
       data: updateData,
       include: {
         closedBy: {
@@ -151,7 +159,7 @@ export async function PUT(
     const { ipAddress, userAgent } = getRequestContext(req);
     await createAuditLog({
       userId: session.user.id,
-      action: `FISCAL_YEAR_${status.replace('_', '')}`,
+      action: `FISCAL_YEAR_${status.replace('_', '')}` as AuditAction,
       entityType: 'FiscalYear',
       entityId: fiscalYear.id,
       changes: {
@@ -186,15 +194,19 @@ export async function PUT(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const userWithPerms = await getUserWithPermissions(session.user.id);
+    if (!userWithPerms) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const canClose = hasPermission(
       userWithPerms.permissions,
       'budgetItems',
@@ -209,7 +221,7 @@ export async function DELETE(
     }
 
     const fiscalYear = await prisma.fiscalYear.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     if (!fiscalYear) {
@@ -234,7 +246,7 @@ export async function DELETE(
     }
 
     await prisma.fiscalYear.delete({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     // Audit log

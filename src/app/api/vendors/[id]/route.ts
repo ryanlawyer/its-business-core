@@ -6,9 +6,10 @@ import { getPermissionsFromSession, hasPermission } from '@/lib/check-permission
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -20,7 +21,7 @@ export async function GET(
     }
 
     const vendor = await prisma.vendor.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!vendor) {
@@ -39,9 +40,10 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -56,7 +58,7 @@ export async function PUT(
     const { vendorNumber, name, phone, email, address, city, state, zipCode } = body;
 
     const vendor = await prisma.vendor.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         vendorNumber,
         name,
@@ -81,9 +83,10 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -95,7 +98,7 @@ export async function DELETE(
     }
 
     await prisma.vendor.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ success: true });

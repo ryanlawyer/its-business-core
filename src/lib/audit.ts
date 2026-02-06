@@ -18,6 +18,7 @@ export type AuditAction =
   | 'PO_REJECTED'
   | 'PO_COMPLETED'
   | 'PO_VOIDED'
+  | 'PO_DELETED'
   | 'PO_LINE_ITEM_ADDED'
   | 'PO_LINE_ITEM_REMOVED'
   | 'PO_LINE_ITEM_UPDATED'
@@ -36,6 +37,15 @@ export type AuditAction =
   | 'BUDGET_ITEM_CREATED'
   | 'BUDGET_ITEM_UPDATED'
   | 'BUDGET_ITEM_DELETED'
+  | 'BUDGET_TRANSFER'
+  | 'BUDGET_CATEGORY_CREATED'
+  | 'BUDGET_CATEGORY_UPDATED'
+  | 'BUDGET_CATEGORY_DELETED'
+  | 'BUDGET_ITEM_COPIED'
+  // Fiscal year actions
+  | 'FISCAL_YEAR_CREATED'
+  | 'FISCAL_YEAR_UPDATED'
+  | 'FISCAL_YEAR_DELETED'
   // Vendor actions
   | 'VENDOR_CREATED'
   | 'VENDOR_UPDATED'
@@ -48,6 +58,8 @@ export type AuditAction =
   | 'PASSWORD_RESET_COMPLETED'
   // Settings actions
   | 'SETTINGS_UPDATED'
+  | 'SETTING_UPDATED'
+  | 'SETTING_CREATED'
   // Receipt actions
   | 'RECEIPT_UPLOADED'
   | 'RECEIPT_UPDATED'
@@ -57,20 +69,36 @@ export type AuditAction =
   | 'RECEIPT_OCR_FAILED'
   | 'RECEIPT_LINKED_TO_PO'
   | 'RECEIPT_UNLINKED_FROM_PO'
+  | 'RECEIPT_CATEGORY_ASSIGNED'
+  | 'RECEIPT_CATEGORY_REMOVED'
   // Bank statement actions
   | 'BANK_STATEMENT_UPLOADED'
   | 'BANK_STATEMENT_PARSED'
   | 'BANK_STATEMENT_DELETED'
   | 'BANK_TRANSACTION_MATCHED'
   | 'BANK_TRANSACTION_UNMATCHED'
+  | 'BANK_TRANSACTION_UPDATED'
+  | 'STATEMENT_UPLOADED'
+  | 'STATEMENT_DELETED'
+  | 'STATEMENT_AUTO_MATCHED'
   // Timeclock workflow actions
   | 'TIMECLOCK_ENTRY_APPROVED'
   | 'TIMECLOCK_ENTRY_REJECTED'
   | 'TIMECLOCK_ENTRY_AUTO_APPROVED'
   | 'TIMECLOCK_ENTRY_AUTO_REJECTED'
   | 'TIMECLOCK_ENTRY_SUBMITTED'
+  | 'TIMECLOCK_ENTRY_EDITED'
   | 'PAY_PERIOD_LOCKED'
   | 'PAY_PERIOD_UNLOCKED'
+  | 'PAY_PERIOD_CONFIG_UPDATED'
+  | 'PAY_PERIOD_CONFIG_CREATED'
+  | 'OVERTIME_CONFIG_UPDATED'
+  | 'OVERTIME_CONFIG_CREATED'
+  | 'MANAGER_ASSIGNMENT_CREATED'
+  | 'MANAGER_ASSIGNMENT_DELETED'
+  | 'EXPORT_TEMPLATE_CREATED'
+  | 'EXPORT_TEMPLATE_UPDATED'
+  | 'EXPORT_TEMPLATE_DELETED'
   | 'TIMECLOCK_RULES_CONFIG_UPDATED'
   // System actions
   | 'BACKUP_DOWNLOADED'
@@ -83,8 +111,12 @@ export type AuditEntityType =
   | 'PurchaseOrder'
   | 'POLineItem'
   | 'BudgetItem'
+  | 'BudgetAmendment'
+  | 'BudgetCategory'
+  | 'FiscalYear'
   | 'Vendor'
   | 'Settings'
+  | 'SystemSettings'
   | 'Auth'
   | 'Receipt'
   | 'BankStatement'
@@ -103,10 +135,7 @@ interface AuditLogData {
   action: AuditAction;
   entityType: AuditEntityType;
   entityId?: string;
-  changes?: {
-    before?: any;
-    after?: any;
-  };
+  changes?: Record<string, any>;
   ipAddress?: string;
   userAgent?: string;
 }

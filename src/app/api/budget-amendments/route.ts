@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
-import { createAuditLog, getRequestContext } from '@/lib/audit';
+import { createAuditLog, getRequestContext, type AuditAction } from '@/lib/audit';
 
 /**
  * GET /api/budget-amendments
@@ -16,6 +16,9 @@ export async function GET(req: NextRequest) {
     }
 
     const userWithPerms = await getUserWithPermissions(session.user.id);
+    if (!userWithPerms) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const canView = hasPermission(
       userWithPerms.permissions,
       'budgetItems',
@@ -129,6 +132,9 @@ export async function POST(req: NextRequest) {
     }
 
     const userWithPerms = await getUserWithPermissions(session.user.id);
+    if (!userWithPerms) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const body = await req.json();
     const { type, budgetItemId, amount, reason, toBudgetItemId } = body;
 
@@ -356,7 +362,7 @@ export async function POST(req: NextRequest) {
     const { ipAddress, userAgent } = getRequestContext(req);
     await createAuditLog({
       userId: session.user.id,
-      action: `BUDGET_${type}`,
+      action: `BUDGET_${type}` as AuditAction,
       entityType: 'BudgetAmendment',
       entityId: amendment.id,
       changes: {

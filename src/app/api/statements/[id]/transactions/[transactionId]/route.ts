@@ -2,7 +2,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
-import { createAuditLog, getRequestContext } from '@/lib/audit';
+import { createAuditLog, getRequestContext, AuditAction } from '@/lib/audit';
 import { findTransactionMatches } from '@/lib/transaction-matcher';
 
 type RouteContext = {
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
             merchantName: true,
             totalAmount: true,
             receiptDate: true,
-            imagePath: true,
+            imageUrl: true,
           },
         },
         matchedPurchaseOrder: {
@@ -273,7 +273,7 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
     const { ipAddress, userAgent } = getRequestContext(req);
     await createAuditLog({
       userId: user.id,
-      action: auditAction,
+      action: auditAction as AuditAction,
       entityType: 'BankTransaction',
       entityId: transactionId,
       changes: auditChanges,

@@ -288,11 +288,11 @@ export async function parseStatementFile(
         };
       }
 
-      headers = (data[0] as unknown[]).map(h => String(h || ''));
+      headers = (data[0] as unknown as unknown[]).map(h => String(h || ''));
       rows = data.slice(1).map(row => {
         const obj: Record<string, unknown> = {};
         headers.forEach((h, i) => {
-          obj[h] = (row as unknown[])[i] || '';
+          obj[h] = (row as unknown as unknown[])[i] || '';
         });
         return obj;
       });

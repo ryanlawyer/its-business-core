@@ -10,15 +10,19 @@ import { createAuditLog, getRequestContext, getChanges } from '@/lib/audit';
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const userWithPerms = await getUserWithPermissions(session.user.id);
+    if (!userWithPerms) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const canView = hasPermission(
       userWithPerms.permissions,
       'budgetItems',
@@ -33,7 +37,7 @@ export async function GET(
     }
 
     const category = await prisma.budgetCategory.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         parent: {
           select: { id: true, code: true, name: true },
@@ -42,7 +46,7 @@ export async function GET(
           select: { id: true, code: true, name: true, isActive: true },
         },
         budgetItems: {
-          select: { id: true, code: true, name: true, fiscalYear: true },
+          select: { id: true, code: true, description: true, fiscalYear: true },
         },
       },
     });
@@ -70,15 +74,19 @@ export async function GET(
  */
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const userWithPerms = await getUserWithPermissions(session.user.id);
+    if (!userWithPerms) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const canManage = hasPermission(
       userWithPerms.permissions,
       'budgetItems',
@@ -93,7 +101,7 @@ export async function PUT(
     }
 
     const existing = await prisma.budgetCategory.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existing) {
@@ -129,7 +137,7 @@ export async function PUT(
 
     // Validate parent exists and prevent circular reference
     if (parentId) {
-      if (parentId === params.id) {
+      if (parentId === id) {
         return NextResponse.json(
           { error: 'A category cannot be its own parent' },
           { status: 400 }
@@ -149,7 +157,7 @@ export async function PUT(
       // Check if parent is a descendant (would create circular reference)
       let currentParent = parent;
       while (currentParent.parentId) {
-        if (currentParent.parentId === params.id) {
+        if (currentParent.parentId === id) {
           return NextResponse.json(
             { error: 'Cannot create circular reference in category hierarchy' },
             { status: 400 }
@@ -164,7 +172,7 @@ export async function PUT(
     }
 
     const category = await prisma.budgetCategory.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         code: code.toUpperCase(),
         name,
@@ -225,15 +233,19 @@ export async function PUT(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const userWithPerms = await getUserWithPermissions(session.user.id);
+    if (!userWithPerms) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const canManage = hasPermission(
       userWithPerms.permissions,
       'budgetItems',
@@ -248,7 +260,7 @@ export async function DELETE(
     }
 
     const category = await prisma.budgetCategory.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         budgetItems: true,
         children: true,
@@ -283,7 +295,7 @@ export async function DELETE(
     }
 
     await prisma.budgetCategory.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     // Audit log

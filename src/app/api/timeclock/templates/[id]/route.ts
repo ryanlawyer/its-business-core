@@ -3,7 +3,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
 import { createAuditLog, getRequestContext } from '@/lib/audit';
-import { AVAILABLE_EXPORT_FIELDS, TemplateColumn } from '../route';
+import { AVAILABLE_EXPORT_FIELDS, TemplateColumn } from '../shared';
 
 interface RouteParams {
   params: Promise<{ id: string }>;

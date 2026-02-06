@@ -46,7 +46,7 @@ type ReceiptDetail = {
     description: string | null;
     quantity: number | null;
     unitPrice: number | null;
-    amount: number | null;
+    total: number | null;
   }>;
 };
 
@@ -158,7 +158,7 @@ export async function GET(req: NextRequest) {
             description: true,
             quantity: true,
             unitPrice: true,
-            amount: true,
+            total: true,
           },
         },
       },

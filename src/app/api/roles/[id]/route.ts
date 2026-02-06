@@ -8,9 +8,10 @@ import { createAuditLog, getRequestContext, getChanges } from '@/lib/audit';
 // PUT /api/roles/[id] - Update role
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -36,7 +37,7 @@ export async function PUT(
 
     // Check if role exists
     const existingRole = await prisma.role.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingRole) {
@@ -58,7 +59,7 @@ export async function PUT(
 
     // Update role
     const role = await prisma.role.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         name: name || existingRole.name,
         code: code ? code.toUpperCase() : existingRole.code,
@@ -118,9 +119,10 @@ export async function PUT(
 // DELETE /api/roles/[id] - Delete role
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -143,7 +145,7 @@ export async function DELETE(
 
     // Check if role exists
     const role = await prisma.role.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         _count: {
           select: { users: true },
@@ -173,7 +175,7 @@ export async function DELETE(
 
     // Delete role
     await prisma.role.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     // Audit log

@@ -32,7 +32,7 @@ type BudgetItemSelectorProps = {
   budgetItems: BudgetItem[];
   departments: Department[];
   selectedBudgetItemId: string;
-  onChange: (budgetItemId: string) => void;
+  onChange: (budgetItemId: string | null) => void;
   userDepartmentId?: string | null;
   userDepartmentName?: string | null;
   required?: boolean;

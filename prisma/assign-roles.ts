@@ -17,7 +17,7 @@ async function main() {
 
   // Assign all users to ADMIN role for now
   const users = await prisma.user.findMany({
-    where: { roleId: null },
+    where: { roleId: { equals: null as unknown as string } },
   });
 
   for (const user of users) {
