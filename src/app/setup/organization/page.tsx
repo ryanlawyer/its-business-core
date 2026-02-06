@@ -111,16 +111,16 @@ export default function SetupOrganizationPage() {
 
   if (isLoading) {
     return (
-      <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
+      <div className="card-glass">
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--text-primary)]"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
+    <div className="card-glass">
       {/* Progress indicator */}
       <div className="flex items-center justify-center gap-2 mb-8">
         {[1, 2, 3, 4, 5].map((step) => (
@@ -128,27 +128,27 @@ export default function SetupOrganizationPage() {
             key={step}
             className={`h-2 rounded-full transition-all ${
               step === 3
-                ? 'w-8 bg-blue-500'
+                ? 'w-8 bg-[var(--accent-primary)]'
                 : step < 3
-                ? 'w-2 bg-blue-400'
-                : 'w-2 bg-white/20'
+                ? 'w-2 bg-[var(--accent-primary-hover)]'
+                : 'w-2 bg-[var(--bg-surface)]'
             }`}
           />
         ))}
       </div>
 
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-white mb-2">
+        <h1 className="page-title">
           Organization Details
         </h1>
-        <p className="text-slate-300">
+        <p className="text-[var(--text-secondary)]">
           Configure your organization settings and create your first department.
         </p>
       </div>
 
       {errors.length > 0 && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
-          <ul className="list-disc list-inside text-red-300 text-sm space-y-1">
+        <div className="rounded-[var(--radius-lg)] border border-[var(--error-muted)] bg-[var(--error-subtle)] px-4 py-3 mb-6">
+          <ul className="list-disc list-inside text-[var(--error)] text-sm space-y-1">
             {errors.map((error, i) => (
               <li key={i}>{error}</li>
             ))}
@@ -158,8 +158,8 @@ export default function SetupOrganizationPage() {
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            Organization Name <span className="text-red-400">*</span>
+          <label className="form-label">
+            Organization Name <span className="text-[var(--error)]">*</span>
           </label>
           <input
             type="text"
@@ -167,14 +167,14 @@ export default function SetupOrganizationPage() {
             onChange={(e) =>
               setFormData({ ...formData, organizationName: e.target.value })
             }
-            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="form-input"
             placeholder="Acme Corporation"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            First Department Name <span className="text-red-400">*</span>
+          <label className="form-label">
+            First Department Name <span className="text-[var(--error)]">*</span>
           </label>
           <input
             type="text"
@@ -182,16 +182,16 @@ export default function SetupOrganizationPage() {
             onChange={(e) =>
               setFormData({ ...formData, departmentName: e.target.value })
             }
-            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="form-input"
             placeholder="General"
           />
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="form-hint">
             You can add more departments later in the admin settings.
           </p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
+          <label className="form-label">
             Timezone
           </label>
           <select
@@ -199,10 +199,10 @@ export default function SetupOrganizationPage() {
             onChange={(e) =>
               setFormData({ ...formData, timezone: e.target.value })
             }
-            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none cursor-pointer"
+            className="form-input form-select"
           >
             {TIMEZONE_OPTIONS.map((tz) => (
-              <option key={tz.value} value={tz.value} className="bg-slate-800">
+              <option key={tz.value} value={tz.value} className="bg-[var(--bg-elevated)]">
                 {tz.label}
               </option>
             ))}
@@ -210,7 +210,7 @@ export default function SetupOrganizationPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
+          <label className="form-label">
             Fiscal Year Start Month
           </label>
           <select
@@ -221,19 +221,19 @@ export default function SetupOrganizationPage() {
                 fiscalYearStartMonth: parseInt(e.target.value, 10),
               })
             }
-            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none cursor-pointer"
+            className="form-input form-select"
           >
             {MONTH_OPTIONS.map((month) => (
               <option
                 key={month.value}
                 value={month.value}
-                className="bg-slate-800"
+                className="bg-[var(--bg-elevated)]"
               >
                 {month.label}
               </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="form-hint">
             Used for fiscal year reporting. Most businesses use January.
           </p>
         </div>
@@ -242,14 +242,14 @@ export default function SetupOrganizationPage() {
       <div className="flex gap-4 mt-8">
         <button
           onClick={() => router.push('/setup/admin')}
-          className="flex-1 py-3 px-4 bg-white/5 hover:bg-white/10 text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2"
+          className="btn btn-secondary flex-1 flex items-center justify-center gap-2"
         >
           <ArrowLeftIcon className="h-4 w-4" />
           Back
         </button>
         <button
           onClick={handleNext}
-          className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
+          className="btn btn-primary flex-1 flex items-center justify-center gap-2"
         >
           Next
           <ArrowRightIcon className="h-4 w-4" />

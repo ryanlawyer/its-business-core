@@ -157,12 +157,12 @@ export default function BudgetAmendmentsPage() {
     switch (type) {
       case 'INCREASE':
       case 'TRANSFER_IN':
-        return 'bg-green-100 text-green-800';
+        return 'badge-success';
       case 'DECREASE':
       case 'TRANSFER_OUT':
-        return 'bg-red-100 text-red-800';
+        return 'badge-error';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'badge-neutral';
     }
   };
 
@@ -182,7 +182,7 @@ export default function BudgetAmendmentsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-600">Loading...</div>
+        <div className="text-[var(--text-secondary)]">Loading...</div>
       </div>
     );
   }
@@ -190,17 +190,17 @@ export default function BudgetAmendmentsPage() {
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Budget Amendments</h1>
+        <h1 className="page-title">Budget Amendments</h1>
         <button
           onClick={() => setShowModal(true)}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          className="btn btn-primary"
         >
           New Amendment
         </button>
       </div>
 
       {error && !showModal && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="rounded-[var(--radius-lg)] border border-[var(--error-muted)] bg-[var(--error-subtle)] text-[var(--error)] px-4 py-3 mb-4">
           {error}
         </div>
       )}
@@ -208,7 +208,7 @@ export default function BudgetAmendmentsPage() {
       {/* Filters */}
       <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="form-label">
             Amendment Type
           </label>
           <select
@@ -217,7 +217,7 @@ export default function BudgetAmendmentsPage() {
               setTypeFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="form-input form-select"
           >
             <option value="">All Types</option>
             <option value="INCREASE">Increase</option>
@@ -227,7 +227,7 @@ export default function BudgetAmendmentsPage() {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="form-label">
             Fiscal Year
           </label>
           <input
@@ -238,69 +238,134 @@ export default function BudgetAmendmentsPage() {
               setCurrentPage(1);
             }}
             placeholder="e.g., 2025"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="form-input"
           />
         </div>
         <div className="flex items-end">
           {!loading && pagination.total > 0 && (
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-[var(--text-secondary)]">
               Showing {amendments.length} of {pagination.total} amendments
             </p>
           )}
         </div>
       </div>
 
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      {/* Mobile Card View */}
+      <div className="lg:hidden space-y-4">
+        {amendments.map((amendment) => (
+          <div key={amendment.id} className="card">
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <h3 className="text-lg font-bold text-[var(--text-primary)]">{amendment.budgetItem.code}</h3>
+                <p className="text-sm text-[var(--text-secondary)]">{amendment.budgetItem.description}</p>
+                {(amendment.type === 'TRANSFER_OUT' || amendment.type === 'TRANSFER_IN') && (
+                  <p className="text-xs text-[var(--accent-primary)] mt-1">
+                    {amendment.type === 'TRANSFER_OUT' && amendment.toBudgetItem && (
+                      <>&rarr; {amendment.toBudgetItem.code}</>
+                    )}
+                    {amendment.type === 'TRANSFER_IN' && amendment.fromBudgetItem && (
+                      <>&larr; {amendment.fromBudgetItem.code}</>
+                    )}
+                  </p>
+                )}
+              </div>
+              <span className={`badge ${getTypeColor(amendment.type)}`}>
+                {getTypeIcon(amendment.type)} {amendment.type.replace('_', ' ')}
+              </span>
+            </div>
+            <div className="space-y-2 text-sm mb-4">
+              <div className="flex justify-between">
+                <span className="text-[var(--text-secondary)]">Amount:</span>
+                <span className="text-[var(--text-primary)] font-bold">
+                  {amendment.type.includes('INCREASE') || amendment.type === 'TRANSFER_IN' ? '+' : '-'}
+                  ${amendment.amount.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--text-secondary)]">Previous:</span>
+                <span className="text-[var(--text-muted)]">${amendment.previousAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--text-secondary)]">New:</span>
+                <span className="text-[var(--text-primary)] font-medium">${amendment.newAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--text-secondary)]">Date:</span>
+                <span className="text-[var(--text-primary)]">{new Date(amendment.createdAt).toLocaleDateString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--text-secondary)]">Created By:</span>
+                <span className="text-[var(--text-primary)]">{amendment.createdBy.name}</span>
+              </div>
+              {amendment.reason && (
+                <div className="border-t border-[var(--border-default)] pt-2">
+                  <span className="text-[var(--text-secondary)]">Reason:</span>
+                  <p className="text-[var(--text-primary)] mt-1">{amendment.reason}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+        {amendments.length === 0 && (
+          <div className="empty-state">
+            <p className="empty-state-title">No budget amendments found.</p>
+            <p className="empty-state-description">Create one to get started.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden lg:block table-container">
+        <table className="table">
+          <thead>
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase">
                 Date
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase">
                 Type
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase">
                 Budget Item
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase">
                 Amount
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase">
                 Previous
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase">
                 New
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase">
                 Reason
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase">
                 Created By
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody>
             {amendments.map((amendment) => (
-              <tr key={amendment.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <tr key={amendment.id}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
                   {new Date(amendment.createdAt).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 py-1 text-xs rounded font-medium ${getTypeColor(amendment.type)}`}>
+                  <span className={`badge ${getTypeColor(amendment.type)}`}>
                     {getTypeIcon(amendment.type)} {amendment.type.replace('_', ' ')}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-900">
+                <td className="px-6 py-4 text-sm">
                   <div className="font-medium">{amendment.budgetItem.code}</div>
-                  <div className="text-xs text-gray-500">{amendment.budgetItem.description}</div>
+                  <div className="text-xs text-[var(--text-muted)]">{amendment.budgetItem.description}</div>
                   {(amendment.type === 'TRANSFER_OUT' || amendment.type === 'TRANSFER_IN') && (
-                    <div className="text-xs text-blue-600 mt-1">
+                    <div className="text-xs text-[var(--accent-primary)] mt-1">
                       {amendment.type === 'TRANSFER_OUT' && amendment.toBudgetItem && (
-                        <>→ {amendment.toBudgetItem.code}</>
+                        <>&rarr; {amendment.toBudgetItem.code}</>
                       )}
                       {amendment.type === 'TRANSFER_IN' && amendment.fromBudgetItem && (
-                        <>← {amendment.fromBudgetItem.code}</>
+                        <>&larr; {amendment.fromBudgetItem.code}</>
                       )}
                     </div>
                   )}
@@ -309,16 +374,16 @@ export default function BudgetAmendmentsPage() {
                   {amendment.type.includes('INCREASE') || amendment.type === 'TRANSFER_IN' ? '+' : '-'}
                   ${amendment.amount.toFixed(2)}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-muted)]">
                   ${amendment.previousAmount.toFixed(2)}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   ${amendment.newAmount.toFixed(2)}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-600">
+                <td className="px-6 py-4 text-sm text-[var(--text-secondary)]">
                   {amendment.reason}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-muted)]">
                   {amendment.createdBy.name}
                 </td>
               </tr>
@@ -327,8 +392,9 @@ export default function BudgetAmendmentsPage() {
         </table>
 
         {amendments.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            No budget amendments found. Create one to get started.
+          <div className="empty-state">
+            <p className="empty-state-title">No budget amendments found.</p>
+            <p className="empty-state-description">Create one to get started.</p>
           </div>
         )}
       </div>
@@ -339,11 +405,11 @@ export default function BudgetAmendmentsPage() {
           <button
             onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
             disabled={currentPage === 1}
-            className="px-4 py-2 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+            className="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Previous
           </button>
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-[var(--text-secondary)]">
             Page {pagination.page} of {pagination.totalPages} ({pagination.total} total)
           </span>
           <button
@@ -351,7 +417,7 @@ export default function BudgetAmendmentsPage() {
               setCurrentPage(Math.min(pagination.totalPages, currentPage + 1))
             }
             disabled={currentPage === pagination.totalPages}
-            className="px-4 py-2 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+            className="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next
           </button>
@@ -361,13 +427,13 @@ export default function BudgetAmendmentsPage() {
       {/* Amendment Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-lg">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          <div className="card w-full max-w-lg">
+            <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">
               New Budget Amendment
             </h2>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+              <div className="rounded-[var(--radius-lg)] border border-[var(--error-muted)] bg-[var(--error-subtle)] text-[var(--error)] px-4 py-3 mb-4">
                 {error}
               </div>
             )}
@@ -375,17 +441,17 @@ export default function BudgetAmendmentsPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Amendment Type */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="form-label">
                   Amendment Type
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => setAmendmentType('INCREASE')}
-                    className={`px-4 py-2 rounded border ${
+                    className={`px-4 py-2 rounded border transition-colors ${
                       amendmentType === 'INCREASE'
-                        ? 'bg-green-500 text-white border-green-600'
-                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        ? 'bg-[var(--success)] text-[var(--bg-void)] border-[var(--success)]'
+                        : 'bg-[var(--bg-surface)] text-[var(--text-secondary)] border-[var(--border-default)] hover:bg-[var(--bg-hover)]'
                     }`}
                   >
                     Increase
@@ -393,10 +459,10 @@ export default function BudgetAmendmentsPage() {
                   <button
                     type="button"
                     onClick={() => setAmendmentType('DECREASE')}
-                    className={`px-4 py-2 rounded border ${
+                    className={`px-4 py-2 rounded border transition-colors ${
                       amendmentType === 'DECREASE'
-                        ? 'bg-red-500 text-white border-red-600'
-                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        ? 'bg-[var(--error)] text-[var(--bg-void)] border-[var(--error)]'
+                        : 'bg-[var(--bg-surface)] text-[var(--text-secondary)] border-[var(--border-default)] hover:bg-[var(--bg-hover)]'
                     }`}
                   >
                     Decrease
@@ -404,10 +470,10 @@ export default function BudgetAmendmentsPage() {
                   <button
                     type="button"
                     onClick={() => setAmendmentType('TRANSFER')}
-                    className={`px-4 py-2 rounded border ${
+                    className={`px-4 py-2 rounded border transition-colors ${
                       amendmentType === 'TRANSFER'
-                        ? 'bg-blue-500 text-white border-blue-600'
-                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        ? 'bg-[var(--info)] text-[var(--bg-void)] border-[var(--info)]'
+                        : 'bg-[var(--bg-surface)] text-[var(--text-secondary)] border-[var(--border-default)] hover:bg-[var(--bg-hover)]'
                     }`}
                   >
                     Transfer
@@ -417,13 +483,13 @@ export default function BudgetAmendmentsPage() {
 
               {/* Budget Item */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="form-label">
                   {amendmentType === 'TRANSFER' ? 'From Budget Item' : 'Budget Item'} *
                 </label>
                 <select
                   value={formData.budgetItemId}
                   onChange={(e) => setFormData({ ...formData, budgetItemId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                  className="form-input form-select"
                   required
                 >
                   <option value="">Select budget item...</option>
@@ -438,13 +504,13 @@ export default function BudgetAmendmentsPage() {
               {/* To Budget Item (only for transfers) */}
               {amendmentType === 'TRANSFER' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="form-label">
                     To Budget Item *
                   </label>
                   <select
                     value={formData.toBudgetItemId}
                     onChange={(e) => setFormData({ ...formData, toBudgetItemId: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                    className="form-input form-select"
                     required
                   >
                     <option value="">Select destination...</option>
@@ -461,7 +527,7 @@ export default function BudgetAmendmentsPage() {
 
               {/* Amount */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="form-label">
                   Amount *
                 </label>
                 <input
@@ -470,7 +536,7 @@ export default function BudgetAmendmentsPage() {
                   min="0.01"
                   value={formData.amount}
                   onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                  className="form-input"
                   placeholder="0.00"
                   required
                 />
@@ -478,13 +544,13 @@ export default function BudgetAmendmentsPage() {
 
               {/* Reason */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="form-label">
                   Reason *
                 </label>
                 <textarea
                   value={formData.reason}
                   onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                  className="form-input"
                   rows={3}
                   placeholder="Explain the reason for this amendment..."
                   required
@@ -494,7 +560,7 @@ export default function BudgetAmendmentsPage() {
               <div className="flex gap-2 pt-4">
                 <button
                   type="submit"
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                  className="btn btn-primary"
                 >
                   Create Amendment
                 </button>
@@ -505,7 +571,7 @@ export default function BudgetAmendmentsPage() {
                     resetForm();
                     setError('');
                   }}
-                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400"
+                  className="btn btn-secondary"
                 >
                   Cancel
                 </button>

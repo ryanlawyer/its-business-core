@@ -225,6 +225,14 @@ body {
   font-size: 1rem;
 }
 
+.section-title {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────
    Card Components
    ───────────────────────────────────────────────────────────────────────────── */
@@ -443,6 +451,17 @@ body {
 
 .btn-danger:hover:not(:disabled) {
   background: var(--error-muted);
+  color: var(--text-primary);
+}
+
+.btn-warning {
+  background: var(--warning-subtle);
+  color: var(--warning);
+  border: 1px solid var(--warning-muted);
+}
+
+.btn-warning:hover:not(:disabled) {
+  background: var(--warning-muted);
   color: var(--text-primary);
 }
 
@@ -893,6 +912,53 @@ body {
   background: var(--border-default);
 }
 
+/* Bottom Navigation (Mobile) */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border-subtle);
+  padding: 0.5rem 0 calc(0.5rem + env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: color 0.15s ease;
+  position: relative;
+  text-decoration: none;
+}
+
+.bottom-nav-item-active {
+  color: var(--accent-primary);
+}
+
+.bottom-nav-item:active {
+  color: var(--accent-primary);
+}
+
+.bottom-nav-badge {
+  position: absolute;
+  top: 0;
+  right: 0.5rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--warning);
+  border-radius: 9999px;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────
    Animations
    ───────────────────────────────────────────────────────────────────────────── */
@@ -1119,4 +1185,17 @@ body {
   opacity: 1;
   visibility: visible;
   transform: translateX(-50%) translateY(-8px);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Utilities
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

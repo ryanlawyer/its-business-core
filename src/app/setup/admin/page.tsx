@@ -53,7 +53,7 @@ export default function SetupAdminPage() {
   };
 
   return (
-    <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
+    <div className="card-glass">
       {/* Progress indicator */}
       <div className="flex items-center justify-center gap-2 mb-8">
         {[1, 2, 3, 4, 5].map((step) => (
@@ -61,27 +61,27 @@ export default function SetupAdminPage() {
             key={step}
             className={`h-2 rounded-full transition-all ${
               step === 2
-                ? 'w-8 bg-blue-500'
+                ? 'w-8 bg-[var(--accent-primary)]'
                 : step < 2
-                ? 'w-2 bg-blue-400'
-                : 'w-2 bg-white/20'
+                ? 'w-2 bg-[var(--accent-primary-hover)]'
+                : 'w-2 bg-[var(--bg-surface)]'
             }`}
           />
         ))}
       </div>
 
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-white mb-2">
+        <h1 className="page-title">
           Create Admin Account
         </h1>
-        <p className="text-slate-300">
+        <p className="text-[var(--text-secondary)]">
           This will be your administrator account with full system access.
         </p>
       </div>
 
       {errors.length > 0 && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
-          <ul className="list-disc list-inside text-red-300 text-sm space-y-1">
+        <div className="rounded-[var(--radius-lg)] border border-[var(--error-muted)] bg-[var(--error-subtle)] px-4 py-3 mb-6">
+          <ul className="list-disc list-inside text-[var(--error)] text-sm space-y-1">
             {errors.map((error, i) => (
               <li key={i}>{error}</li>
             ))}
@@ -91,33 +91,33 @@ export default function SetupAdminPage() {
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
+          <label className="form-label">
             Full Name
           </label>
           <input
             type="text"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="form-input"
             placeholder="John Smith"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
+          <label className="form-label">
             Email Address
           </label>
           <input
             type="email"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="form-input"
             placeholder="admin@company.com"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
+          <label className="form-label">
             Password
           </label>
           <div className="relative">
@@ -125,13 +125,13 @@ export default function SetupAdminPage() {
               type={showPassword ? 'text' : 'password'}
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12"
+              className="form-input pr-12"
               placeholder="Minimum 8 characters"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
             >
               {showPassword ? (
                 <EyeSlashIcon className="h-5 w-5" />
@@ -143,7 +143,7 @@ export default function SetupAdminPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
+          <label className="form-label">
             Confirm Password
           </label>
           <div className="relative">
@@ -151,13 +151,13 @@ export default function SetupAdminPage() {
               type={showConfirm ? 'text' : 'password'}
               value={formData.confirmPassword}
               onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12"
+              className="form-input pr-12"
               placeholder="Re-enter your password"
             />
             <button
               type="button"
               onClick={() => setShowConfirm(!showConfirm)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
             >
               {showConfirm ? (
                 <EyeSlashIcon className="h-5 w-5" />
@@ -172,14 +172,14 @@ export default function SetupAdminPage() {
       <div className="flex gap-4 mt-8">
         <button
           onClick={() => router.push('/setup')}
-          className="flex-1 py-3 px-4 bg-white/5 hover:bg-white/10 text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2"
+          className="btn btn-secondary flex-1 flex items-center justify-center gap-2"
         >
           <ArrowLeftIcon className="h-4 w-4" />
           Back
         </button>
         <button
           onClick={handleNext}
-          className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
+          className="btn btn-primary flex-1 flex items-center justify-center gap-2"
         >
           Next
           <ArrowRightIcon className="h-4 w-4" />

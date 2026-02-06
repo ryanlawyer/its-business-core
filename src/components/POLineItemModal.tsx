@@ -108,17 +108,17 @@ export default function POLineItemModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-md">
-        <div className="border-b px-6 py-4">
-          <h2 className="text-2xl font-bold text-gray-900">
+      <div className="card w-full max-w-md">
+        <div className="border-b border-[var(--border-subtle)] px-6 py-4 -mx-6 -mt-6 mb-0">
+          <h2 className="text-2xl font-bold text-[var(--text-primary)]">
             {editingItem ? 'Edit Line Item' : 'Add Line Item'}
           </h2>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="pt-6 space-y-4">
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="form-label">
               Description *
             </label>
             <textarea
@@ -127,19 +127,19 @@ export default function POLineItemModal({
                 setFormData({ ...formData, description: e.target.value })
               }
               rows={3}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 ${
-                errors.description ? 'border-red-500' : 'border-gray-300'
+              className={`form-input ${
+                errors.description ? 'border-[var(--error)]' : ''
               }`}
               placeholder="Enter item description"
             />
             {errors.description && (
-              <p className="text-red-500 text-xs mt-1">{errors.description}</p>
+              <p className="form-error">{errors.description}</p>
             )}
           </div>
 
           {/* Budget Item */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="form-label">
               Budget Item *
             </label>
             <select
@@ -147,8 +147,8 @@ export default function POLineItemModal({
               onChange={(e) =>
                 setFormData({ ...formData, budgetItemId: e.target.value })
               }
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 ${
-                errors.budgetItemId ? 'border-red-500' : 'border-gray-300'
+              className={`form-input form-select ${
+                errors.budgetItemId ? 'border-[var(--error)]' : ''
               }`}
             >
               <option value="">Select budget item</option>
@@ -159,7 +159,7 @@ export default function POLineItemModal({
               ))}
             </select>
             {errors.budgetItemId && (
-              <p className="text-red-500 text-xs mt-1">{errors.budgetItemId}</p>
+              <p className="form-error">{errors.budgetItemId}</p>
             )}
             {/* Show available budget */}
             {formData.budgetItemId && (() => {
@@ -167,15 +167,15 @@ export default function POLineItemModal({
               if (selectedBudget && selectedBudget.remaining !== undefined) {
                 const isOverBudget = formData.amount > selectedBudget.remaining;
                 return (
-                  <div className={`mt-2 p-2 rounded text-sm ${isOverBudget ? 'bg-red-50 border border-red-200' : 'bg-blue-50 border border-blue-200'}`}>
+                  <div className={`mt-2 p-2 rounded-[var(--radius-lg)] text-sm ${isOverBudget ? 'bg-[var(--error-subtle)] border border-[var(--error-muted)]' : 'bg-[var(--info-subtle)] border border-[var(--info-muted)]'}`}>
                     <div className="flex justify-between">
-                      <span className="font-medium text-gray-700">Available Budget:</span>
-                      <span className={`font-bold ${isOverBudget ? 'text-red-600' : 'text-green-600'}`}>
+                      <span className="font-medium text-[var(--text-secondary)]">Available Budget:</span>
+                      <span className={`font-bold ${isOverBudget ? 'text-[var(--error)]' : 'text-[var(--success)]'}`}>
                         ${selectedBudget.remaining.toFixed(2)}
                       </span>
                     </div>
                     {isOverBudget && formData.amount > 0 && (
-                      <div className="mt-1 text-red-600 font-medium">
+                      <div className="mt-1 text-[var(--error)] font-medium">
                         ⚠️ Over budget by ${(formData.amount - selectedBudget.remaining).toFixed(2)}
                       </div>
                     )}
@@ -188,11 +188,11 @@ export default function POLineItemModal({
 
           {/* Amount */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="form-label">
               Amount *
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-2 text-gray-500">$</span>
+              <span className="absolute left-3 top-2 text-[var(--text-muted)]">$</span>
               <input
                 type="number"
                 step="0.01"
@@ -204,14 +204,14 @@ export default function POLineItemModal({
                     amount: parseFloat(e.target.value) || 0,
                   })
                 }
-                className={`w-full pl-8 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 ${
-                  errors.amount ? 'border-red-500' : 'border-gray-300'
+                className={`form-input pl-8 ${
+                  errors.amount ? 'border-[var(--error)]' : ''
                 }`}
                 placeholder="0.00"
               />
             </div>
             {errors.amount && (
-              <p className="text-red-500 text-xs mt-1">{errors.amount}</p>
+              <p className="form-error">{errors.amount}</p>
             )}
           </div>
 
@@ -220,13 +220,13 @@ export default function POLineItemModal({
             <button
               type="button"
               onClick={handleCancel}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+              className="btn btn-secondary"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-semibold transition-colors"
+              className="btn btn-primary"
             >
               {editingItem ? 'Update' : 'Add'}
             </button>

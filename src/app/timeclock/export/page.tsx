@@ -239,8 +239,8 @@ export default function ExportPage() {
     return (
       <div className="p-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+          <div className="h-8 bg-[var(--bg-hover)] rounded w-1/4"></div>
+          <div className="h-64 bg-[var(--bg-hover)] rounded"></div>
         </div>
       </div>
     );
@@ -250,19 +250,19 @@ export default function ExportPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Export Timeclock Data</h1>
+      <h1 className="page-title mb-6">Export Timeclock Data</h1>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">
+        <div className="mb-4 rounded-[var(--radius-lg)] border border-[var(--error-muted)] bg-[var(--error-subtle)] text-[var(--error)] px-4 py-3">
           {error}
         </div>
       )}
 
       {/* Warning banner for pending entries */}
       {pendingCount > 0 && (
-        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+        <div className="mb-4 rounded-[var(--radius-lg)] border border-[var(--warning-muted)] bg-[var(--warning-subtle)] px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-yellow-800">
+            <div className="flex items-center gap-2 text-[var(--warning)]">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
@@ -272,27 +272,27 @@ export default function ExportPage() {
             </div>
             <Link
               href="/timeclock/approvals"
-              className="text-sm text-yellow-700 hover:text-yellow-900 underline"
+              className="text-sm text-[var(--warning)] hover:text-[var(--warning)] underline"
             >
               View pending entries
             </Link>
           </div>
-          <p className="mt-1 text-sm text-yellow-700">
+          <p className="mt-1 text-sm text-[var(--warning)]">
             Only approved entries are included in exports. Approve pending entries before exporting for complete data.
           </p>
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow p-6 space-y-6">
+      <div className="card p-6 space-y-6">
         {/* Period Selector */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="form-label">
             Pay Period
           </label>
           <select
             value={selectedPeriodIndex}
             onChange={(e) => setSelectedPeriodIndex(parseInt(e.target.value))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            className="form-input form-select"
           >
             {payPeriods.map((period, index) => (
               <option key={period.start} value={index}>
@@ -304,13 +304,13 @@ export default function ExportPage() {
 
         {/* Department Filter */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="form-label">
             Department
           </label>
           <select
             value={selectedDepartment}
             onChange={(e) => setSelectedDepartment(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            className="form-input form-select"
           >
             <option value="all">All Departments</option>
             {departments.map((dept) => (
@@ -323,13 +323,13 @@ export default function ExportPage() {
 
         {/* Template Selector */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="form-label">
             Export Template
           </label>
           <select
             value={selectedTemplate}
             onChange={(e) => setSelectedTemplate(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            className="form-input form-select"
           >
             <option value="">Default Template</option>
             {templates.map((template) => (
@@ -342,7 +342,7 @@ export default function ExportPage() {
 
         {/* Format Selector */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="form-label">
             Export Format
           </label>
           <div className="flex gap-4">
@@ -353,7 +353,7 @@ export default function ExportPage() {
                 value="csv"
                 checked={selectedFormat === 'csv'}
                 onChange={(e) => setSelectedFormat(e.target.value)}
-                className="h-4 w-4 text-blue-600"
+                className="h-4 w-4 text-[var(--accent-primary)]"
               />
               <span className="text-sm">CSV</span>
             </label>
@@ -364,7 +364,7 @@ export default function ExportPage() {
                 value="xlsx"
                 checked={selectedFormat === 'xlsx'}
                 onChange={(e) => setSelectedFormat(e.target.value)}
-                className="h-4 w-4 text-blue-600"
+                className="h-4 w-4 text-[var(--accent-primary)]"
               />
               <span className="text-sm">Excel (.xlsx)</span>
             </label>
@@ -375,7 +375,7 @@ export default function ExportPage() {
                 value="pdf"
                 checked={selectedFormat === 'pdf'}
                 onChange={(e) => setSelectedFormat(e.target.value)}
-                className="h-4 w-4 text-blue-600"
+                className="h-4 w-4 text-[var(--accent-primary)]"
               />
               <span className="text-sm">PDF Timesheets</span>
             </label>
@@ -384,51 +384,87 @@ export default function ExportPage() {
 
         {/* Preview Table */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="form-label mb-2">
             Preview (First 5 Rows)
           </label>
           {loadingPreview ? (
-            <div className="animate-pulse h-32 bg-gray-100 rounded"></div>
+            <div className="animate-pulse h-32 bg-[var(--bg-hover)] rounded"></div>
           ) : previewRows.length === 0 ? (
-            <div className="p-4 text-center text-gray-500 bg-gray-50 rounded border border-gray-200">
-              No approved entries found for this period
+            <div className="empty-state">
+              <p className="empty-state-title">No approved entries found for this period</p>
             </div>
           ) : (
-            <div className="overflow-x-auto border border-gray-200 rounded-md">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Dept</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Regular</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Daily OT</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Weekly OT</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {previewRows.map((row, idx) => (
-                    <tr key={idx}>
-                      <td className="px-4 py-2 text-sm text-gray-900">{row.employeeName}</td>
-                      <td className="px-4 py-2 text-sm text-gray-500">{row.department}</td>
-                      <td className="px-4 py-2 text-sm text-gray-900 text-right">{row.regularHours}</td>
-                      <td className="px-4 py-2 text-sm text-gray-900 text-right">{row.dailyOvertimeHours}</td>
-                      <td className="px-4 py-2 text-sm text-gray-900 text-right">{row.weeklyOvertimeHours}</td>
-                      <td className="px-4 py-2 text-sm font-medium text-gray-900 text-right">{row.totalHours}</td>
+            <>
+              {/* Mobile Card View */}
+              <div className="lg:hidden space-y-4">
+                {previewRows.map((row, idx) => (
+                  <div key={idx} className="card">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="text-sm font-bold text-[var(--text-primary)]">{row.employeeName}</h3>
+                        <p className="text-xs text-[var(--text-secondary)] mt-0.5">{row.department}</p>
+                      </div>
+                      <span className="text-sm font-semibold text-[var(--text-primary)]">{row.totalHours}h</span>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-[var(--text-secondary)]">Regular:</span>
+                        <span className="text-[var(--text-primary)]">{row.regularHours}h</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[var(--text-secondary)]">Daily OT:</span>
+                        <span className="text-[var(--text-primary)]">{row.dailyOvertimeHours}h</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[var(--text-secondary)]">Weekly OT:</span>
+                        <span className="text-[var(--text-primary)]">{row.weeklyOvertimeHours}h</span>
+                      </div>
+                      <div className="flex justify-between border-t border-[var(--border-default)] pt-2">
+                        <span className="text-[var(--text-secondary)] font-medium">Total:</span>
+                        <span className="text-[var(--text-primary)] font-medium">{row.totalHours}h</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden lg:block table-container">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium uppercase">Name</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium uppercase">Dept</th>
+                      <th className="px-4 py-2 text-right text-xs font-medium uppercase">Regular</th>
+                      <th className="px-4 py-2 text-right text-xs font-medium uppercase">Daily OT</th>
+                      <th className="px-4 py-2 text-right text-xs font-medium uppercase">Weekly OT</th>
+                      <th className="px-4 py-2 text-right text-xs font-medium uppercase">Total</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {previewRows.map((row, idx) => (
+                      <tr key={idx}>
+                        <td className="px-4 py-2 text-sm text-[var(--text-primary)]">{row.employeeName}</td>
+                        <td className="px-4 py-2 text-sm text-[var(--text-muted)]">{row.department}</td>
+                        <td className="px-4 py-2 text-sm text-[var(--text-primary)] text-right">{row.regularHours}</td>
+                        <td className="px-4 py-2 text-sm text-[var(--text-primary)] text-right">{row.dailyOvertimeHours}</td>
+                        <td className="px-4 py-2 text-sm text-[var(--text-primary)] text-right">{row.weeklyOvertimeHours}</td>
+                        <td className="px-4 py-2 text-sm font-medium text-[var(--text-primary)] text-right">{row.totalHours}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
 
         {/* Export Button */}
-        <div className="pt-4 border-t">
+        <div className="pt-4 border-t border-[var(--border-default)]">
           <button
             onClick={handleExport}
             disabled={exporting || previewRows.length === 0}
-            className="w-full px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            className="btn btn-primary w-full py-3 font-medium"
           >
             {exporting ? 'Exporting...' : 'Export & Download'}
           </button>

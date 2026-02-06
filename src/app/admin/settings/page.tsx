@@ -4,6 +4,31 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { SystemSettings } from '@/lib/settings';
+import {
+  BuildingOffice2Icon,
+  ShieldCheckIcon,
+  DocumentTextIcon,
+  CalendarIcon,
+  ClipboardDocumentListIcon,
+  CpuChipIcon,
+  EnvelopeIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  EyeIcon,
+  EyeSlashIcon,
+} from '@heroicons/react/24/outline';
+
+type TabKey = 'organization' | 'security' | 'purchaseOrders' | 'fiscal' | 'audit' | 'ai' | 'email';
+
+const TABS: { key: TabKey; label: string; icon: typeof BuildingOffice2Icon }[] = [
+  { key: 'organization', label: 'Organization', icon: BuildingOffice2Icon },
+  { key: 'security', label: 'Security', icon: ShieldCheckIcon },
+  { key: 'purchaseOrders', label: 'Purchase Orders', icon: DocumentTextIcon },
+  { key: 'fiscal', label: 'Fiscal Year', icon: CalendarIcon },
+  { key: 'audit', label: 'Audit Log', icon: ClipboardDocumentListIcon },
+  { key: 'ai', label: 'AI / OCR', icon: CpuChipIcon },
+  { key: 'email', label: 'Email', icon: EnvelopeIcon },
+];
 
 export default function SettingsPage() {
   const { data: session } = useSession();
@@ -12,13 +37,22 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'organization' | 'security' | 'purchaseOrders' | 'fiscal' | 'audit' | 'ai' | 'email'>('organization');
+  const [activeTab, setActiveTab] = useState<TabKey>('organization');
   const [showApiKey, setShowApiKey] = useState(false);
   const [testingEmail, setTestingEmail] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     fetchSettings();
   }, []);
+
+  // Auto-dismiss feedback after 5 seconds
+  useEffect(() => {
+    if (feedback) {
+      const timer = setTimeout(() => setFeedback(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [feedback]);
 
   const fetchSettings = async () => {
     try {
@@ -40,6 +74,7 @@ export default function SettingsPage() {
     if (!settings) return;
 
     setSaving(true);
+    setFeedback(null);
     try {
       const res = await fetch('/api/settings', {
         method: 'PUT',
@@ -48,14 +83,14 @@ export default function SettingsPage() {
       });
 
       if (res.ok) {
-        alert('Settings saved successfully!');
+        setFeedback({ type: 'success', message: 'Settings saved successfully.' });
       } else {
         const data = await res.json();
-        alert(`Failed to save settings: ${data.error}`);
+        setFeedback({ type: 'error', message: data.error || 'Failed to save settings.' });
       }
     } catch (error) {
       console.error('Error saving settings:', error);
-      alert('Failed to save settings');
+      setFeedback({ type: 'error', message: 'Failed to save settings.' });
     } finally {
       setSaving(false);
     }
@@ -63,116 +98,89 @@ export default function SettingsPage() {
 
   if (loading || !settings) {
     return (
-      <main className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="text-center text-gray-600">Loading...</div>
+      <main className="min-h-screen">
+        <div className="max-w-5xl mx-auto px-4 py-8">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-[var(--bg-hover)] rounded w-48"></div>
+            <div className="h-4 bg-[var(--bg-hover)] rounded w-80"></div>
+            <div className="h-12 bg-[var(--bg-hover)] rounded mt-6"></div>
+            <div className="h-64 bg-[var(--bg-hover)] rounded"></div>
+          </div>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+    <main className="min-h-screen">
+      <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">System Settings</h1>
-            <p className="text-gray-600">Configure system-wide settings and preferences</p>
+            <h1 className="page-title mb-1">System Settings</h1>
+            <p className="text-[var(--text-secondary)] text-sm">Configure system-wide settings and preferences</p>
           </div>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn btn-primary whitespace-nowrap"
           >
             {saving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6" aria-label="Tabs">
-              <button
-                onClick={() => setActiveTab('organization')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'organization'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Organization
-              </button>
-              <button
-                onClick={() => setActiveTab('security')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'security'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Security
-              </button>
-              <button
-                onClick={() => setActiveTab('purchaseOrders')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'purchaseOrders'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Purchase Orders
-              </button>
-              <button
-                onClick={() => setActiveTab('fiscal')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'fiscal'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Fiscal Year
-              </button>
-              <button
-                onClick={() => setActiveTab('audit')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'audit'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Audit Log
-              </button>
-              <button
-                onClick={() => setActiveTab('ai')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'ai'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                AI / OCR
-              </button>
-              <button
-                onClick={() => setActiveTab('email')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'email'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Email
-              </button>
+        {/* Feedback Banner */}
+        {feedback && (
+          <div
+            className={`mb-4 flex items-center gap-3 rounded-[var(--radius-lg)] px-4 py-3 text-sm transition-all ${
+              feedback.type === 'success'
+                ? 'border border-[var(--success-muted)] bg-[var(--success-subtle)] text-[var(--success)]'
+                : 'border border-[var(--error-muted)] bg-[var(--error-subtle)] text-[var(--error)]'
+            }`}
+          >
+            {feedback.type === 'success' ? (
+              <CheckCircleIcon className="h-5 w-5 flex-shrink-0" />
+            ) : (
+              <XCircleIcon className="h-5 w-5 flex-shrink-0" />
+            )}
+            <span>{feedback.message}</span>
+            <button
+              onClick={() => setFeedback(null)}
+              className="ml-auto text-current opacity-60 hover:opacity-100"
+            >
+              &times;
+            </button>
+          </div>
+        )}
+
+        <div className="card overflow-hidden">
+          {/* Tab Navigation — scrollable on mobile */}
+          <div className="border-b border-[var(--border-default)] overflow-x-auto scrollbar-hide">
+            <nav className="flex min-w-max px-2 sm:px-4" aria-label="Settings tabs">
+              {TABS.map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key)}
+                  className={`flex items-center gap-2 px-3 sm:px-4 py-3 border-b-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                    activeTab === key
+                      ? 'border-[var(--accent-primary)] text-[var(--accent-primary)]'
+                      : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:border-[var(--border-default)]'
+                  }`}
+                >
+                  <Icon className="h-4 w-4 hidden sm:block" />
+                  {label}
+                </button>
+              ))}
             </nav>
           </div>
 
           {/* Tab Content */}
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {/* Organization Tab */}
             {activeTab === 'organization' && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="form-label mb-2">
                     Organization Name
                   </label>
                   <input
@@ -184,18 +192,18 @@ export default function SettingsPage() {
                         organization: { ...settings.organization, name: e.target.value },
                       })
                     }
-                    className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="form-input w-full max-w-md"
                   />
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-[var(--text-muted)] mt-1">
                     This name will appear in the navigation bar and throughout the application
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="form-label mb-2">
                     Organization Logo
                   </label>
-                  <p className="text-sm text-gray-500 mb-2">
+                  <p className="text-sm text-[var(--text-muted)] mb-2">
                     Logo upload functionality coming soon. Currently using default ITS logo.
                   </p>
                   <input
@@ -208,7 +216,7 @@ export default function SettingsPage() {
                       })
                     }
                     placeholder="Logo URL or path"
-                    className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="form-input w-full max-w-md"
                   />
                 </div>
               </div>
@@ -219,7 +227,7 @@ export default function SettingsPage() {
               <div className="space-y-8">
                 {/* Password Policy */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Password Policy</h3>
+                  <h3 className="section-title mb-4">Password Policy</h3>
 
                   <div className="space-y-4">
                     <label className="flex items-center">
@@ -240,13 +248,13 @@ export default function SettingsPage() {
                         }
                         className="mr-2"
                       />
-                      <span className="text-sm font-medium text-gray-700">Enable Password Policy</span>
+                      <span className="text-sm font-medium text-[var(--text-secondary)]">Enable Password Policy</span>
                     </label>
 
                     {settings.security.passwordPolicy.enabled && (
-                      <>
+                      <div className="ml-6 space-y-4 border-l-2 border-[var(--border-default)] pl-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="form-label mb-2">
                             Minimum Length
                           </label>
                           <input
@@ -266,7 +274,7 @@ export default function SettingsPage() {
                                 },
                               })
                             }
-                            className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                            className="form-input w-32"
                           />
                         </div>
 
@@ -288,7 +296,7 @@ export default function SettingsPage() {
                             }
                             className="mr-2"
                           />
-                          <span className="text-sm text-gray-700">Require uppercase letters</span>
+                          <span className="text-sm text-[var(--text-secondary)]">Require uppercase letters</span>
                         </label>
 
                         <label className="flex items-center">
@@ -309,7 +317,7 @@ export default function SettingsPage() {
                             }
                             className="mr-2"
                           />
-                          <span className="text-sm text-gray-700">Require lowercase letters</span>
+                          <span className="text-sm text-[var(--text-secondary)]">Require lowercase letters</span>
                         </label>
 
                         <label className="flex items-center">
@@ -330,7 +338,7 @@ export default function SettingsPage() {
                             }
                             className="mr-2"
                           />
-                          <span className="text-sm text-gray-700">Require numbers</span>
+                          <span className="text-sm text-[var(--text-secondary)]">Require numbers</span>
                         </label>
 
                         <label className="flex items-center">
@@ -351,11 +359,11 @@ export default function SettingsPage() {
                             }
                             className="mr-2"
                           />
-                          <span className="text-sm text-gray-700">Require symbols (!@#$%^&*)</span>
+                          <span className="text-sm text-[var(--text-secondary)]">Require symbols (!@#$%^&*)</span>
                         </label>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="form-label mb-2">
                             Prevent Password Reuse (last N passwords)
                           </label>
                           <input
@@ -375,18 +383,18 @@ export default function SettingsPage() {
                                 },
                               })
                             }
-                            className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                            className="form-input w-32"
                           />
-                          <p className="text-sm text-gray-500 mt-1">Set to 0 to disable</p>
+                          <p className="text-sm text-[var(--text-muted)] mt-1">Set to 0 to disable</p>
                         </div>
-                      </>
+                      </div>
                     )}
                   </div>
                 </div>
 
                 {/* Session Timeout */}
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Session Timeout</h3>
+                <div className="border-t border-[var(--border-default)] pt-6">
+                  <h3 className="section-title mb-4">Session Timeout</h3>
 
                   <div className="space-y-4">
                     <label className="flex items-center">
@@ -407,12 +415,12 @@ export default function SettingsPage() {
                         }
                         className="mr-2"
                       />
-                      <span className="text-sm font-medium text-gray-700">Enable Session Timeout</span>
+                      <span className="text-sm font-medium text-[var(--text-secondary)]">Enable Session Timeout</span>
                     </label>
 
                     {settings.security.sessionTimeout.enabled && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <div className="ml-6 border-l-2 border-[var(--border-default)] pl-4">
+                        <label className="form-label mb-2">
                           Inactivity Timeout (minutes)
                         </label>
                         <input
@@ -432,9 +440,9 @@ export default function SettingsPage() {
                               },
                             })
                           }
-                          className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          className="form-input w-32"
                         />
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="text-sm text-[var(--text-muted)] mt-1">
                           Users will be logged out after this period of inactivity
                         </p>
                       </div>
@@ -448,7 +456,7 @@ export default function SettingsPage() {
             {activeTab === 'purchaseOrders' && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="form-label mb-2">
                     PO Number Prefix
                   </label>
                   <input
@@ -461,10 +469,10 @@ export default function SettingsPage() {
                       })
                     }
                     placeholder="PO-"
-                    className="w-48 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="form-input w-48"
                   />
-                  <p className="text-sm text-gray-500 mt-1">
-                    Example: "PO-" will generate numbers like PO-2025-001
+                  <p className="text-sm text-[var(--text-muted)] mt-1">
+                    Example: &quot;PO-&quot; will generate numbers like PO-2025-001
                   </p>
                 </div>
 
@@ -484,9 +492,9 @@ export default function SettingsPage() {
                       }
                       className="mr-2"
                     />
-                    <span className="text-sm font-medium text-gray-700">Reset counter yearly</span>
+                    <span className="text-sm font-medium text-[var(--text-secondary)]">Reset counter yearly</span>
                   </label>
-                  <p className="text-sm text-gray-500 mt-1 ml-6">
+                  <p className="text-sm text-[var(--text-muted)] mt-1 ml-6">
                     If enabled, PO numbers will reset to 001 each year. If disabled, numbers will continue incrementing.
                   </p>
                 </div>
@@ -497,7 +505,7 @@ export default function SettingsPage() {
             {activeTab === 'fiscal' && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="form-label mb-2">
                     Fiscal Year Start Month
                   </label>
                   <select
@@ -508,7 +516,7 @@ export default function SettingsPage() {
                         fiscalYear: { startMonth: parseInt(e.target.value) },
                       })
                     }
-                    className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="form-input form-select w-64"
                   >
                     <option value={1}>January</option>
                     <option value={2}>February</option>
@@ -523,7 +531,7 @@ export default function SettingsPage() {
                     <option value={11}>November</option>
                     <option value={12}>December</option>
                   </select>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-[var(--text-muted)] mt-1">
                     Defines when your fiscal year begins for budgeting purposes
                   </p>
                 </div>
@@ -534,7 +542,7 @@ export default function SettingsPage() {
             {activeTab === 'audit' && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="form-label mb-2">
                     Retention Period (months)
                   </label>
                   <input
@@ -548,9 +556,9 @@ export default function SettingsPage() {
                         auditLog: { retentionMonths: parseInt(e.target.value) },
                       })
                     }
-                    className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="form-input w-32"
                   />
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-[var(--text-muted)] mt-1">
                     Set to 0 to keep audit logs forever. Otherwise, logs older than this period will be automatically purged.
                   </p>
                 </div>
@@ -561,14 +569,14 @@ export default function SettingsPage() {
             {activeTab === 'ai' && (
               <div className="space-y-8">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Provider for OCR & Receipt Processing</h3>
-                  <p className="text-sm text-gray-600 mb-4">
+                  <h3 className="section-title mb-2">AI Provider for OCR & Receipt Processing</h3>
+                  <p className="text-sm text-[var(--text-secondary)] mb-4">
                     Configure the AI provider used for optical character recognition (OCR) to extract data from receipts and documents.
                   </p>
 
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="form-label mb-2">
                         AI Provider
                       </label>
                       <select
@@ -582,7 +590,7 @@ export default function SettingsPage() {
                             },
                           })
                         }
-                        className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                        className="form-input form-select w-64"
                       >
                         <option value="none">None (Disabled)</option>
                         <option value="anthropic">Anthropic (Claude)</option>
@@ -591,14 +599,14 @@ export default function SettingsPage() {
                     </div>
 
                     {settings.ai?.provider === 'anthropic' && (
-                      <div className="border-l-4 border-blue-500 pl-4 space-y-4">
-                        <h4 className="font-medium text-gray-900">Anthropic Configuration</h4>
+                      <div className="ml-4 border-l-2 border-[var(--accent-primary-muted)] pl-4 space-y-4">
+                        <h4 className="font-medium text-[var(--text-primary)]">Anthropic Configuration</h4>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="form-label mb-2">
                             API Key
                           </label>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 max-w-md">
                             <input
                               type={showApiKey ? 'text' : 'password'}
                               value={settings.ai.anthropic?.apiKey || ''}
@@ -615,23 +623,24 @@ export default function SettingsPage() {
                                 })
                               }
                               placeholder="sk-ant-..."
-                              className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                              className="form-input w-full"
                             />
                             <button
                               type="button"
                               onClick={() => setShowApiKey(!showApiKey)}
-                              className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900"
+                              className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                              title={showApiKey ? 'Hide API key' : 'Show API key'}
                             >
-                              {showApiKey ? 'Hide' : 'Show'}
+                              {showApiKey ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                             </button>
                           </div>
-                          <p className="text-sm text-gray-500 mt-1">
-                            Get your API key from <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">console.anthropic.com</a>
+                          <p className="text-sm text-[var(--text-muted)] mt-1">
+                            Get your API key from <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer" className="text-[var(--accent-primary)] hover:underline">console.anthropic.com</a>
                           </p>
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="form-label mb-2">
                             Model
                           </label>
                           <select
@@ -648,7 +657,7 @@ export default function SettingsPage() {
                                 },
                               })
                             }
-                            className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                            className="form-input form-select w-64"
                           >
                             <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (Recommended)</option>
                             <option value="claude-opus-4-20250514">Claude Opus 4 (Most Capable)</option>
@@ -660,14 +669,14 @@ export default function SettingsPage() {
                     )}
 
                     {settings.ai?.provider === 'openai' && (
-                      <div className="border-l-4 border-green-500 pl-4 space-y-4">
-                        <h4 className="font-medium text-gray-900">OpenAI Configuration</h4>
+                      <div className="ml-4 border-l-2 border-[var(--success-muted)] pl-4 space-y-4">
+                        <h4 className="font-medium text-[var(--text-primary)]">OpenAI Configuration</h4>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="form-label mb-2">
                             API Key
                           </label>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 max-w-md">
                             <input
                               type={showApiKey ? 'text' : 'password'}
                               value={settings.ai.openai?.apiKey || ''}
@@ -684,23 +693,24 @@ export default function SettingsPage() {
                                 })
                               }
                               placeholder="sk-..."
-                              className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                              className="form-input w-full"
                             />
                             <button
                               type="button"
                               onClick={() => setShowApiKey(!showApiKey)}
-                              className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900"
+                              className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                              title={showApiKey ? 'Hide API key' : 'Show API key'}
                             >
-                              {showApiKey ? 'Hide' : 'Show'}
+                              {showApiKey ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                             </button>
                           </div>
-                          <p className="text-sm text-gray-500 mt-1">
-                            Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">platform.openai.com</a>
+                          <p className="text-sm text-[var(--text-muted)] mt-1">
+                            Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-[var(--accent-primary)] hover:underline">platform.openai.com</a>
                           </p>
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="form-label mb-2">
                             Model
                           </label>
                           <select
@@ -717,7 +727,7 @@ export default function SettingsPage() {
                                 },
                               })
                             }
-                            className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                            className="form-input form-select w-64"
                           >
                             <option value="gpt-4o">GPT-4o (Recommended)</option>
                             <option value="gpt-4o-mini">GPT-4o Mini (Faster)</option>
@@ -735,14 +745,14 @@ export default function SettingsPage() {
             {activeTab === 'email' && (
               <div className="space-y-8">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Email Configuration</h3>
-                  <p className="text-sm text-gray-600 mb-4">
+                  <h3 className="section-title mb-2">Email Configuration</h3>
+                  <p className="text-sm text-[var(--text-secondary)] mb-4">
                     Configure email settings for sending notifications and receiving forwarded receipts via email.
                   </p>
 
                   <div className="space-y-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="form-label mb-2">
                         Email Provider
                       </label>
                       <select
@@ -756,7 +766,7 @@ export default function SettingsPage() {
                             },
                           })
                         }
-                        className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                        className="form-input form-select w-64"
                       >
                         <option value="none">None (Disabled)</option>
                         <option value="gmail">Gmail / Google Workspace</option>
@@ -766,16 +776,14 @@ export default function SettingsPage() {
                     </div>
 
                     {settings.email?.provider === 'gmail' && (
-                      <div className="border-l-4 border-red-500 pl-4 space-y-4">
-                        <h4 className="font-medium text-gray-900">Gmail / Google Workspace OAuth</h4>
-                        <p className="text-sm text-gray-600">
-                          Configure OAuth credentials from the <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Cloud Console</a>
+                      <div className="ml-4 border-l-2 border-[var(--error-muted)] pl-4 space-y-4">
+                        <h4 className="font-medium text-[var(--text-primary)]">Gmail / Google Workspace OAuth</h4>
+                        <p className="text-sm text-[var(--text-secondary)]">
+                          Configure OAuth credentials from the <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-[var(--accent-primary)] hover:underline">Google Cloud Console</a>
                         </p>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Client ID
-                          </label>
+                          <label className="form-label mb-2">Client ID</label>
                           <input
                             type="text"
                             value={settings.email.gmail?.clientId || ''}
@@ -792,14 +800,12 @@ export default function SettingsPage() {
                               })
                             }
                             placeholder="xxxxx.apps.googleusercontent.com"
-                            className="w-full max-w-lg px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                            className="form-input w-full max-w-lg"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Client Secret
-                          </label>
+                          <label className="form-label mb-2">Client Secret</label>
                           <input
                             type="password"
                             value={settings.email.gmail?.clientSecret || ''}
@@ -816,14 +822,12 @@ export default function SettingsPage() {
                               })
                             }
                             placeholder="GOCSPX-..."
-                            className="w-full max-w-lg px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                            className="form-input w-full max-w-lg"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Refresh Token
-                          </label>
+                          <label className="form-label mb-2">Refresh Token</label>
                           <input
                             type="password"
                             value={settings.email.gmail?.refreshToken || ''}
@@ -840,9 +844,9 @@ export default function SettingsPage() {
                               })
                             }
                             placeholder="1//..."
-                            className="w-full max-w-lg px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                            className="form-input w-full max-w-lg"
                           />
-                          <p className="text-sm text-gray-500 mt-1">
+                          <p className="text-sm text-[var(--text-muted)] mt-1">
                             Obtain by completing OAuth flow with Gmail API
                           </p>
                         </div>
@@ -850,16 +854,14 @@ export default function SettingsPage() {
                     )}
 
                     {settings.email?.provider === 'office365' && (
-                      <div className="border-l-4 border-blue-600 pl-4 space-y-4">
-                        <h4 className="font-medium text-gray-900">Microsoft 365 / Outlook OAuth</h4>
-                        <p className="text-sm text-gray-600">
-                          Configure OAuth credentials from the <a href="https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Azure Portal</a>
+                      <div className="ml-4 border-l-2 border-[var(--info-muted)] pl-4 space-y-4">
+                        <h4 className="font-medium text-[var(--text-primary)]">Microsoft 365 / Outlook OAuth</h4>
+                        <p className="text-sm text-[var(--text-secondary)]">
+                          Configure OAuth credentials from the <a href="https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noopener noreferrer" className="text-[var(--accent-primary)] hover:underline">Azure Portal</a>
                         </p>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Client ID (Application ID)
-                          </label>
+                          <label className="form-label mb-2">Client ID (Application ID)</label>
                           <input
                             type="text"
                             value={settings.email.office365?.clientId || ''}
@@ -876,14 +878,12 @@ export default function SettingsPage() {
                               })
                             }
                             placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                            className="w-full max-w-lg px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                            className="form-input w-full max-w-lg"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Tenant ID
-                          </label>
+                          <label className="form-label mb-2">Tenant ID</label>
                           <input
                             type="text"
                             value={settings.email.office365?.tenantId || ''}
@@ -900,14 +900,12 @@ export default function SettingsPage() {
                               })
                             }
                             placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                            className="w-full max-w-lg px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                            className="form-input w-full max-w-lg"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Client Secret
-                          </label>
+                          <label className="form-label mb-2">Client Secret</label>
                           <input
                             type="password"
                             value={settings.email.office365?.clientSecret || ''}
@@ -924,14 +922,12 @@ export default function SettingsPage() {
                               })
                             }
                             placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                            className="w-full max-w-lg px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                            className="form-input w-full max-w-lg"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Refresh Token
-                          </label>
+                          <label className="form-label mb-2">Refresh Token</label>
                           <input
                             type="password"
                             value={settings.email.office365?.refreshToken || ''}
@@ -948,9 +944,9 @@ export default function SettingsPage() {
                               })
                             }
                             placeholder="0.xxxxx..."
-                            className="w-full max-w-lg px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                            className="form-input w-full max-w-lg"
                           />
-                          <p className="text-sm text-gray-500 mt-1">
+                          <p className="text-sm text-[var(--text-muted)] mt-1">
                             Obtain by completing OAuth flow with Microsoft Graph API
                           </p>
                         </div>
@@ -958,14 +954,12 @@ export default function SettingsPage() {
                     )}
 
                     {settings.email?.provider === 'smtp' && (
-                      <div className="border-l-4 border-gray-500 pl-4 space-y-4">
-                        <h4 className="font-medium text-gray-900">Custom SMTP Configuration</h4>
+                      <div className="ml-4 border-l-2 border-[var(--border-strong)] pl-4 space-y-4">
+                        <h4 className="font-medium text-[var(--text-primary)]">Custom SMTP Configuration</h4>
 
-                        <div className="grid grid-cols-2 gap-4 max-w-lg">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              SMTP Host
-                            </label>
+                            <label className="form-label mb-2">SMTP Host</label>
                             <input
                               type="text"
                               value={settings.email.smtp?.host || ''}
@@ -982,14 +976,12 @@ export default function SettingsPage() {
                                 })
                               }
                               placeholder="smtp.example.com"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                              className="form-input w-full"
                             />
                           </div>
 
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Port
-                            </label>
+                            <label className="form-label mb-2">Port</label>
                             <input
                               type="number"
                               value={settings.email.smtp?.port || 587}
@@ -1005,7 +997,7 @@ export default function SettingsPage() {
                                   },
                                 })
                               }
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                              className="form-input w-full"
                             />
                           </div>
                         </div>
@@ -1028,13 +1020,11 @@ export default function SettingsPage() {
                             }
                             className="mr-2"
                           />
-                          <span className="text-sm text-gray-700">Use SSL/TLS (recommended for port 465)</span>
+                          <span className="text-sm text-[var(--text-secondary)]">Use SSL/TLS (recommended for port 465)</span>
                         </label>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Username
-                          </label>
+                          <label className="form-label mb-2">Username</label>
                           <input
                             type="text"
                             value={settings.email.smtp?.username || ''}
@@ -1051,14 +1041,12 @@ export default function SettingsPage() {
                               })
                             }
                             placeholder="user@example.com"
-                            className="w-full max-w-lg px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                            className="form-input w-full max-w-lg"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Password
-                          </label>
+                          <label className="form-label mb-2">Password</label>
                           <input
                             type="password"
                             value={settings.email.smtp?.password || ''}
@@ -1074,14 +1062,12 @@ export default function SettingsPage() {
                                 },
                               })
                             }
-                            className="w-full max-w-lg px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                            className="form-input w-full max-w-lg"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            From Address
-                          </label>
+                          <label className="form-label mb-2">From Address</label>
                           <input
                             type="email"
                             value={settings.email.smtp?.fromAddress || ''}
@@ -1098,7 +1084,7 @@ export default function SettingsPage() {
                               })
                             }
                             placeholder="noreply@example.com"
-                            className="w-full max-w-lg px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                            className="form-input w-full max-w-lg"
                           />
                         </div>
                       </div>
@@ -1106,9 +1092,9 @@ export default function SettingsPage() {
 
                     {/* Receipt Forwarding Section */}
                     {settings.email?.provider && settings.email.provider !== 'none' && (
-                      <div className="border-t pt-6 mt-6">
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Receipt Email Forwarding</h4>
-                        <p className="text-sm text-gray-600 mb-4">
+                      <div className="border-t border-[var(--border-default)] pt-6 mt-6">
+                        <h4 className="section-title mb-2">Receipt Email Forwarding</h4>
+                        <p className="text-sm text-[var(--text-secondary)] mb-4">
                           Forward receipts to a dedicated email address to automatically import them into the system.
                         </p>
 
@@ -1131,12 +1117,12 @@ export default function SettingsPage() {
                               }
                               className="mr-2"
                             />
-                            <span className="text-sm font-medium text-gray-700">Enable Receipt Email Forwarding</span>
+                            <span className="text-sm font-medium text-[var(--text-secondary)]">Enable Receipt Email Forwarding</span>
                           </label>
 
                           {settings.email.receiptForwarding?.enabled && (
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <div className="ml-6 border-l-2 border-[var(--border-default)] pl-4">
+                              <label className="form-label mb-2">
                                 Forwarding Email Address
                               </label>
                               <input
@@ -1155,9 +1141,9 @@ export default function SettingsPage() {
                                   })
                                 }
                                 placeholder="receipts@yourcompany.com"
-                                className="w-full max-w-lg px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                                className="form-input w-full max-w-lg"
                               />
-                              <p className="text-sm text-gray-500 mt-1">
+                              <p className="text-sm text-[var(--text-muted)] mt-1">
                                 Forward digital receipts to this address to automatically create expense entries
                               </p>
                             </div>
@@ -1168,7 +1154,7 @@ export default function SettingsPage() {
 
                     {/* Test Email Button */}
                     {settings.email?.provider && settings.email.provider !== 'none' && (
-                      <div className="border-t pt-6">
+                      <div className="border-t border-[var(--border-default)] pt-6">
                         <button
                           type="button"
                           onClick={async () => {
@@ -1181,22 +1167,22 @@ export default function SettingsPage() {
                               });
                               const data = await res.json();
                               if (res.ok) {
-                                alert('Test email sent successfully!');
+                                setFeedback({ type: 'success', message: 'Test email sent successfully!' });
                               } else {
-                                alert(`Failed to send test email: ${data.error}`);
+                                setFeedback({ type: 'error', message: `Failed to send test email: ${data.error}` });
                               }
                             } catch (error) {
-                              alert('Failed to send test email');
+                              setFeedback({ type: 'error', message: 'Failed to send test email.' });
                             } finally {
                               setTestingEmail(false);
                             }
                           }}
                           disabled={testingEmail}
-                          className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
+                          className="btn btn-secondary"
                         >
                           {testingEmail ? 'Sending...' : 'Send Test Email'}
                         </button>
-                        <p className="text-sm text-gray-500 mt-2">
+                        <p className="text-sm text-[var(--text-muted)] mt-2">
                           Save your settings first, then click to send a test email to verify the configuration.
                         </p>
                       </div>

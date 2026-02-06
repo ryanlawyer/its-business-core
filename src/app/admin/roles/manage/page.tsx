@@ -223,92 +223,162 @@ export default function ManageRolesPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen">
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="text-center text-gray-600">Loading...</div>
+          <div className="text-center text-[var(--text-secondary)]">Loading...</div>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Role Management</h1>
-            <p className="text-gray-600">Create and manage user roles with custom permissions</p>
+            <h1 className="page-title mb-2">Role Management</h1>
+            <p className="text-[var(--text-secondary)]">Create and manage user roles with custom permissions</p>
           </div>
           <button
             onClick={() => openModal()}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+            className="btn btn-primary"
           >
             + Create Role
           </button>
         </div>
 
         {/* Roles List */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <table className="min-w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Name</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Code</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Description</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Users</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Type</th>
-                <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {roles.map((role) => (
-                <tr key={role.id} className="border-t hover:bg-gray-50">
-                  <td className="py-3 px-4 text-sm font-medium text-gray-900">{role.name}</td>
-                  <td className="py-3 px-4 text-sm text-gray-600">
-                    <code className="bg-gray-100 px-2 py-1 rounded text-xs">{role.code}</code>
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-600">{role.description || '-'}</td>
-                  <td className="py-3 px-4 text-sm text-gray-600">{role._count?.users || 0}</td>
-                  <td className="py-3 px-4 text-sm">
+        <div className="card overflow-hidden">
+          {/* Mobile Card View */}
+          <div className="lg:hidden space-y-4 p-4">
+            {roles.map((role) => {
+              // Build a summary of enabled permissions
+              const permSummary = permissionSections
+                .map((section) => {
+                  const enabledPerms = section.permissions.filter(
+                    (perm) => role.permissions?.[section.key]?.[perm.key]
+                  );
+                  if (enabledPerms.length === 0) return null;
+                  return `${section.name}: ${enabledPerms.map((p) => p.label).join(', ')}`;
+                })
+                .filter(Boolean);
+
+              return (
+                <div key={role.id} className="card">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-[var(--text-primary)]">{role.name}</h3>
+                      <code className="bg-[var(--bg-hover)] px-2 py-1 rounded text-xs">{role.code}</code>
+                    </div>
                     {role.isSystem ? (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
-                        System
-                      </span>
+                      <span className="badge badge-info">System</span>
                     ) : (
-                      <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs font-medium">
-                        Custom
-                      </span>
+                      <span className="badge badge-neutral">Custom</span>
                     )}
-                  </td>
-                  <td className="py-3 px-4 text-sm text-right space-x-2">
+                  </div>
+                  {role.description && (
+                    <p className="text-sm text-[var(--text-secondary)] mb-3">{role.description}</p>
+                  )}
+                  <div className="space-y-2 text-sm mb-4">
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">Users:</span>
+                      <span className="text-[var(--text-primary)]">{role._count?.users || 0}</span>
+                    </div>
+                    {permSummary.length > 0 && (
+                      <div>
+                        <span className="text-[var(--text-secondary)]">Permissions:</span>
+                        <div className="mt-1 space-y-1">
+                          {permSummary.map((summary, idx) => (
+                            <p key={idx} className="text-xs text-[var(--text-muted)]">{summary}</p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2 pt-3 border-t border-[var(--border-default)]">
                     <button
                       onClick={() => openModal(role)}
-                      className="text-blue-600 hover:text-blue-800"
+                      className="btn btn-secondary flex-1"
                     >
                       Edit
                     </button>
                     {!role.isSystem && (
                       <button
                         onClick={() => handleDelete(role)}
-                        className="text-red-600 hover:text-red-800"
+                        className="btn btn-danger flex-1"
                       >
                         Delete
                       </button>
                     )}
-                  </td>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden lg:block table-container">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th className="text-left py-3 px-4 text-sm font-semibold">Name</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold">Code</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold">Description</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold">Users</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold">Type</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {roles.map((role) => (
+                  <tr key={role.id}>
+                    <td className="py-3 px-4 text-sm font-medium">{role.name}</td>
+                    <td className="py-3 px-4 text-sm text-[var(--text-secondary)]">
+                      <code className="bg-[var(--bg-hover)] px-2 py-1 rounded text-xs">{role.code}</code>
+                    </td>
+                    <td className="py-3 px-4 text-sm text-[var(--text-secondary)]">{role.description || '-'}</td>
+                    <td className="py-3 px-4 text-sm text-[var(--text-secondary)]">{role._count?.users || 0}</td>
+                    <td className="py-3 px-4 text-sm">
+                      {role.isSystem ? (
+                        <span className="badge badge-info">
+                          System
+                        </span>
+                      ) : (
+                        <span className="badge badge-neutral">
+                          Custom
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-sm text-right space-x-2">
+                      <button
+                        onClick={() => openModal(role)}
+                        className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
+                      >
+                        Edit
+                      </button>
+                      {!role.isSystem && (
+                        <button
+                          onClick={() => handleDelete(role)}
+                          className="text-[var(--error)] hover:text-[var(--error)]"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Modal */}
         {showModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-              <div className="sticky top-0 bg-white border-b px-6 py-4">
-                <h2 className="text-2xl font-bold text-gray-900">
+            <div className="card w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-[var(--bg-card)] border-b border-[var(--border-default)] px-6 py-4">
+                <h2 className="text-2xl font-bold text-[var(--text-primary)]">
                   {editingRole ? 'Edit Role' : 'Create Role'}
                 </h2>
               </div>
@@ -317,7 +387,7 @@ export default function ManageRolesPage() {
                 {/* Basic Info */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="form-label">
                       Name *
                     </label>
                     <input
@@ -325,11 +395,11 @@ export default function ManageRolesPage() {
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      className="form-input w-full"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="form-label">
                       Code *
                     </label>
                     <input
@@ -338,37 +408,37 @@ export default function ManageRolesPage() {
                       onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
                       required
                       disabled={editingRole?.isSystem}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 disabled:bg-gray-100"
+                      className="form-input w-full disabled:opacity-50"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="form-label">
                     Description
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="form-input w-full"
                   />
                 </div>
 
                 {/* Permissions */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Permissions</h3>
+                  <h3 className="section-title mb-4">Permissions</h3>
 
                   {/* Warning for ADMIN role */}
                   {editingRole?.code === 'ADMIN' && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                    <div className="rounded-[var(--radius-lg)] border border-[var(--warning-muted)] bg-[var(--warning-subtle)] text-[var(--warning)] px-4 py-3 mb-4">
                       <div className="flex items-start gap-3">
-                        <svg className="w-5 h-5 text-yellow-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
                         <div>
-                          <h4 className="font-semibold text-yellow-900 mb-1">Administrator Role - Full Access Enforced</h4>
-                          <p className="text-sm text-yellow-800">
+                          <h4 className="font-semibold mb-1">Administrator Role - Full Access Enforced</h4>
+                          <p className="text-sm">
                             The Administrator role always has full system access. All permissions are automatically enabled and cannot be disabled for this role.
                           </p>
                         </div>
@@ -378,8 +448,8 @@ export default function ManageRolesPage() {
 
                   <div className="space-y-6">
                     {permissionSections.map((section) => (
-                      <div key={section.key} className="border rounded-lg p-4">
-                        <h4 className="font-semibold text-gray-900 mb-3">{section.name}</h4>
+                      <div key={section.key} className="border border-[var(--border-default)] rounded-lg p-4">
+                        <h4 className="font-semibold text-[var(--text-primary)] mb-3">{section.name}</h4>
                         <div className="grid grid-cols-2 gap-3">
                           {section.permissions.map((perm) => (
                             <label key={perm.key} className={`flex items-start gap-3 ${editingRole?.code === 'ADMIN' ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
@@ -391,8 +461,8 @@ export default function ManageRolesPage() {
                                 className="mt-1"
                               />
                               <div>
-                                <div className="font-medium text-sm text-gray-900">{perm.label}</div>
-                                <div className="text-xs text-gray-500">{perm.description}</div>
+                                <div className="font-medium text-sm text-[var(--text-primary)]">{perm.label}</div>
+                                <div className="text-xs text-[var(--text-muted)]">{perm.description}</div>
                               </div>
                             </label>
                           ))}
@@ -403,17 +473,17 @@ export default function ManageRolesPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex justify-end gap-3 pt-4 border-t">
+                <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border-default)]">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="btn btn-secondary"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-semibold transition-colors"
+                    className="btn btn-primary"
                   >
                     {editingRole ? 'Update Role' : 'Create Role'}
                   </button>

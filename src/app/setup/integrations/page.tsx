@@ -112,16 +112,16 @@ export default function SetupIntegrationsPage() {
 
   if (isLoading) {
     return (
-      <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
+      <div className="card-glass">
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--text-primary)]"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
+    <div className="card-glass">
       {/* Progress indicator */}
       <div className="flex items-center justify-center gap-2 mb-8">
         {[1, 2, 3, 4, 5].map((step) => (
@@ -129,49 +129,49 @@ export default function SetupIntegrationsPage() {
             key={step}
             className={`h-2 rounded-full transition-all ${
               step === 4
-                ? 'w-8 bg-blue-500'
+                ? 'w-8 bg-[var(--accent-primary)]'
                 : step < 4
-                ? 'w-2 bg-blue-400'
-                : 'w-2 bg-white/20'
+                ? 'w-2 bg-[var(--accent-primary-hover)]'
+                : 'w-2 bg-[var(--bg-surface)]'
             }`}
           />
         ))}
       </div>
 
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-white mb-2">
+        <h1 className="page-title">
           Optional Integrations
         </h1>
-        <p className="text-slate-300">
+        <p className="text-[var(--text-secondary)]">
           Configure AI and email integrations. All fields are optional and can be configured later.
         </p>
       </div>
 
       <div className="space-y-4">
         {/* AI Receipt Scanning Section */}
-        <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+        <div className="bg-[var(--bg-surface)] rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden">
           <button
             type="button"
             onClick={() => setAiExpanded(!aiExpanded)}
-            className="w-full px-4 py-4 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
+            className="w-full px-4 py-4 flex items-center justify-between text-left hover:bg-[var(--bg-hover)] transition-colors"
           >
             <div>
-              <h3 className="text-white font-medium">AI Receipt Scanning</h3>
-              <p className="text-sm text-slate-400">
+              <h3 className="text-[var(--text-primary)] font-medium">AI Receipt Scanning</h3>
+              <p className="text-sm text-[var(--text-muted)]">
                 Use Anthropic Claude for automatic receipt data extraction
               </p>
             </div>
             {aiExpanded ? (
-              <ChevronUpIcon className="h-5 w-5 text-slate-400 flex-shrink-0" />
+              <ChevronUpIcon className="h-5 w-5 text-[var(--text-muted)] flex-shrink-0" />
             ) : (
-              <ChevronDownIcon className="h-5 w-5 text-slate-400 flex-shrink-0" />
+              <ChevronDownIcon className="h-5 w-5 text-[var(--text-muted)] flex-shrink-0" />
             )}
           </button>
 
           {aiExpanded && (
-            <div className="px-4 pb-4 space-y-4 border-t border-white/10 pt-4">
+            <div className="px-4 pb-4 space-y-4 border-t border-[var(--border-default)] pt-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="form-label">
                   Anthropic API Key
                 </label>
                 <input
@@ -180,16 +180,16 @@ export default function SetupIntegrationsPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, anthropicApiKey: e.target.value })
                   }
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="form-input"
                   placeholder="sk-ant-..."
                 />
-                <p className="mt-1 text-xs text-slate-400">
+                <p className="form-hint">
                   Get your API key from{' '}
                   <a
                     href="https://console.anthropic.com/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-400 hover:text-blue-300 underline"
+                    className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] underline"
                   >
                     console.anthropic.com
                   </a>
@@ -201,20 +201,20 @@ export default function SetupIntegrationsPage() {
                   type="button"
                   onClick={handleTestAnthropic}
                   disabled={testingAi || !formData.anthropicApiKey}
-                  className="px-4 py-2 bg-white/10 hover:bg-white/15 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn btn-secondary btn-sm"
                 >
                   {testingAi ? 'Testing...' : 'Test Connection'}
                 </button>
 
                 {aiTestStatus === 'success' && (
-                  <div className="flex items-center gap-2 text-emerald-400 text-sm">
+                  <div className="flex items-center gap-2 text-[var(--success)] text-sm">
                     <CheckCircleIcon className="h-5 w-5" />
                     <span>{aiTestMessage}</span>
                   </div>
                 )}
 
                 {aiTestStatus === 'error' && (
-                  <div className="flex items-center gap-2 text-red-400 text-sm">
+                  <div className="flex items-center gap-2 text-[var(--error)] text-sm">
                     <XCircleIcon className="h-5 w-5" />
                     <span>{aiTestMessage}</span>
                   </div>
@@ -225,29 +225,29 @@ export default function SetupIntegrationsPage() {
         </div>
 
         {/* Email Notifications Section */}
-        <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+        <div className="bg-[var(--bg-surface)] rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden">
           <button
             type="button"
             onClick={() => setEmailExpanded(!emailExpanded)}
-            className="w-full px-4 py-4 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
+            className="w-full px-4 py-4 flex items-center justify-between text-left hover:bg-[var(--bg-hover)] transition-colors"
           >
             <div>
-              <h3 className="text-white font-medium">Email Notifications</h3>
-              <p className="text-sm text-slate-400">
+              <h3 className="text-[var(--text-primary)] font-medium">Email Notifications</h3>
+              <p className="text-sm text-[var(--text-muted)]">
                 Configure SMTP settings for sending email notifications
               </p>
             </div>
             {emailExpanded ? (
-              <ChevronUpIcon className="h-5 w-5 text-slate-400 flex-shrink-0" />
+              <ChevronUpIcon className="h-5 w-5 text-[var(--text-muted)] flex-shrink-0" />
             ) : (
-              <ChevronDownIcon className="h-5 w-5 text-slate-400 flex-shrink-0" />
+              <ChevronDownIcon className="h-5 w-5 text-[var(--text-muted)] flex-shrink-0" />
             )}
           </button>
 
           {emailExpanded && (
-            <div className="px-4 pb-4 space-y-4 border-t border-white/10 pt-4">
+            <div className="px-4 pb-4 space-y-4 border-t border-[var(--border-default)] pt-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="form-label">
                   Email Provider
                 </label>
                 <select
@@ -258,12 +258,12 @@ export default function SetupIntegrationsPage() {
                       emailProvider: e.target.value as 'none' | 'smtp',
                     })
                   }
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none cursor-pointer"
+                  className="form-input form-select"
                 >
-                  <option value="none" className="bg-slate-800">
+                  <option value="none" className="bg-[var(--bg-elevated)]">
                     None (Disabled)
                   </option>
-                  <option value="smtp" className="bg-slate-800">
+                  <option value="smtp" className="bg-[var(--bg-elevated)]">
                     SMTP
                   </option>
                 </select>
@@ -273,7 +273,7 @@ export default function SetupIntegrationsPage() {
                 <>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                      <label className="form-label">
                         SMTP Host
                       </label>
                       <input
@@ -282,12 +282,12 @@ export default function SetupIntegrationsPage() {
                         onChange={(e) =>
                           setFormData({ ...formData, smtpHost: e.target.value })
                         }
-                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="form-input"
                         placeholder="smtp.example.com"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                      <label className="form-label">
                         Port
                       </label>
                       <input
@@ -296,14 +296,14 @@ export default function SetupIntegrationsPage() {
                         onChange={(e) =>
                           setFormData({ ...formData, smtpPort: e.target.value })
                         }
-                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="form-input"
                         placeholder="587"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                    <label className="form-label">
                       Username
                     </label>
                     <input
@@ -312,13 +312,13 @@ export default function SetupIntegrationsPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, smtpUsername: e.target.value })
                       }
-                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="form-input"
                       placeholder="user@example.com"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                    <label className="form-label">
                       Password
                     </label>
                     <input
@@ -327,13 +327,13 @@ export default function SetupIntegrationsPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, smtpPassword: e.target.value })
                       }
-                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="form-input"
                       placeholder="Your SMTP password"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                    <label className="form-label">
                       From Address
                     </label>
                     <input
@@ -342,7 +342,7 @@ export default function SetupIntegrationsPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, smtpFromAddress: e.target.value })
                       }
-                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="form-input"
                       placeholder="noreply@example.com"
                     />
                   </div>
@@ -354,21 +354,21 @@ export default function SetupIntegrationsPage() {
       </div>
 
       {/* Info Note */}
-      <p className="text-center text-sm text-slate-400 mt-6">
+      <p className="text-center text-sm text-[var(--text-muted)] mt-6">
         All integrations can be configured or changed later in Settings.
       </p>
 
       <div className="flex gap-4 mt-8">
         <button
           onClick={() => router.push('/setup/organization')}
-          className="flex-1 py-3 px-4 bg-white/5 hover:bg-white/10 text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2"
+          className="btn btn-secondary flex-1 flex items-center justify-center gap-2"
         >
           <ArrowLeftIcon className="h-4 w-4" />
           Back
         </button>
         <button
           onClick={handleNext}
-          className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
+          className="btn btn-primary flex-1 flex items-center justify-center gap-2"
         >
           Next
           <ArrowRightIcon className="h-4 w-4" />

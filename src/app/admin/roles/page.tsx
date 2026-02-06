@@ -20,7 +20,7 @@ export default function RolesPage() {
       role: 'USER',
       name: 'User',
       description: 'Basic employee access for day-to-day operations',
-      color: 'bg-gray-100 text-gray-800 border-gray-300',
+      color: 'badge badge-neutral',
       permissions: [
         { name: 'Clock In/Out', allowed: true, description: 'Can clock in and out for time tracking' },
         { name: 'View Own Time Entries', allowed: true, description: 'Can view their own timeclock history' },
@@ -40,7 +40,7 @@ export default function RolesPage() {
       role: 'MANAGER',
       name: 'Manager',
       description: 'Department management with approval authority',
-      color: 'bg-blue-100 text-blue-800 border-blue-300',
+      color: 'badge badge-info',
       permissions: [
         { name: 'Clock In/Out', allowed: true, description: 'Can clock in and out for time tracking' },
         { name: 'View Own Time Entries', allowed: true, description: 'Can view their own timeclock history' },
@@ -60,7 +60,7 @@ export default function RolesPage() {
       role: 'ADMIN',
       name: 'Administrator',
       description: 'Full system access and configuration',
-      color: 'bg-purple-100 text-purple-800 border-purple-300',
+      color: 'badge badge-accent',
       permissions: [
         { name: 'Clock In/Out', allowed: true, description: 'Can clock in and out for time tracking' },
         { name: 'View Own Time Entries', allowed: true, description: 'Can view their own timeclock history' },
@@ -80,25 +80,25 @@ export default function RolesPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Role Permissions</h1>
-          <p className="text-gray-600">
+          <h1 className="page-title mb-2">Role Permissions</h1>
+          <p className="text-[var(--text-secondary)]">
             View and understand what each role can do in the system
           </p>
         </div>
 
         {/* Info Banner */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div className="rounded-[var(--radius-lg)] border border-[var(--info-muted)] bg-[var(--info-subtle)] text-[var(--info)] px-4 py-3 mb-6">
           <div className="flex items-start gap-3">
-            <svg className="w-6 h-6 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <h3 className="font-semibold text-blue-900 mb-1">About Roles</h3>
-              <p className="text-sm text-blue-800">
+              <h3 className="font-semibold mb-1">About Roles</h3>
+              <p className="text-sm">
                 The system uses three roles to control access to features. Assign users to the appropriate role in the User Management page based on their responsibilities.
               </p>
             </div>
@@ -108,7 +108,7 @@ export default function RolesPage() {
         {/* Roles Grid */}
         <div className="space-y-6">
           {roleDefinitions.map((roleDef) => (
-            <div key={roleDef.role} className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div key={roleDef.role} className="card overflow-hidden">
               {/* Role Header */}
               <div className={`border-l-4 p-6 ${roleDef.color} border`}>
                 <div className="flex items-center justify-between">
@@ -124,31 +124,31 @@ export default function RolesPage() {
 
               {/* Permissions List */}
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Permissions</h3>
+                <h3 className="section-title mb-4">Permissions</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {roleDef.permissions.map((perm, index) => (
                     <div
                       key={index}
                       className={`flex items-start gap-3 p-3 rounded-lg ${
-                        perm.allowed ? 'bg-green-50' : 'bg-gray-50'
+                        perm.allowed ? 'bg-[var(--success-subtle)]' : 'bg-[var(--bg-hover)]'
                       }`}
                     >
                       <div className="flex-shrink-0 mt-0.5">
                         {perm.allowed ? (
-                          <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-5 h-5 text-[var(--success)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
                         ) : (
-                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-5 h-5 text-[var(--text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                           </svg>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className={`font-medium text-sm ${perm.allowed ? 'text-green-900' : 'text-gray-500'}`}>
+                        <div className={`font-medium text-sm ${perm.allowed ? 'text-[var(--success)]' : 'text-[var(--text-muted)]'}`}>
                           {perm.name}
                         </div>
-                        <div className={`text-xs mt-0.5 ${perm.allowed ? 'text-green-700' : 'text-gray-500'}`}>
+                        <div className={`text-xs mt-0.5 ${perm.allowed ? 'text-[var(--success)]' : 'text-[var(--text-muted)]'}`}>
                           {perm.description}
                         </div>
                       </div>
@@ -161,26 +161,26 @@ export default function RolesPage() {
         </div>
 
         {/* Usage Guide */}
-        <div className="mt-8 bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Assigning Roles</h3>
-          <div className="space-y-3 text-sm text-gray-600">
+        <div className="mt-8 card p-6">
+          <h3 className="section-title mb-4">Assigning Roles</h3>
+          <div className="space-y-3 text-sm text-[var(--text-secondary)]">
             <div className="flex items-start gap-3">
-              <span className="font-semibold text-gray-900 min-w-[120px]">USER:</span>
+              <span className="font-semibold text-[var(--text-primary)] min-w-[120px]">USER:</span>
               <span>Assign to regular employees who need to track time and create purchase requests.</span>
             </div>
             <div className="flex items-start gap-3">
-              <span className="font-semibold text-gray-900 min-w-[120px]">MANAGER:</span>
+              <span className="font-semibold text-[var(--text-primary)] min-w-[120px]">MANAGER:</span>
               <span>Assign to department managers who need to approve purchases, manage budgets, and oversee their team.</span>
             </div>
             <div className="flex items-start gap-3">
-              <span className="font-semibold text-gray-900 min-w-[120px]">ADMIN:</span>
+              <span className="font-semibold text-[var(--text-primary)] min-w-[120px]">ADMIN:</span>
               <span>Assign to system administrators who need full access to configure the system and manage all data.</span>
             </div>
           </div>
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <p className="text-sm text-gray-600">
+          <div className="mt-4 pt-4 border-t border-[var(--border-default)]">
+            <p className="text-sm text-[var(--text-secondary)]">
               To change a user's role, go to{' '}
-              <a href="/users" className="text-blue-600 hover:text-blue-800 font-medium">
+              <a href="/users" className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] font-medium">
                 User Management
               </a>{' '}
               and edit their account.

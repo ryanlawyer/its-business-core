@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { permissions } from '@/lib/permissions';
+import { useDebounce } from '@/hooks/useDebounce';
 
 type Vendor = {
   id: string;
@@ -24,6 +25,7 @@ export default function VendorsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm);
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -49,7 +51,11 @@ export default function VendorsPage() {
 
   useEffect(() => {
     fetchVendors();
-  }, [currentPage]);
+  }, [currentPage, debouncedSearch]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch]);
 
   const fetchVendors = async () => {
     try {
@@ -60,7 +66,7 @@ export default function VendorsPage() {
         limit: '50',
       });
 
-      if (searchTerm) params.append('search', searchTerm);
+      if (debouncedSearch) params.append('search', debouncedSearch);
 
       const res = await fetch(`/api/vendors?${params}`);
       const data = await res.json();
@@ -170,15 +176,15 @@ export default function VendorsPage() {
 
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 sm:mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Vendor Management</h1>
+          <h1 className="page-title">Vendor Management</h1>
           {canManage && (
             <button
               onClick={() => openForm()}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 sm:px-6 py-3 sm:py-2 rounded-lg transition-colors font-medium"
+              className="btn btn-primary"
             >
               + Add Vendor
             </button>
@@ -187,7 +193,7 @@ export default function VendorsPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <div className="rounded-[var(--radius-lg)] border border-[var(--error-muted)] bg-[var(--error-subtle)] text-[var(--error)] px-4 py-3 mb-4">
             <p>{error}</p>
           </div>
         )}
@@ -201,17 +207,17 @@ export default function VendorsPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              className="flex-1 px-4 py-3 border rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="form-input flex-1"
             />
             <button
               onClick={handleSearch}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+              className="btn btn-primary"
             >
               Search
             </button>
           </div>
           {!loading && pagination.total > 0 && (
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-[var(--text-secondary)]">
               Showing {vendors.length} of {pagination.total} vendors
             </p>
           )}
@@ -219,54 +225,55 @@ export default function VendorsPage() {
 
         {/* Loading State */}
         {loading ? (
-          <div className="bg-white rounded-lg shadow-md p-8 text-center">
-            <p className="text-gray-500">Loading vendors...</p>
+          <div className="card text-center">
+            <p className="text-[var(--text-muted)]">Loading vendors...</p>
           </div>
         ) : vendors.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-8 text-center">
-            <p className="text-gray-500">No vendors found. Add one to get started!</p>
+          <div className="card empty-state">
+            <p className="empty-state-title">No vendors found.</p>
+            <p className="empty-state-description">Add one to get started!</p>
           </div>
         ) : (
           <>
             {/* Mobile Card View */}
             <div className="lg:hidden space-y-4">
               {vendors.map((vendor) => (
-                <div key={vendor.id} className="bg-white rounded-lg shadow-md p-4">
+                <div key={vendor.id} className="card">
                   <div className="flex justify-between items-start mb-3">
                     <div>
-                      <h3 className="text-lg font-bold text-gray-900">{vendor.name}</h3>
-                      <p className="text-sm text-gray-600">#{vendor.vendorNumber}</p>
+                      <h3 className="text-lg font-bold text-[var(--text-primary)]">{vendor.name}</h3>
+                      <p className="text-sm text-[var(--text-secondary)]">#{vendor.vendorNumber}</p>
                     </div>
                   </div>
 
                   <div className="space-y-2 text-sm mb-4">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Phone:</span>
-                      <span className="text-gray-900">{vendor.phone || '-'}</span>
+                      <span className="text-[var(--text-secondary)]">Phone:</span>
+                      <span className="text-[var(--text-primary)]">{vendor.phone || '-'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Email:</span>
-                      <span className="text-gray-900">{vendor.email || '-'}</span>
+                      <span className="text-[var(--text-secondary)]">Email:</span>
+                      <span className="text-[var(--text-primary)]">{vendor.email || '-'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Location:</span>
-                      <span className="text-gray-900">
+                      <span className="text-[var(--text-secondary)]">Location:</span>
+                      <span className="text-[var(--text-primary)]">
                         {vendor.city && vendor.state ? `${vendor.city}, ${vendor.state}` : '-'}
                       </span>
                     </div>
                   </div>
 
                   {canManage && (
-                    <div className="flex gap-2 border-t pt-3">
+                    <div className="flex gap-2 border-t border-[var(--border-default)] pt-3">
                       <button
                         onClick={() => openForm(vendor)}
-                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-medium transition-colors"
+                        className="btn btn-primary flex-1"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => deleteVendor(vendor.id)}
-                        className="flex-1 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-medium transition-colors"
+                        className="btn btn-danger flex-1"
                       >
                         Delete
                       </button>
@@ -277,53 +284,53 @@ export default function VendorsPage() {
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden lg:block bg-white rounded-lg shadow-md overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-gray-50">
+            <div className="hidden lg:block table-container">
+              <table className="table">
+                <thead>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                       Vendor #
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                       Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                       Phone
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                       Email
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                       City, State
                     </th>
                     {canManage && (
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                         Actions
                       </th>
                     )}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-[var(--border-subtle)]">
                   {vendors.map((vendor) => (
-                    <tr key={vendor.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm text-gray-900">{vendor.vendorNumber}</td>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{vendor.name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900">{vendor.phone || '-'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900">{vendor.email || '-'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
+                    <tr key={vendor.id}>
+                      <td className="px-6 py-4 text-sm">{vendor.vendorNumber}</td>
+                      <td className="px-6 py-4 text-sm font-medium">{vendor.name}</td>
+                      <td className="px-6 py-4 text-sm">{vendor.phone || '-'}</td>
+                      <td className="px-6 py-4 text-sm">{vendor.email || '-'}</td>
+                      <td className="px-6 py-4 text-sm">
                         {vendor.city && vendor.state ? `${vendor.city}, ${vendor.state}` : '-'}
                       </td>
                       {canManage && (
                         <td className="px-6 py-4 text-sm space-x-3">
                           <button
                             onClick={() => openForm(vendor)}
-                            className="text-blue-600 hover:text-blue-800 font-medium"
+                            className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] font-medium"
                           >
                             Edit
                           </button>
                           <button
                             onClick={() => deleteVendor(vendor.id)}
-                            className="text-red-600 hover:text-red-800 font-medium"
+                            className="text-[var(--error)] hover:text-[var(--error)] font-medium"
                           >
                             Delete
                           </button>
@@ -341,11 +348,11 @@ export default function VendorsPage() {
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  className="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous
                 </button>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-[var(--text-secondary)]">
                   Page {pagination.page} of {pagination.totalPages} ({pagination.total} total)
                 </span>
                 <button
@@ -353,7 +360,7 @@ export default function VendorsPage() {
                     setCurrentPage(Math.min(pagination.totalPages, currentPage + 1))
                   }
                   disabled={currentPage === pagination.totalPages}
-                  className="px-4 py-2 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  className="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>
@@ -366,15 +373,15 @@ export default function VendorsPage() {
       {/* Form Modal */}
       {isFormOpen && canManage && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+          <div className="card w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-6">
               {editingVendor ? 'Edit Vendor' : 'Add Vendor'}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="form-label">
                     Vendor Number *
                   </label>
                   <input
@@ -384,12 +391,12 @@ export default function VendorsPage() {
                       setFormData({ ...formData, vendorNumber: e.target.value })
                     }
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="form-input"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="form-label">
                     Name *
                   </label>
                   <input
@@ -399,12 +406,12 @@ export default function VendorsPage() {
                       setFormData({ ...formData, name: e.target.value })
                     }
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="form-input"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="form-label">
                     Phone
                   </label>
                   <input
@@ -413,12 +420,12 @@ export default function VendorsPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, phone: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="form-input"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="form-label">
                     Email
                   </label>
                   <input
@@ -427,13 +434,13 @@ export default function VendorsPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, email: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="form-input"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="form-label">
                   Address
                 </label>
                 <input
@@ -442,13 +449,13 @@ export default function VendorsPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, address: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  className="form-input"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="form-label">
                     City
                   </label>
                   <input
@@ -457,12 +464,12 @@ export default function VendorsPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, city: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-500 text-gray-900"
+                    className="form-input"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="form-label">
                     State
                   </label>
                   <input
@@ -471,12 +478,12 @@ export default function VendorsPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, state: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="form-input"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="form-label">
                     Zip Code
                   </label>
                   <input
@@ -485,22 +492,22 @@ export default function VendorsPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, zipCode: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="form-input"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-3 mt-6 pt-4 border-t">
+              <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-[var(--border-default)]">
                 <button
                   type="button"
                   onClick={closeForm}
-                  className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                  className="btn btn-secondary"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors font-medium"
+                  className="btn btn-primary"
                 >
                   {editingVendor ? 'Update Vendor' : 'Add Vendor'}
                 </button>

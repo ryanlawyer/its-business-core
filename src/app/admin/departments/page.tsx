@@ -151,108 +151,164 @@ export default function DepartmentsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen">
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="text-center text-gray-600">Loading...</div>
+          <div className="text-center text-[var(--text-secondary)]">Loading...</div>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Department Management</h1>
-            <p className="text-gray-600">Manage organizational departments</p>
+            <h1 className="page-title mb-2">Department Management</h1>
+            <p className="text-[var(--text-secondary)]">Manage organizational departments</p>
           </div>
           <button
             onClick={() => openModal()}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+            className="btn btn-primary"
           >
             + Add Department
           </button>
         </div>
 
         {/* Departments List */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="card overflow-hidden">
           {departments.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              No departments found. Create your first department to get started.
+            <div className="empty-state">
+              <p className="empty-state-title">No departments found</p>
+              <p className="empty-state-description">Create your first department to get started.</p>
             </div>
           ) : (
-            <table className="min-w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Name</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Description</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Users</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Budget Items</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {departments.map((dept) => (
-                  <tr key={dept.id} className="border-t hover:bg-gray-50">
-                    <td className="py-3 px-4 text-sm font-medium text-gray-900">{dept.name}</td>
-                    <td className="py-3 px-4 text-sm text-gray-600">{dept.description || '-'}</td>
-                    <td className="py-3 px-4 text-sm text-gray-900">{dept._count?.users || 0}</td>
-                    <td className="py-3 px-4 text-sm text-gray-900">{dept._count?.budgetItems || 0}</td>
-                    <td className="py-3 px-4 text-sm">
-                      {dept.isActive ? (
-                        <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
-                          Active
-                        </span>
-                      ) : (
-                        <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs font-medium">
-                          Inactive
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-right space-x-2">
-                      <button
-                        onClick={() => openModal(dept)}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleToggleActive(dept)}
-                        className="text-yellow-600 hover:text-yellow-800"
-                      >
-                        {dept.isActive ? 'Deactivate' : 'Activate'}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(dept)}
-                        className="text-red-600 hover:text-red-800"
-                        disabled={dept._count && (dept._count.users > 0 || dept._count.budgetItems > 0)}
-                      >
-                        Delete
-                      </button>
-                    </td>
+            <>
+            {/* Mobile Card View */}
+            <div className="lg:hidden space-y-4 p-4">
+              {departments.map((dept) => (
+                <div key={dept.id} className="card">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-[var(--text-primary)]">{dept.name}</h3>
+                      <p className="text-sm text-[var(--text-secondary)]">{dept.description || 'No description'}</p>
+                    </div>
+                    {dept.isActive ? (
+                      <span className="badge badge-success">Active</span>
+                    ) : (
+                      <span className="badge badge-neutral">Inactive</span>
+                    )}
+                  </div>
+                  <div className="space-y-2 text-sm mb-4">
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">Users:</span>
+                      <span className="text-[var(--text-primary)]">{dept._count?.users || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">Budget Items:</span>
+                      <span className="text-[var(--text-primary)]">{dept._count?.budgetItems || 0}</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-3 border-t border-[var(--border-default)]">
+                    <button
+                      onClick={() => openModal(dept)}
+                      className="btn btn-secondary flex-1"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleToggleActive(dept)}
+                      className="btn btn-warning flex-1"
+                    >
+                      {dept.isActive ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(dept)}
+                      className="btn btn-danger flex-1"
+                      disabled={dept._count && (dept._count.users > 0 || dept._count.budgetItems > 0)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden lg:block table-container">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th className="text-left py-3 px-4 text-sm font-semibold">Name</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold">Description</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold">Users</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold">Budget Items</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold">Status</th>
+                    <th className="text-right py-3 px-4 text-sm font-semibold">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {departments.map((dept) => (
+                    <tr key={dept.id}>
+                      <td className="py-3 px-4 text-sm font-medium">{dept.name}</td>
+                      <td className="py-3 px-4 text-sm text-[var(--text-secondary)]">{dept.description || '-'}</td>
+                      <td className="py-3 px-4 text-sm">{dept._count?.users || 0}</td>
+                      <td className="py-3 px-4 text-sm">{dept._count?.budgetItems || 0}</td>
+                      <td className="py-3 px-4 text-sm">
+                        {dept.isActive ? (
+                          <span className="badge badge-success">
+                            Active
+                          </span>
+                        ) : (
+                          <span className="badge badge-neutral">
+                            Inactive
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-right space-x-2">
+                        <button
+                          onClick={() => openModal(dept)}
+                          className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleToggleActive(dept)}
+                          className="text-[var(--warning)] hover:text-[var(--warning)]"
+                        >
+                          {dept.isActive ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(dept)}
+                          className="text-[var(--error)] hover:text-[var(--error)]"
+                          disabled={dept._count && (dept._count.users > 0 || dept._count.budgetItems > 0)}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            </>
           )}
         </div>
 
         {/* Modal */}
         {showModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg w-full max-w-md">
-              <div className="border-b px-6 py-4">
-                <h2 className="text-2xl font-bold text-gray-900">
+            <div className="card w-full max-w-md">
+              <div className="border-b border-[var(--border-default)] px-6 py-4">
+                <h2 className="text-2xl font-bold text-[var(--text-primary)]">
                   {editingDepartment ? 'Edit Department' : 'Add Department'}
                 </h2>
               </div>
 
               <form onSubmit={handleSubmit} className="p-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="form-label">
                     Name *
                   </label>
                   <input
@@ -260,19 +316,19 @@ export default function DepartmentsPage() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="form-input w-full"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="form-label">
                     Description
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="form-input w-full"
                   />
                 </div>
 
@@ -280,13 +336,13 @@ export default function DepartmentsPage() {
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="btn btn-secondary"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-semibold transition-colors"
+                    className="btn btn-primary"
                   >
                     {editingDepartment ? 'Update' : 'Create'}
                   </button>

@@ -435,7 +435,7 @@ export default function Navbar() {
 
             <button
               onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-              className="btn btn-secondary btn-sm"
+              className="btn btn-secondary btn-sm hidden lg:flex"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
@@ -467,7 +467,7 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="nav-mobile animate-fade-in-down lg:hidden">
+        <div className="nav-mobile animate-fade-in-down lg:hidden pb-20">
           <div className="nav-mobile-section">
             <div className="nav-mobile-section-title">Timeclock</div>
             <Link
@@ -701,6 +701,97 @@ export default function Navbar() {
               )}
             </div>
           )}
+
+          <div className="nav-mobile-section">
+            <button
+              onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+              className="nav-mobile-link text-[var(--error)] w-full text-left"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              Sign Out
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Bottom Nav */}
+      {user && (
+        <div className="bottom-nav lg:hidden">
+          <Link
+            href="/"
+            onClick={() => setMobileMenuOpen(false)}
+            className={`bottom-nav-item ${isActive('/') ? 'bottom-nav-item-active' : ''}`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <span>Clock</span>
+          </Link>
+          <Link
+            href="/purchase-orders"
+            onClick={() => setMobileMenuOpen(false)}
+            className={`bottom-nav-item ${isActive('/purchase-orders') || pathname.startsWith('/purchase-orders') ? 'bottom-nav-item-active' : ''}`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+              <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <path d="M16 10a4 4 0 01-8 0" />
+            </svg>
+            <span>POs</span>
+          </Link>
+          <Link
+            href="/receipts"
+            onClick={() => setMobileMenuOpen(false)}
+            className={`bottom-nav-item ${isActive('/receipts') || pathname.startsWith('/receipts') ? 'bottom-nav-item-active' : ''}`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+              <path d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z" />
+            </svg>
+            <span>Receipts</span>
+          </Link>
+          {canApproveEntries ? (
+            <Link
+              href="/timeclock/approvals"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`bottom-nav-item ${isActive('/timeclock/approvals') ? 'bottom-nav-item-active' : ''}`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {pendingCount > 0 && <span className="bottom-nav-badge" />}
+              <span>Approvals</span>
+            </Link>
+          ) : (
+            <Link
+              href="/budget-items"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`bottom-nav-item ${isActive('/budget-items') ? 'bottom-nav-item-active' : ''}`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                <line x1="12" y1="1" x2="12" y2="23" />
+                <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+              </svg>
+              <span>Budget</span>
+            </Link>
+          )}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className={`bottom-nav-item ${mobileMenuOpen ? 'bottom-nav-item-active' : ''}`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+              {mobileMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+            <span>Menu</span>
+          </button>
         </div>
       )}
     </>

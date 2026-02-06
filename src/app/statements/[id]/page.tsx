@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useState, useEffect, useCallback, use } from 'react';
 import Link from 'next/link';
+import { useDebounce } from '@/hooks/useDebounce';
 
 type MatchedReceipt = {
   id: string;
@@ -79,6 +80,7 @@ export default function StatementDetailPage({ params }: { params: Promise<{ id: 
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm);
   const [matchModal, setMatchModal] = useState<MatchModalData | null>(null);
   const [matchLoading, setMatchLoading] = useState(false);
   const [availableReceipts, setAvailableReceipts] = useState<MatchedReceipt[]>([]);
@@ -283,7 +285,7 @@ export default function StatementDetailPage({ params }: { params: Promise<{ id: 
       if (typeFilter && t.type !== typeFilter) return false;
 
       // Search filter
-      if (searchTerm && !t.description.toLowerCase().includes(searchTerm.toLowerCase())) {
+      if (debouncedSearch && !t.description.toLowerCase().includes(debouncedSearch.toLowerCase())) {
         return false;
       }
 
@@ -292,24 +294,24 @@ export default function StatementDetailPage({ params }: { params: Promise<{ id: 
   };
 
   const getMatchStatus = (t: Transaction) => {
-    if (t.matchedReceiptId) return { label: 'Matched (Receipt)', color: 'bg-green-100 text-green-800' };
-    if (t.matchedPurchaseOrderId) return { label: 'Matched (PO)', color: 'bg-green-100 text-green-800' };
-    if (t.noReceiptRequired) return { label: 'No Receipt', color: 'bg-gray-100 text-gray-800' };
-    return { label: 'Unmatched', color: 'bg-yellow-100 text-yellow-800' };
+    if (t.matchedReceiptId) return { label: 'Matched (Receipt)', color: 'badge badge-success' };
+    if (t.matchedPurchaseOrderId) return { label: 'Matched (PO)', color: 'badge badge-success' };
+    if (t.noReceiptRequired) return { label: 'No Receipt', color: 'badge badge-neutral' };
+    return { label: 'Unmatched', color: 'badge badge-warning' };
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-[var(--text-secondary)]">Loading...</div>
       </div>
     );
   }
 
   if (!statement) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-red-600">Statement not found</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-[var(--error)]">Statement not found</div>
       </div>
     );
   }
@@ -320,17 +322,17 @@ export default function StatementDetailPage({ params }: { params: Promise<{ id: 
     : 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <Link href="/statements" className="text-blue-600 hover:text-blue-800 text-sm mb-2 inline-block">
+          <Link href="/statements" className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] text-sm mb-2 inline-block">
             &larr; Back to Statements
           </Link>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{statement.filename}</h1>
-              <p className="text-gray-600 mt-1">
+              <h1 className="page-title">{statement.filename}</h1>
+              <p className="text-[var(--text-secondary)] mt-1">
                 {statement.accountName && <span className="mr-4">{statement.accountName}</span>}
                 {formatDate(statement.startDate)} - {formatDate(statement.endDate)}
               </p>
@@ -338,7 +340,7 @@ export default function StatementDetailPage({ params }: { params: Promise<{ id: 
             <button
               onClick={handleAutoMatch}
               disabled={autoMatching}
-              className="inline-flex items-center gap-2 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              className="btn btn-primary inline-flex items-center gap-2 disabled:opacity-50"
             >
               {autoMatching ? (
                 <>
@@ -363,49 +365,49 @@ export default function StatementDetailPage({ params }: { params: Promise<{ id: 
         {/* Summary Cards */}
         {summary && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <div className="text-2xl font-bold text-gray-900">{summary.totalTransactions}</div>
-              <div className="text-sm text-gray-500">Total Transactions</div>
+            <div className="stat-card">
+              <div className="stat-value">{summary.totalTransactions}</div>
+              <div className="stat-label">Total Transactions</div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <div className="text-2xl font-bold text-green-600">{summary.matchedToReceipt + summary.matchedToPO}</div>
-              <div className="text-sm text-gray-500">Matched</div>
+            <div className="stat-card">
+              <div className="stat-value text-[var(--success)]">{summary.matchedToReceipt + summary.matchedToPO}</div>
+              <div className="stat-label">Matched</div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <div className="text-2xl font-bold text-yellow-600">{summary.unmatched}</div>
-              <div className="text-sm text-gray-500">Unmatched</div>
+            <div className="stat-card">
+              <div className="stat-value text-[var(--warning)]">{summary.unmatched}</div>
+              <div className="stat-label">Unmatched</div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <div className="text-2xl font-bold text-blue-600">{reconciliationPercent}%</div>
-              <div className="text-sm text-gray-500">Reconciled</div>
+            <div className="stat-card">
+              <div className="stat-value text-[var(--info)]">{reconciliationPercent}%</div>
+              <div className="stat-label">Reconciled</div>
             </div>
           </div>
         )}
 
         {/* Reconciliation Progress */}
         {summary && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-8">
+          <div className="card p-4 mb-8">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">Reconciliation Progress</span>
-              <span className="text-sm text-gray-500">{reconciliationPercent}%</span>
+              <span className="text-sm font-medium text-[var(--text-secondary)]">Reconciliation Progress</span>
+              <span className="text-sm text-[var(--text-secondary)]">{reconciliationPercent}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div className="w-full bg-[var(--bg-surface)] rounded-full h-2.5">
               <div
-                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                className="bg-[var(--accent-primary)] h-2.5 rounded-full transition-all duration-300"
                 style={{ width: `${reconciliationPercent}%` }}
               />
             </div>
-            <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
+            <div className="mt-2 flex items-center gap-4 text-xs text-[var(--text-secondary)]">
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 bg-green-500 rounded-full" />
+                <span className="w-2 h-2 bg-[var(--success)] rounded-full" />
                 {summary.matchedToReceipt} receipts
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 bg-blue-500 rounded-full" />
+                <span className="w-2 h-2 bg-[var(--info)] rounded-full" />
                 {summary.matchedToPO} POs
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 bg-gray-400 rounded-full" />
+                <span className="w-2 h-2 bg-[var(--text-muted)] rounded-full" />
                 {summary.noReceiptRequired} no-receipt
               </span>
             </div>
@@ -417,7 +419,7 @@ export default function StatementDetailPage({ params }: { params: Promise<{ id: 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="form-input form-select"
           >
             <option value="">All Status</option>
             <option value="matched">Matched</option>
@@ -427,7 +429,7 @@ export default function StatementDetailPage({ params }: { params: Promise<{ id: 
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="form-input form-select"
           >
             <option value="">All Types</option>
             <option value="DEBIT">Debits</option>
@@ -438,48 +440,146 @@ export default function StatementDetailPage({ params }: { params: Promise<{ id: 
             placeholder="Search description..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="form-input"
           />
         </div>
 
-        {/* Transactions Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        {/* Mobile Card View */}
+        <div className="lg:hidden space-y-4">
+          {filteredTransactions.length === 0 ? (
+            <div className="p-8 text-center text-[var(--text-secondary)]">
+              No transactions match the current filters.
+            </div>
+          ) : (
+            filteredTransactions.map((transaction) => {
+              const matchStatus = getMatchStatus(transaction);
+              return (
+                <div key={transaction.id} className="card">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1 min-w-0 mr-3">
+                      <h3 className="text-sm font-bold text-[var(--text-primary)] truncate">{transaction.description}</h3>
+                      <p className="text-xs text-[var(--text-secondary)] mt-0.5">{formatDate(transaction.transactionDate)}</p>
+                    </div>
+                    <span className={`text-sm font-semibold whitespace-nowrap ${
+                      transaction.type === 'DEBIT' ? 'text-[var(--error)]' : 'text-[var(--success)]'
+                    }`}>
+                      {transaction.type === 'DEBIT' ? '-' : '+'}{formatCurrency(transaction.amount)}
+                    </span>
+                  </div>
+                  <div className="space-y-2 text-sm mb-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[var(--text-secondary)]">Type:</span>
+                      <span className={`font-medium ${
+                        transaction.type === 'DEBIT' ? 'text-[var(--error)]' : 'text-[var(--success)]'
+                      }`}>{transaction.type}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[var(--text-secondary)]">Status:</span>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${matchStatus.color}`}>
+                        {matchStatus.label}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[var(--text-secondary)]">Matched To:</span>
+                      <span className="text-[var(--text-primary)]">
+                        {transaction.matchedReceipt && (
+                          <Link
+                            href={`/receipts/${transaction.matchedReceipt.id}`}
+                            className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
+                          >
+                            {transaction.matchedReceipt.merchantName || 'Receipt'}
+                          </Link>
+                        )}
+                        {transaction.matchedPurchaseOrder && (
+                          <Link
+                            href={`/purchase-orders/${transaction.matchedPurchaseOrder.id}`}
+                            className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
+                          >
+                            PO #{transaction.matchedPurchaseOrder.poNumber}
+                          </Link>
+                        )}
+                        {!transaction.matchedReceipt && !transaction.matchedPurchaseOrder && '-'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--border-default)]">
+                    {!transaction.matchedReceiptId && !transaction.matchedPurchaseOrderId && !transaction.noReceiptRequired && (
+                      <>
+                        <button
+                          onClick={() => openMatchModal(transaction)}
+                          className="btn btn-primary btn-sm"
+                        >
+                          Match
+                        </button>
+                        <button
+                          onClick={() => handleMarkNoReceipt(transaction.id, true)}
+                          className="btn btn-ghost btn-sm"
+                        >
+                          No Receipt
+                        </button>
+                      </>
+                    )}
+                    {(transaction.matchedReceiptId || transaction.matchedPurchaseOrderId) && (
+                      <button
+                        onClick={() => handleUnmatch(transaction.id)}
+                        className="btn btn-danger btn-sm"
+                      >
+                        Unmatch
+                      </button>
+                    )}
+                    {transaction.noReceiptRequired && (
+                      <button
+                        onClick={() => handleMarkNoReceipt(transaction.id, false)}
+                        className="btn btn-secondary btn-sm"
+                      >
+                        Undo
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden lg:block table-container">
+          <table className="table">
+            <thead>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Description
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
                   Amount
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Matched To
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody>
               {filteredTransactions.map((transaction) => {
                 const matchStatus = getMatchStatus(transaction);
                 return (
-                  <tr key={transaction.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <tr key={transaction.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {formatDate(transaction.transactionDate)}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
+                    <td className="px-6 py-4 text-sm max-w-xs truncate">
                       {transaction.description}
                     </td>
                     <td className={`px-6 py-4 whitespace-nowrap text-sm text-right font-medium ${
-                      transaction.type === 'DEBIT' ? 'text-red-600' : 'text-green-600'
+                      transaction.type === 'DEBIT' ? 'text-[var(--error)]' : 'text-[var(--success)]'
                     }`}>
                       {transaction.type === 'DEBIT' ? '-' : '+'}{formatCurrency(transaction.amount)}
                     </td>
@@ -488,11 +588,11 @@ export default function StatementDetailPage({ params }: { params: Promise<{ id: 
                         {matchStatus.label}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-secondary)]">
                       {transaction.matchedReceipt && (
                         <Link
                           href={`/receipts/${transaction.matchedReceipt.id}`}
-                          className="text-blue-600 hover:text-blue-800"
+                          className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
                         >
                           {transaction.matchedReceipt.merchantName || 'Receipt'}
                         </Link>
@@ -500,7 +600,7 @@ export default function StatementDetailPage({ params }: { params: Promise<{ id: 
                       {transaction.matchedPurchaseOrder && (
                         <Link
                           href={`/purchase-orders/${transaction.matchedPurchaseOrder.id}`}
-                          className="text-blue-600 hover:text-blue-800"
+                          className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
                         >
                           PO #{transaction.matchedPurchaseOrder.poNumber}
                         </Link>
@@ -513,13 +613,13 @@ export default function StatementDetailPage({ params }: { params: Promise<{ id: 
                           <>
                             <button
                               onClick={() => openMatchModal(transaction)}
-                              className="text-blue-600 hover:text-blue-900"
+                              className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
                             >
                               Match
                             </button>
                             <button
                               onClick={() => handleMarkNoReceipt(transaction.id, true)}
-                              className="text-gray-600 hover:text-gray-900"
+                              className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                             >
                               No Receipt
                             </button>
@@ -528,7 +628,7 @@ export default function StatementDetailPage({ params }: { params: Promise<{ id: 
                         {(transaction.matchedReceiptId || transaction.matchedPurchaseOrderId) && (
                           <button
                             onClick={() => handleUnmatch(transaction.id)}
-                            className="text-red-600 hover:text-red-900"
+                            className="text-[var(--error)] hover:text-[var(--error)]"
                           >
                             Unmatch
                           </button>
@@ -536,7 +636,7 @@ export default function StatementDetailPage({ params }: { params: Promise<{ id: 
                         {transaction.noReceiptRequired && (
                           <button
                             onClick={() => handleMarkNoReceipt(transaction.id, false)}
-                            className="text-gray-600 hover:text-gray-900"
+                            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                           >
                             Undo
                           </button>
@@ -550,7 +650,7 @@ export default function StatementDetailPage({ params }: { params: Promise<{ id: 
           </table>
 
           {filteredTransactions.length === 0 && (
-            <div className="p-8 text-center text-gray-500">
+            <div className="p-8 text-center text-[var(--text-secondary)]">
               No transactions match the current filters.
             </div>
           )}
@@ -560,21 +660,21 @@ export default function StatementDetailPage({ params }: { params: Promise<{ id: 
         {matchModal && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:p-0">
-              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setMatchModal(null)} />
+              <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={() => setMatchModal(null)} />
 
-              <div className="relative inline-block bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-2xl sm:w-full">
-                <div className="bg-white px-4 pt-5 pb-4 sm:p-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">
+              <div className="relative inline-block card text-left overflow-hidden transform transition-all sm:my-8 sm:max-w-2xl sm:w-full">
+                <div className="px-4 pt-5 pb-4 sm:p-6">
+                  <h3 className="section-title mb-4">
                     Match Transaction
                   </h3>
 
                   {/* Transaction Info */}
-                  <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                    <div className="text-sm text-gray-500">Transaction</div>
-                    <div className="font-medium">{matchModal.transaction.description}</div>
-                    <div className="text-sm text-gray-500 mt-1">
+                  <div className="bg-[var(--bg-surface)] rounded-lg p-4 mb-4">
+                    <div className="text-sm text-[var(--text-secondary)]">Transaction</div>
+                    <div className="font-medium text-[var(--text-primary)]">{matchModal.transaction.description}</div>
+                    <div className="text-sm text-[var(--text-secondary)] mt-1">
                       {formatDate(matchModal.transaction.transactionDate)} &bull;{' '}
-                      <span className={matchModal.transaction.type === 'DEBIT' ? 'text-red-600' : 'text-green-600'}>
+                      <span className={matchModal.transaction.type === 'DEBIT' ? 'text-[var(--error)]' : 'text-[var(--success)]'}>
                         {formatCurrency(matchModal.transaction.amount)}
                       </span>
                     </div>
@@ -583,12 +683,12 @@ export default function StatementDetailPage({ params }: { params: Promise<{ id: 
                   {/* AI Suggestions */}
                   {matchModal.suggestions && matchModal.suggestions.length > 0 && (
                     <div className="mb-6">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">AI Suggestions</h4>
+                      <h4 className="text-sm font-medium text-[var(--text-secondary)] mb-2">AI Suggestions</h4>
                       <div className="space-y-2">
                         {matchModal.suggestions.slice(0, 5).map((suggestion, idx) => (
                           <div
                             key={idx}
-                            className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 cursor-pointer"
+                            className="border border-[var(--border-default)] rounded-lg p-3 hover:bg-[var(--bg-hover)] cursor-pointer"
                             onClick={() => {
                               if (suggestion.receiptId) {
                                 handleMatchReceipt(matchModal.transaction.id, suggestion.receiptId);
@@ -598,14 +698,14 @@ export default function StatementDetailPage({ params }: { params: Promise<{ id: 
                             }}
                           >
                             <div className="flex items-center justify-between">
-                              <div className="text-sm font-medium">
+                              <div className="text-sm font-medium text-[var(--text-primary)]">
                                 {suggestion.receiptId ? 'Receipt' : 'Purchase Order'}
                               </div>
-                              <div className="text-xs text-gray-500">
+                              <div className="text-xs text-[var(--text-secondary)]">
                                 Score: {suggestion.matchScore}
                               </div>
                             </div>
-                            <div className="text-xs text-gray-500 mt-1">
+                            <div className="text-xs text-[var(--text-secondary)] mt-1">
                               {suggestion.matchReasons.join(' \u2022 ')}
                             </div>
                           </div>
@@ -616,15 +716,15 @@ export default function StatementDetailPage({ params }: { params: Promise<{ id: 
 
                   {/* Manual Search */}
                   <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Or search receipts</h4>
+                    <h4 className="text-sm font-medium text-[var(--text-secondary)] mb-2">Or search receipts</h4>
                     <input
                       type="text"
                       placeholder="Search by merchant name..."
                       value={receiptSearchTerm}
                       onChange={(e) => setReceiptSearchTerm(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
+                      className="form-input mb-2"
                     />
-                    <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
+                    <div className="max-h-48 overflow-y-auto border border-[var(--border-default)] rounded-lg">
                       {availableReceipts
                         .filter((r) =>
                           receiptSearchTerm
@@ -635,26 +735,26 @@ export default function StatementDetailPage({ params }: { params: Promise<{ id: 
                         .map((receipt) => (
                           <div
                             key={receipt.id}
-                            className="p-2 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                            className="p-2 hover:bg-[var(--bg-hover)] cursor-pointer border-b border-[var(--border-subtle)] last:border-b-0"
                             onClick={() => handleMatchReceipt(matchModal.transaction.id, receipt.id)}
                           >
-                            <div className="text-sm font-medium">{receipt.merchantName || 'Unknown'}</div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-sm font-medium text-[var(--text-primary)]">{receipt.merchantName || 'Unknown'}</div>
+                            <div className="text-xs text-[var(--text-secondary)]">
                               {formatDate(receipt.receiptDate)} &bull; {formatCurrency(receipt.totalAmount || 0)}
                             </div>
                           </div>
                         ))}
                       {availableReceipts.length === 0 && (
-                        <div className="p-4 text-center text-gray-500 text-sm">No receipts available</div>
+                        <div className="p-4 text-center text-[var(--text-secondary)] text-sm">No receipts available</div>
                       )}
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-gray-50 px-4 py-3 sm:px-6 flex justify-end">
+                <div className="px-4 py-3 sm:px-6 flex justify-end border-t border-[var(--border-default)]">
                   <button
                     onClick={() => setMatchModal(null)}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                    className="btn btn-secondary"
                   >
                     Cancel
                   </button>

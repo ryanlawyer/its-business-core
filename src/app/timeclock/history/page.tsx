@@ -162,7 +162,7 @@ export default function TimeclockHistoryPage() {
       <header className="page-header animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <h1 className="page-title font-display">Time History</h1>
+            <h1 className="page-title">Time History</h1>
             <p className="page-subtitle">View and export your complete timeclock history</p>
           </div>
           <button
@@ -248,29 +248,29 @@ export default function TimeclockHistoryPage() {
       {/* Summary Stats */}
       {summary && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-          <div className="card text-center p-4">
-            <div className="text-2xl font-bold font-mono" style={{ color: 'var(--text-primary)' }}>
+          <div className="stat-card">
+            <div className="stat-value" style={{ color: 'var(--text-primary)' }}>
               {formatMinutes(summary.totalMinutes)}
             </div>
-            <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Total Time</div>
+            <div className="stat-label">Total Time</div>
           </div>
-          <div className="card text-center p-4">
-            <div className="text-2xl font-bold font-mono" style={{ color: 'var(--warning)' }}>
+          <div className="stat-card">
+            <div className="stat-value" style={{ color: 'var(--warning)' }}>
               {summary.statusCounts.pending}
             </div>
-            <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Pending</div>
+            <div className="stat-label">Pending</div>
           </div>
-          <div className="card text-center p-4">
-            <div className="text-2xl font-bold font-mono" style={{ color: 'var(--success)' }}>
+          <div className="stat-card">
+            <div className="stat-value" style={{ color: 'var(--success)' }}>
               {summary.statusCounts.approved}
             </div>
-            <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Approved</div>
+            <div className="stat-label">Approved</div>
           </div>
-          <div className="card text-center p-4">
-            <div className="text-2xl font-bold font-mono" style={{ color: 'var(--error)' }}>
+          <div className="stat-card">
+            <div className="stat-value" style={{ color: 'var(--error)' }}>
               {summary.statusCounts.rejected}
             </div>
-            <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Rejected</div>
+            <div className="stat-label">Rejected</div>
           </div>
         </div>
       )}
@@ -278,7 +278,7 @@ export default function TimeclockHistoryPage() {
       {/* Entries Table */}
       <div className="table-container animate-fade-in-up" style={{ animationDelay: '150ms' }}>
         <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: 'var(--border-subtle)' }}>
-          <h2 className="text-lg font-display font-medium" style={{ color: 'var(--text-primary)' }}>
+          <h2 className="section-title">
             Time Entries
           </h2>
           {pagination && (
@@ -314,52 +314,105 @@ export default function TimeclockHistoryPage() {
             </div>
           </div>
         ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Clock In</th>
-                <th>Clock Out</th>
-                <th>Duration</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((entry, index) => (
-                <tr
-                  key={entry.id}
-                  className="animate-fade-in"
-                  style={{
-                    animationDelay: `${200 + index * 30}ms`,
-                    background: entry.status === 'rejected' ? 'var(--error-bg, rgba(239, 68, 68, 0.1))' : undefined,
-                  }}
-                >
-                  <td className="font-mono">
+          <>
+          {/* Mobile Card View */}
+          <div className="lg:hidden space-y-4 p-4">
+            {entries.map((entry, index) => (
+              <div
+                key={entry.id}
+                className="card animate-fade-in"
+                style={{
+                  animationDelay: `${200 + index * 30}ms`,
+                  background: entry.status === 'rejected' ? 'var(--error-bg, rgba(239, 68, 68, 0.1))' : undefined,
+                }}
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <h3 className="text-lg font-bold text-[var(--text-primary)] font-mono">
                     {new Date(entry.clockIn).toLocaleDateString()}
-                  </td>
-                  <td className="font-mono">
-                    {new Date(entry.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </td>
-                  <td className="font-mono">
-                    {entry.clockOut
-                      ? new Date(entry.clockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                      : '—'}
-                  </td>
-                  <td className="font-mono font-medium">
-                    {entry.clockOut ? formatDuration(entry.duration) : '—'}
-                  </td>
-                  <td>
-                    {getStatusBadge(entry.status, entry.isLocked)}
-                    {entry.status === 'rejected' && entry.rejectedNote && (
-                      <div className="mt-1 text-xs" style={{ color: 'var(--error)' }}>
-                        <span className="font-medium">Note:</span> {entry.rejectedNote}
-                      </div>
-                    )}
-                  </td>
+                  </h3>
+                  {getStatusBadge(entry.status, entry.isLocked)}
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-[var(--text-secondary)]">Clock In:</span>
+                    <span className="text-[var(--text-primary)] font-mono">
+                      {new Date(entry.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[var(--text-secondary)]">Clock Out:</span>
+                    <span className="text-[var(--text-primary)] font-mono">
+                      {entry.clockOut
+                        ? new Date(entry.clockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        : '—'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[var(--text-secondary)]">Duration:</span>
+                    <span className="text-[var(--text-primary)] font-mono font-medium">
+                      {entry.clockOut ? formatDuration(entry.duration) : '—'}
+                    </span>
+                  </div>
+                </div>
+                {entry.status === 'rejected' && entry.rejectedNote && (
+                  <div className="mt-3 pt-3 border-t border-[var(--border-default)] text-xs" style={{ color: 'var(--error)' }}>
+                    <span className="font-medium">Note:</span> {entry.rejectedNote}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden lg:block">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Clock In</th>
+                  <th>Clock Out</th>
+                  <th>Duration</th>
+                  <th>Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {entries.map((entry, index) => (
+                  <tr
+                    key={entry.id}
+                    className="animate-fade-in"
+                    style={{
+                      animationDelay: `${200 + index * 30}ms`,
+                      background: entry.status === 'rejected' ? 'var(--error-bg, rgba(239, 68, 68, 0.1))' : undefined,
+                    }}
+                  >
+                    <td className="font-mono">
+                      {new Date(entry.clockIn).toLocaleDateString()}
+                    </td>
+                    <td className="font-mono">
+                      {new Date(entry.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td className="font-mono">
+                      {entry.clockOut
+                        ? new Date(entry.clockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        : '—'}
+                    </td>
+                    <td className="font-mono font-medium">
+                      {entry.clockOut ? formatDuration(entry.duration) : '—'}
+                    </td>
+                    <td>
+                      {getStatusBadge(entry.status, entry.isLocked)}
+                      {entry.status === 'rejected' && entry.rejectedNote && (
+                        <div className="mt-1 text-xs" style={{ color: 'var(--error)' }}>
+                          <span className="font-medium">Note:</span> {entry.rejectedNote}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          </>
         )}
 
         {/* Pagination */}

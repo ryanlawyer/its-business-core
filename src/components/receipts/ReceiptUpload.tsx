@@ -231,8 +231,8 @@ export default function ReceiptUpload({ onUploadComplete, autoProcess = true }: 
         onClick={() => fileInputRef.current?.click()}
         className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
           isDragging
-            ? 'border-blue-500 bg-blue-50'
-            : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+            ? 'border-[var(--accent-primary)] bg-[var(--accent-primary-subtle)]'
+            : 'border-[var(--border-default)] hover:border-[var(--accent-primary)] hover:bg-[var(--bg-hover)]'
         }`}
       >
         <input
@@ -245,7 +245,7 @@ export default function ReceiptUpload({ onUploadComplete, autoProcess = true }: 
         />
 
         <svg
-          className="mx-auto h-12 w-12 text-gray-400"
+          className="mx-auto h-12 w-12 text-[var(--text-muted)]"
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={1.5}
@@ -258,12 +258,12 @@ export default function ReceiptUpload({ onUploadComplete, autoProcess = true }: 
           />
         </svg>
 
-        <p className="mt-4 text-sm text-gray-600">
+        <p className="mt-4 text-sm text-[var(--text-secondary)]">
           {isDragging
             ? 'Drop the receipt here...'
             : 'Drag and drop a receipt, or click to select'}
         </p>
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-xs text-[var(--text-muted)]">
           JPG, PNG, WebP, GIF, or PDF up to 10MB
         </p>
       </div>
@@ -272,7 +272,7 @@ export default function ReceiptUpload({ onUploadComplete, autoProcess = true }: 
       <div className="flex justify-center">
         <button
           onClick={() => cameraInputRef.current?.click()}
-          className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="btn btn-secondary"
         >
           <svg
             className="w-5 h-5 mr-2"
@@ -307,14 +307,14 @@ export default function ReceiptUpload({ onUploadComplete, autoProcess = true }: 
       {/* Upload queue */}
       {uploads.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-gray-900">Uploads</h3>
+          <h3 className="text-sm font-medium text-[var(--text-primary)]">Uploads</h3>
           {uploads.map((upload, index) => (
             <div
               key={index}
-              className="flex items-center space-x-4 bg-white border border-gray-200 rounded-lg p-3"
+              className="flex items-center space-x-4 card p-3"
             >
               {/* Preview */}
-              <div className="flex-shrink-0 w-16 h-16 bg-gray-100 rounded-md overflow-hidden">
+              <div className="flex-shrink-0 w-16 h-16 bg-[var(--bg-surface)] rounded-md overflow-hidden">
                 {upload.preview ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -325,7 +325,7 @@ export default function ReceiptUpload({ onUploadComplete, autoProcess = true }: 
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <svg
-                      className="w-8 h-8 text-gray-400"
+                      className="w-8 h-8 text-[var(--text-muted)]"
                       fill="none"
                       viewBox="0 0 24 24"
                       strokeWidth={1.5}
@@ -343,17 +343,17 @@ export default function ReceiptUpload({ onUploadComplete, autoProcess = true }: 
 
               {/* File info and status */}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
+                <p className="text-sm font-medium text-[var(--text-primary)] truncate">
                   {upload.file.name}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-[var(--text-muted)]">
                   {(upload.file.size / (1024 * 1024)).toFixed(2)} MB
                 </p>
 
                 {/* Status indicator */}
                 <div className="mt-1">
                   {upload.status === 'queued' && (
-                    <span className="inline-flex items-center text-xs text-yellow-600">
+                    <span className="inline-flex items-center text-xs text-[var(--warning)]">
                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
@@ -361,7 +361,7 @@ export default function ReceiptUpload({ onUploadComplete, autoProcess = true }: 
                     </span>
                   )}
                   {upload.status === 'uploading' && (
-                    <span className="inline-flex items-center text-xs text-blue-600">
+                    <span className="inline-flex items-center text-xs text-[var(--info)]">
                       <svg className="w-4 h-4 mr-1 animate-spin" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -370,7 +370,7 @@ export default function ReceiptUpload({ onUploadComplete, autoProcess = true }: 
                     </span>
                   )}
                   {upload.status === 'processing' && (
-                    <span className="inline-flex items-center text-xs text-purple-600">
+                    <span className="inline-flex items-center text-xs text-[var(--accent-secondary)]">
                       <svg className="w-4 h-4 mr-1 animate-spin" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -379,7 +379,7 @@ export default function ReceiptUpload({ onUploadComplete, autoProcess = true }: 
                     </span>
                   )}
                   {upload.status === 'success' && (
-                    <span className="inline-flex items-center text-xs text-green-600">
+                    <span className="inline-flex items-center text-xs text-[var(--success)]">
                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
@@ -387,7 +387,7 @@ export default function ReceiptUpload({ onUploadComplete, autoProcess = true }: 
                     </span>
                   )}
                   {upload.status === 'error' && (
-                    <span className="inline-flex items-center text-xs text-red-600">
+                    <span className="inline-flex items-center text-xs text-[var(--error)]">
                       <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                       </svg>
@@ -402,7 +402,7 @@ export default function ReceiptUpload({ onUploadComplete, autoProcess = true }: 
                 {upload.status === 'error' && (
                   <button
                     onClick={() => retryUpload(upload.file)}
-                    className="text-blue-600 hover:text-blue-800"
+                    className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
                     title="Retry"
                   >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -412,7 +412,7 @@ export default function ReceiptUpload({ onUploadComplete, autoProcess = true }: 
                 )}
                 <button
                   onClick={() => removeUpload(upload.file)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
                   title="Remove"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">

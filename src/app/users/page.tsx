@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { permissions, getRoleDisplay, getRoleBadgeColor } from '@/lib/permissions';
+import { useDebounce } from '@/hooks/useDebounce';
 
 type Role = {
   id: string;
@@ -34,6 +35,7 @@ export default function UsersPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm);
   const [roleFilter, setRoleFilter] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -65,7 +67,11 @@ export default function UsersPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, [currentPage, roleFilter, departmentFilter]);
+  }, [currentPage, roleFilter, departmentFilter, debouncedSearch]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch]);
 
   const fetchMetadata = async () => {
     try {
@@ -92,7 +98,7 @@ export default function UsersPage() {
         limit: '50',
       });
 
-      if (searchTerm) params.append('search', searchTerm);
+      if (debouncedSearch) params.append('search', debouncedSearch);
       if (roleFilter) params.append('roleId', roleFilter);
       if (departmentFilter) params.append('departmentId', departmentFilter);
 
@@ -172,30 +178,30 @@ export default function UsersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-[var(--text-secondary)]">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen py-8">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+          <h1 className="page-title">User Management</h1>
           <button
             onClick={() => openModal()}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
+            className="btn btn-primary"
           >
             + Add User
           </button>
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div className="card p-4 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="form-label">
                 Search
               </label>
               <div className="flex gap-2">
@@ -205,24 +211,24 @@ export default function UsersPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                   placeholder="Search by name or email..."
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="form-input flex-1"
                 />
                 <button
                   onClick={handleSearch}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  className="btn btn-primary"
                 >
                   Search
                 </button>
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="form-label">
                 Role
               </label>
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="form-input form-select"
               >
                 <option value="">All Roles</option>
                 {roles.map((role) => (
@@ -233,13 +239,13 @@ export default function UsersPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="form-label">
                 Department
               </label>
               <select
                 value={departmentFilter}
                 onChange={(e) => setDepartmentFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="form-input form-select"
               >
                 <option value="">All Departments</option>
                 {departments.map((dept) => (
@@ -253,79 +259,130 @@ export default function UsersPage() {
         </div>
 
         {/* Users List */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="card overflow-hidden">
           {users.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">No users found</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
-                      Name
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
-                      Email
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
-                      Role
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
-                      Department
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
-                      Status
-                    </th>
-                    <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((user) => (
-                    <tr key={user.id} className="border-t hover:bg-gray-50">
-                      <td className="py-3 px-4 text-sm font-medium text-gray-900">
-                        {user.name}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-600">
-                        {user.email}
-                      </td>
-                      <td className="py-3 px-4 text-sm">
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-medium ${getRoleBadgeColor(
-                            user.role.code as any
-                          )}`}
-                        >
-                          {user.role.name}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-600">
-                        {user.department?.name || '-'}
-                      </td>
-                      <td className="py-3 px-4 text-sm">
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-medium ${
-                            user.isActive
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}
-                        >
-                          {user.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-sm text-right">
-                        <button
-                          onClick={() => openModal(user)}
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          Edit
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="empty-state">
+              <p className="empty-state-title">No users found</p>
             </div>
+          ) : (
+            <>
+              {/* Mobile Card View */}
+              <div className="lg:hidden space-y-4 p-4">
+                {users.map((user) => (
+                  <div key={user.id} className="card">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-bold text-[var(--text-primary)]">{user.name}</h3>
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-medium ${getRoleBadgeColor(
+                              user.role.code as any
+                            )}`}
+                          >
+                            {user.role.name}
+                          </span>
+                        </div>
+                        <p className="text-sm text-[var(--text-secondary)]">{user.email}</p>
+                      </div>
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-medium ${
+                          user.isActive
+                            ? 'badge badge-success'
+                            : 'badge badge-neutral'
+                        }`}
+                      >
+                        {user.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <div className="space-y-2 text-sm mb-4">
+                      <div className="flex justify-between">
+                        <span className="text-[var(--text-secondary)]">Department:</span>
+                        <span className="text-[var(--text-primary)]">{user.department?.name || '-'}</span>
+                      </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => openModal(user)}
+                        className="btn btn-secondary btn-sm"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden lg:block table-container">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th className="text-left py-3 px-4 text-sm font-semibold">
+                        Name
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold">
+                        Email
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold">
+                        Role
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold">
+                        Department
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold">
+                        Status
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((user) => (
+                      <tr key={user.id} className="border-t">
+                        <td className="py-3 px-4 text-sm font-medium text-[var(--text-primary)]">
+                          {user.name}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-[var(--text-secondary)]">
+                          {user.email}
+                        </td>
+                        <td className="py-3 px-4 text-sm">
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-medium ${getRoleBadgeColor(
+                              user.role.code as any
+                            )}`}
+                          >
+                            {user.role.name}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-sm text-[var(--text-secondary)]">
+                          {user.department?.name || '-'}
+                        </td>
+                        <td className="py-3 px-4 text-sm">
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-medium ${
+                              user.isActive
+                                ? 'badge badge-success'
+                                : 'badge badge-neutral'
+                            }`}
+                          >
+                            {user.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-sm text-right">
+                          <button
+                            onClick={() => openModal(user)}
+                            className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
+                          >
+                            Edit
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
 
@@ -335,11 +392,11 @@ export default function UsersPage() {
             <button
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="px-4 py-2 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              className="btn btn-secondary btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Previous
             </button>
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-[var(--text-secondary)]">
               Page {pagination.page} of {pagination.totalPages} ({pagination.total} users)
             </span>
             <button
@@ -347,7 +404,7 @@ export default function UsersPage() {
                 setCurrentPage(Math.min(pagination.totalPages, currentPage + 1))
               }
               disabled={currentPage === pagination.totalPages}
-              className="px-4 py-2 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              className="btn btn-secondary btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next
             </button>
@@ -356,23 +413,23 @@ export default function UsersPage() {
 
         {/* Summary */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="text-sm text-gray-600">Total Users</div>
-            <div className="text-2xl font-bold text-gray-900">
+          <div className="stat-card">
+            <div className="stat-value" style={{ color: 'var(--text-primary)' }}>
               {pagination.total || 0}
             </div>
+            <div className="stat-label">Total Users</div>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="text-sm text-gray-600">Active Users</div>
-            <div className="text-2xl font-bold text-green-600">
+          <div className="stat-card">
+            <div className="stat-value" style={{ color: 'var(--success)' }}>
               {users.filter((u) => u.isActive).length}
             </div>
+            <div className="stat-label">Active Users</div>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="text-sm text-gray-600">Administrators</div>
-            <div className="text-2xl font-bold text-purple-600">
+          <div className="stat-card">
+            <div className="stat-value" style={{ color: 'var(--accent-secondary)' }}>
               {users.filter((u) => u.role.code === 'ADMIN').length}
             </div>
+            <div className="stat-label">Administrators</div>
           </div>
         </div>
       </div>
@@ -380,14 +437,14 @@ export default function UsersPage() {
       {/* Add/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-lg">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          <div className="card p-6 w-full max-w-lg">
+            <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">
               {editingUser ? 'Edit User' : 'Add User'}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="form-label">
                   Name *
                 </label>
                 <input
@@ -397,12 +454,12 @@ export default function UsersPage() {
                     setFormData({ ...formData, name: e.target.value })
                   }
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="form-input"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="form-label">
                   Email *
                 </label>
                 <input
@@ -412,12 +469,12 @@ export default function UsersPage() {
                     setFormData({ ...formData, email: e.target.value })
                   }
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="form-input"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="form-label">
                   Password {editingUser ? '(leave blank to keep current)' : '*'}
                 </label>
                 <input
@@ -427,13 +484,13 @@ export default function UsersPage() {
                     setFormData({ ...formData, password: e.target.value })
                   }
                   required={!editingUser}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="form-input"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="form-label">
                     Role *
                   </label>
                   <select
@@ -445,7 +502,7 @@ export default function UsersPage() {
                       })
                     }
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="form-input form-select"
                   >
                     <option value="">Select a role</option>
                     {roles.map((role) => (
@@ -457,7 +514,7 @@ export default function UsersPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="form-label">
                     Department
                   </label>
                   <select
@@ -465,7 +522,7 @@ export default function UsersPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, departmentId: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="form-input form-select"
                   >
                     <option value="">No department</option>
                     {departments.map((dept) => (
@@ -485,11 +542,11 @@ export default function UsersPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, isActive: e.target.checked })
                   }
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-[var(--accent-primary)] focus:ring-[var(--accent-primary)] border-[var(--border-default)] rounded"
                 />
                 <label
                   htmlFor="isActive"
-                  className="ml-2 block text-sm text-gray-700"
+                  className="ml-2 block text-sm text-[var(--text-secondary)]"
                 >
                   Active
                 </label>
@@ -499,13 +556,13 @@ export default function UsersPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="btn btn-secondary"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  className="btn btn-primary"
                 >
                   {editingUser ? 'Update' : 'Create'}
                 </button>

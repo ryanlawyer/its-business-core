@@ -219,16 +219,16 @@ export default function TimeclockConfigPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
-              <div className="h-10 bg-gray-200 rounded w-full mb-4"></div>
-              <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
-              <div className="h-10 bg-gray-200 rounded w-full"></div>
+            <div className="h-8 bg-[var(--bg-hover)] rounded w-1/3 mb-4"></div>
+            <div className="h-4 bg-[var(--bg-hover)] rounded w-1/2 mb-8"></div>
+            <div className="card p-6">
+              <div className="h-6 bg-[var(--bg-hover)] rounded w-1/4 mb-4"></div>
+              <div className="h-10 bg-[var(--bg-hover)] rounded w-full mb-4"></div>
+              <div className="h-6 bg-[var(--bg-hover)] rounded w-1/4 mb-4"></div>
+              <div className="h-10 bg-[var(--bg-hover)] rounded w-full"></div>
             </div>
           </div>
         </div>
@@ -244,22 +244,22 @@ export default function TimeclockConfigPage() {
   const showStartDate = formType === 'biweekly';
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Timeclock Configuration</h1>
-          <p className="text-gray-600">
+          <h1 className="page-title mb-2">Timeclock Configuration</h1>
+          <p className="text-[var(--text-secondary)]">
             Configure pay periods and overtime rules for time tracking
           </p>
         </div>
 
         {/* Error Alert */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="mb-6 rounded-[var(--radius-lg)] border border-[var(--error-muted)] bg-[var(--error-subtle)] text-[var(--error)] px-4 py-3">
             <div className="flex items-start gap-3">
               <svg
-                className="w-5 h-5 text-red-600 mt-0.5"
+                className="w-5 h-5 text-[var(--error)] mt-0.5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -272,8 +272,8 @@ export default function TimeclockConfigPage() {
                 />
               </svg>
               <div>
-                <h3 className="font-semibold text-red-900">Error</h3>
-                <p className="text-sm text-red-800">{error}</p>
+                <h3 className="font-semibold text-[var(--error)]">Error</h3>
+                <p className="text-sm text-[var(--error)]">{error}</p>
               </div>
             </div>
           </div>
@@ -281,10 +281,10 @@ export default function TimeclockConfigPage() {
 
         {/* Success Alert */}
         {success && (
-          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="mb-6 rounded-[var(--radius-lg)] border border-[var(--success-muted)] bg-[var(--success-subtle)] text-[var(--success)] px-4 py-3">
             <div className="flex items-start gap-3">
               <svg
-                className="w-5 h-5 text-green-600 mt-0.5"
+                className="w-5 h-5 text-[var(--success)] mt-0.5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -297,22 +297,22 @@ export default function TimeclockConfigPage() {
                 />
               </svg>
               <div>
-                <p className="text-sm text-green-800">{success}</p>
+                <p className="text-sm text-[var(--success)]">{success}</p>
               </div>
             </div>
           </div>
         )}
 
         {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="border-b border-gray-200">
+        <div className="card overflow-hidden">
+          <div className="border-b border-[var(--border-default)]">
             <nav className="flex space-x-8 px-6" aria-label="Tabs">
               <button
                 onClick={() => setActiveTab('payperiod')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'payperiod'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-[var(--accent-primary)] text-[var(--accent-primary)]'
+                    : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:border-[var(--border-default)]'
                 }`}
               >
                 Pay Periods
@@ -321,8 +321,8 @@ export default function TimeclockConfigPage() {
                 onClick={() => setActiveTab('overtime')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'overtime'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-[var(--accent-primary)] text-[var(--accent-primary)]'
+                    : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:border-[var(--border-default)]'
                 }`}
               >
                 Overtime Rules
@@ -335,15 +335,15 @@ export default function TimeclockConfigPage() {
             <>
               <div className="p-6 space-y-6">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-1">Pay Period Settings</h2>
-                  <p className="text-sm text-gray-600">
+                  <h2 className="section-title mb-1">Pay Period Settings</h2>
+                  <p className="text-sm text-[var(--text-secondary)]">
                     Configure how pay periods are calculated for time tracking
                   </p>
                 </div>
 
                 {/* Pay Period Type */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="form-label mb-2">
                     Pay Period Type
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -352,8 +352,8 @@ export default function TimeclockConfigPage() {
                         key={type.value}
                         className={`relative flex cursor-pointer rounded-lg border p-4 transition-colors ${
                           formType === type.value
-                            ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500'
-                            : 'border-gray-300 hover:border-gray-400'
+                            ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]/10 ring-2 ring-[var(--accent-primary)]'
+                            : 'border-[var(--border-default)] hover:border-[var(--border-default)]'
                         }`}
                       >
                         <input
@@ -367,14 +367,14 @@ export default function TimeclockConfigPage() {
                         <div className="flex-1">
                           <span
                             className={`block font-medium ${
-                              formType === type.value ? 'text-blue-900' : 'text-gray-900'
+                              formType === type.value ? 'text-[var(--accent-primary)]' : 'text-[var(--text-primary)]'
                             }`}
                           >
                             {type.label}
                           </span>
                           <span
                             className={`mt-1 block text-sm ${
-                              formType === type.value ? 'text-blue-700' : 'text-gray-500'
+                              formType === type.value ? 'text-[var(--accent-primary)]' : 'text-[var(--text-muted)]'
                             }`}
                           >
                             {type.description}
@@ -382,7 +382,7 @@ export default function TimeclockConfigPage() {
                         </div>
                         {formType === type.value && (
                           <svg
-                            className="h-5 w-5 text-blue-600"
+                            className="h-5 w-5 text-[var(--accent-primary)]"
                             fill="currentColor"
                             viewBox="0 0 20 20"
                           >
@@ -403,7 +403,7 @@ export default function TimeclockConfigPage() {
                   <div>
                     <label
                       htmlFor="startDayOfWeek"
-                      className="block text-sm font-medium text-gray-700 mb-2"
+                      className="form-label mb-2"
                     >
                       Pay Period Start Day
                     </label>
@@ -411,7 +411,7 @@ export default function TimeclockConfigPage() {
                       id="startDayOfWeek"
                       value={formStartDayOfWeek}
                       onChange={(e) => setFormStartDayOfWeek(parseInt(e.target.value))}
-                      className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      className="form-input form-select w-full max-w-xs"
                     >
                       {DAY_NAMES.map((day, index) => (
                         <option key={index} value={index}>
@@ -419,7 +419,7 @@ export default function TimeclockConfigPage() {
                         </option>
                       ))}
                     </select>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-[var(--text-muted)] mt-1">
                       The day of the week when each pay period starts
                     </p>
                   </div>
@@ -430,7 +430,7 @@ export default function TimeclockConfigPage() {
                   <div>
                     <label
                       htmlFor="startDate"
-                      className="block text-sm font-medium text-gray-700 mb-2"
+                      className="form-label mb-2"
                     >
                       Reference Start Date
                     </label>
@@ -439,9 +439,9 @@ export default function TimeclockConfigPage() {
                       id="startDate"
                       value={formStartDate}
                       onChange={(e) => setFormStartDate(e.target.value)}
-                      className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      className="form-input w-full max-w-xs"
                     />
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-[var(--text-muted)] mt-1">
                       A known start date for a pay period (used to calculate bi-weekly boundaries)
                     </p>
                   </div>
@@ -449,11 +449,11 @@ export default function TimeclockConfigPage() {
               </div>
 
               {/* Footer with Save Button */}
-              <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex justify-end">
+              <div className="border-t border-[var(--border-default)] px-6 py-4 flex justify-end">
                 <button
                   onClick={handleSavePayPeriod}
                   disabled={saving}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn btn-primary"
                 >
                   {saving ? 'Saving...' : 'Save Pay Period Settings'}
                 </button>
@@ -466,8 +466,8 @@ export default function TimeclockConfigPage() {
             <>
               <div className="p-6 space-y-6">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-1">Overtime Rules</h2>
-                  <p className="text-sm text-gray-600">
+                  <h2 className="section-title mb-1">Overtime Rules</h2>
+                  <p className="text-sm text-[var(--text-secondary)]">
                     Configure overtime thresholds and notification settings
                   </p>
                 </div>
@@ -476,7 +476,7 @@ export default function TimeclockConfigPage() {
                 <div>
                   <label
                     htmlFor="dailyThreshold"
-                    className="block text-sm font-medium text-gray-700 mb-2"
+                    className="form-label mb-2"
                   >
                     Daily Overtime Threshold (hours)
                   </label>
@@ -490,11 +490,11 @@ export default function TimeclockConfigPage() {
                       step="0.5"
                       min="0"
                       max="24"
-                      className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      className="form-input w-32"
                     />
-                    <span className="text-sm text-gray-500">hours per day</span>
+                    <span className="text-sm text-[var(--text-muted)]">hours per day</span>
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-[var(--text-muted)] mt-1">
                     Hours worked beyond this threshold in a single day count as overtime. Leave empty
                     to disable.
                   </p>
@@ -504,7 +504,7 @@ export default function TimeclockConfigPage() {
                 <div>
                   <label
                     htmlFor="weeklyThreshold"
-                    className="block text-sm font-medium text-gray-700 mb-2"
+                    className="form-label mb-2"
                   >
                     Weekly Overtime Threshold (hours)
                   </label>
@@ -518,24 +518,24 @@ export default function TimeclockConfigPage() {
                       step="0.5"
                       min="0"
                       max="168"
-                      className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      className="form-input w-32"
                     />
-                    <span className="text-sm text-gray-500">hours per week</span>
+                    <span className="text-sm text-[var(--text-muted)]">hours per week</span>
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-[var(--text-muted)] mt-1">
                     Hours worked beyond this threshold in a week count as overtime. Leave empty to
                     disable.
                   </p>
                 </div>
 
-                <div className="border-t border-gray-200 pt-6">
-                  <h3 className="text-md font-semibold text-gray-900 mb-4">Alert Settings</h3>
+                <div className="border-t border-[var(--border-default)] pt-6">
+                  <h3 className="section-title mb-4">Alert Settings</h3>
 
                   {/* Alert Before Daily */}
                   <div className="mb-4">
                     <label
                       htmlFor="alertBeforeDaily"
-                      className="block text-sm font-medium text-gray-700 mb-2"
+                      className="form-label mb-2"
                     >
                       Alert Before Daily Threshold (minutes)
                     </label>
@@ -548,11 +548,11 @@ export default function TimeclockConfigPage() {
                         placeholder="30"
                         min="0"
                         max="120"
-                        className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                        className="form-input w-32"
                       />
-                      <span className="text-sm text-gray-500">minutes before</span>
+                      <span className="text-sm text-[var(--text-muted)]">minutes before</span>
                     </div>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-[var(--text-muted)] mt-1">
                       Show warning when approaching daily overtime threshold
                     </p>
                   </div>
@@ -561,7 +561,7 @@ export default function TimeclockConfigPage() {
                   <div>
                     <label
                       htmlFor="alertBeforeWeekly"
-                      className="block text-sm font-medium text-gray-700 mb-2"
+                      className="form-label mb-2"
                     >
                       Alert Before Weekly Threshold (minutes)
                     </label>
@@ -574,18 +574,18 @@ export default function TimeclockConfigPage() {
                         placeholder="120"
                         min="0"
                         max="480"
-                        className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                        className="form-input w-32"
                       />
-                      <span className="text-sm text-gray-500">minutes before</span>
+                      <span className="text-sm text-[var(--text-muted)]">minutes before</span>
                     </div>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-[var(--text-muted)] mt-1">
                       Show warning when approaching weekly overtime threshold
                     </p>
                   </div>
                 </div>
 
-                <div className="border-t border-gray-200 pt-6">
-                  <h3 className="text-md font-semibold text-gray-900 mb-4">Notification Settings</h3>
+                <div className="border-t border-[var(--border-default)] pt-6">
+                  <h3 className="section-title mb-4">Notification Settings</h3>
 
                   {/* Notify Employee */}
                   <div className="flex items-center gap-3 mb-3">
@@ -594,9 +594,9 @@ export default function TimeclockConfigPage() {
                       id="notifyEmployee"
                       checked={formNotifyEmployee}
                       onChange={(e) => setFormNotifyEmployee(e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-[var(--accent-primary)] focus:ring-[var(--accent-primary)] border-[var(--border-default)] rounded"
                     />
-                    <label htmlFor="notifyEmployee" className="text-sm text-gray-700">
+                    <label htmlFor="notifyEmployee" className="text-sm text-[var(--text-secondary)]">
                       Notify employees when approaching or exceeding overtime thresholds
                     </label>
                   </div>
@@ -608,9 +608,9 @@ export default function TimeclockConfigPage() {
                       id="notifyManager"
                       checked={formNotifyManager}
                       onChange={(e) => setFormNotifyManager(e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-[var(--accent-primary)] focus:ring-[var(--accent-primary)] border-[var(--border-default)] rounded"
                     />
-                    <label htmlFor="notifyManager" className="text-sm text-gray-700">
+                    <label htmlFor="notifyManager" className="text-sm text-[var(--text-secondary)]">
                       Notify managers when team members approach or exceed overtime thresholds
                     </label>
                   </div>
@@ -618,11 +618,11 @@ export default function TimeclockConfigPage() {
               </div>
 
               {/* Footer with Save Button */}
-              <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex justify-end">
+              <div className="border-t border-[var(--border-default)] px-6 py-4 flex justify-end">
                 <button
                   onClick={handleSaveOvertime}
                   disabled={saving}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn btn-primary"
                 >
                   {saving ? 'Saving...' : 'Save Overtime Settings'}
                 </button>
@@ -632,10 +632,10 @@ export default function TimeclockConfigPage() {
         </div>
 
         {/* Info Section */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="mt-6 rounded-[var(--radius-lg)] border border-[var(--info-muted)] bg-[var(--info-subtle)] px-4 py-3">
           <div className="flex items-start gap-3">
             <svg
-              className="w-6 h-6 text-blue-600 mt-0.5"
+              className="w-6 h-6 text-[var(--info)] mt-0.5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -648,11 +648,11 @@ export default function TimeclockConfigPage() {
               />
             </svg>
             <div>
-              <h3 className="font-semibold text-blue-900 mb-1">
+              <h3 className="font-semibold text-[var(--info)] mb-1">
                 {activeTab === 'payperiod' ? 'About Pay Periods' : 'About Overtime Rules'}
               </h3>
               {activeTab === 'payperiod' ? (
-                <ul className="text-sm text-blue-800 space-y-1">
+                <ul className="text-sm text-[var(--info)] space-y-1">
                   <li>
                     <strong>Weekly:</strong> Pay period starts on the selected day each week
                   </li>
@@ -668,7 +668,7 @@ export default function TimeclockConfigPage() {
                   </li>
                 </ul>
               ) : (
-                <ul className="text-sm text-blue-800 space-y-1">
+                <ul className="text-sm text-[var(--info)] space-y-1">
                   <li>
                     <strong>Daily OT:</strong> Hours exceeding the daily threshold on any single day
                   </li>

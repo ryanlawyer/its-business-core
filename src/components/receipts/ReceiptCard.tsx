@@ -23,11 +23,11 @@ interface ReceiptCardProps {
 }
 
 const statusColors: Record<string, string> = {
-  PENDING: 'bg-gray-100 text-gray-800',
-  PROCESSING: 'bg-blue-100 text-blue-800',
-  COMPLETED: 'bg-green-100 text-green-800',
-  FAILED: 'bg-red-100 text-red-800',
-  REVIEWED: 'bg-purple-100 text-purple-800',
+  PENDING: 'badge badge-neutral',
+  PROCESSING: 'badge badge-info',
+  COMPLETED: 'badge badge-success',
+  FAILED: 'badge badge-error',
+  REVIEWED: 'badge badge-accent',
 };
 
 const statusLabels: Record<string, string> = {
@@ -54,9 +54,9 @@ export default function ReceiptCard({ receipt }: ReceiptCardProps) {
 
   return (
     <Link href={`/receipts/${receipt.id}`}>
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
+      <div className="card-interactive overflow-hidden p-0">
         {/* Thumbnail */}
-        <div className="aspect-[4/3] bg-gray-100 relative">
+        <div className="aspect-[4/3] bg-[var(--bg-surface)] relative">
           {receipt.thumbnailUrl || receipt.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -68,7 +68,7 @@ export default function ReceiptCard({ receipt }: ReceiptCardProps) {
                 target.style.display = 'none';
                 target.parentElement!.innerHTML = `
                   <div class="w-full h-full flex items-center justify-center">
-                    <svg class="w-12 h-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <svg class="w-12 h-12 text-[var(--text-muted)]" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
                     </svg>
                   </div>
@@ -77,7 +77,7 @@ export default function ReceiptCard({ receipt }: ReceiptCardProps) {
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <svg className="w-12 h-12 text-gray-300" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <svg className="w-12 h-12 text-[var(--text-muted)]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
               </svg>
             </div>
@@ -85,7 +85,7 @@ export default function ReceiptCard({ receipt }: ReceiptCardProps) {
 
           {/* Status badge */}
           <div className="absolute top-2 right-2">
-            <span className={`px-2 py-1 rounded text-xs font-medium ${statusColors[receipt.status] || 'bg-gray-100 text-gray-800'}`}>
+            <span className={statusColors[receipt.status] || 'badge badge-neutral'}>
               {statusLabels[receipt.status] || receipt.status}
             </span>
           </div>
@@ -93,29 +93,29 @@ export default function ReceiptCard({ receipt }: ReceiptCardProps) {
 
         {/* Content */}
         <div className="p-4">
-          <h3 className="font-medium text-gray-900 truncate">
+          <h3 className="font-medium text-[var(--text-primary)] truncate">
             {receipt.merchantName || 'Unknown Merchant'}
           </h3>
 
           <div className="mt-2 flex justify-between items-center">
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-[var(--text-secondary)]">
               {formatDate(receipt.receiptDate)}
             </span>
-            <span className="text-sm font-semibold text-gray-900">
+            <span className="text-sm font-semibold text-[var(--text-primary)]">
               {formatAmount(receipt.totalAmount, receipt.currency)}
             </span>
           </div>
 
           {receipt.budgetCategory && (
             <div className="mt-2">
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700">
+              <span className="badge badge-info">
                 {receipt.budgetCategory.name}
               </span>
             </div>
           )}
 
           {receipt._count && receipt._count.lineItems > 0 && (
-            <div className="mt-2 text-xs text-gray-500">
+            <div className="mt-2 text-xs text-[var(--text-secondary)]">
               {receipt._count.lineItems} line item{receipt._count.lineItems !== 1 ? 's' : ''}
             </div>
           )}

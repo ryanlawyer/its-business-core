@@ -186,7 +186,7 @@ export default function TeamOverviewPage() {
       <header className="page-header animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <h1 className="page-title font-display">Team Overview</h1>
+            <h1 className="page-title">Team Overview</h1>
             <p className="page-subtitle">View and manage team time entries</p>
           </div>
           <div className="flex gap-2">
@@ -287,36 +287,36 @@ export default function TeamOverviewPage() {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-        <div className="card text-center p-4">
-          <div className="text-2xl font-bold font-mono" style={{ color: 'var(--text-primary)' }}>
+        <div className="stat-card">
+          <div className="stat-value" style={{ color: 'var(--text-primary)' }}>
             {summary.totalEmployees}
           </div>
-          <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Total Employees</div>
+          <div className="stat-label">Total Employees</div>
         </div>
-        <div className="card text-center p-4">
-          <div className="text-2xl font-bold font-mono" style={{ color: 'var(--success)' }}>
+        <div className="stat-card">
+          <div className="stat-value" style={{ color: 'var(--success)' }}>
             {summary.totalApproved}
           </div>
-          <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Approved</div>
+          <div className="stat-label">Approved</div>
         </div>
-        <div className="card text-center p-4">
-          <div className="text-2xl font-bold font-mono" style={{ color: 'var(--warning)' }}>
+        <div className="stat-card">
+          <div className="stat-value" style={{ color: 'var(--warning)' }}>
             {summary.totalPending}
           </div>
-          <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Pending</div>
+          <div className="stat-label">Pending</div>
         </div>
-        <div className="card text-center p-4">
-          <div className="text-2xl font-bold font-mono" style={{ color: 'var(--error)' }}>
+        <div className="stat-card">
+          <div className="stat-value" style={{ color: 'var(--error)' }}>
             {summary.totalRejected}
           </div>
-          <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Rejected</div>
+          <div className="stat-label">Rejected</div>
         </div>
       </div>
 
       {/* Employee Table */}
       <div className="table-container animate-fade-in-up" style={{ animationDelay: '150ms' }}>
         <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: 'var(--border-subtle)' }}>
-          <h2 className="text-lg font-display font-medium" style={{ color: 'var(--text-primary)' }}>
+          <h2 className="section-title">
             Employees
           </h2>
         </div>
@@ -346,77 +346,151 @@ export default function TeamOverviewPage() {
             </div>
           </div>
         ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Employee</th>
-                <th>Department</th>
-                <th>Regular Hours</th>
-                <th>OT Hours</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            {/* Mobile Card View */}
+            <div className="lg:hidden space-y-4 p-4">
               {employeeTotals.map((employee, index) => (
-                <tr
+                <div
                   key={employee.userId}
-                  className="cursor-pointer hover:bg-[var(--bg-secondary)] animate-fade-in"
+                  className="card cursor-pointer animate-fade-in"
                   style={{ animationDelay: `${200 + index * 30}ms` }}
                   onClick={() => router.push(`/timeclock/team/${employee.userId}`)}
                 >
-                  <td>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
-                        {employee.userName}
-                      </span>
-                      {employee.hasOvertime && (
-                        <span
-                          className="text-xs px-1.5 py-0.5 rounded"
-                          style={{ background: 'var(--warning)', color: 'white' }}
-                          title={`OT: ${formatHours(employee.overtimeMinutes)}`}
-                        >
-                          OT
-                        </span>
-                      )}
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-[var(--text-primary)]">{employee.userName}</h3>
+                        {employee.hasOvertime && (
+                          <span
+                            className="text-xs px-1.5 py-0.5 rounded"
+                            style={{ background: 'var(--warning)', color: 'white' }}
+                            title={`OT: ${formatHours(employee.overtimeMinutes)}`}
+                          >
+                            OT
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-[var(--text-secondary)]">{employee.userEmail}</p>
                     </div>
-                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                      {employee.userEmail}
+                  </div>
+                  <div className="space-y-2 text-sm mb-4">
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">Department:</span>
+                      <span className="text-[var(--text-primary)]">{employee.departmentName || '—'}</span>
                     </div>
-                  </td>
-                  <td>{employee.departmentName || '—'}</td>
-                  <td className="font-mono">{formatHours(employee.regularMinutes)}</td>
-                  <td className="font-mono">
-                    {employee.overtimeMinutes > 0 ? (
-                      <span style={{ color: 'var(--warning)' }}>
-                        {formatHours(employee.overtimeMinutes)}
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">Regular Hours:</span>
+                      <span className="text-[var(--text-primary)] font-mono">{formatHours(employee.regularMinutes)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">OT Hours:</span>
+                      <span className="font-mono">
+                        {employee.overtimeMinutes > 0 ? (
+                          <span style={{ color: 'var(--warning)' }}>
+                            {formatHours(employee.overtimeMinutes)}
+                          </span>
+                        ) : (
+                          <span className="text-[var(--text-primary)]">—</span>
+                        )}
                       </span>
-                    ) : (
-                      '—'
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {employee.approvedCount > 0 && (
+                      <span className="badge badge-success">
+                        {employee.approvedCount} approved
+                      </span>
                     )}
-                  </td>
-                  <td>
-                    <div className="flex flex-wrap gap-1">
-                      {employee.approvedCount > 0 && (
-                        <span className="badge badge-success">
-                          {employee.approvedCount} approved
-                        </span>
-                      )}
-                      {employee.pendingCount > 0 && (
-                        <span className="badge badge-warning badge-dot">
-                          {employee.pendingCount} pending
-                        </span>
-                      )}
-                      {employee.rejectedCount > 0 && (
-                        <span className="badge badge-error badge-dot">
-                          {employee.rejectedCount} rejected
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
+                    {employee.pendingCount > 0 && (
+                      <span className="badge badge-warning badge-dot">
+                        {employee.pendingCount} pending
+                      </span>
+                    )}
+                    {employee.rejectedCount > 0 && (
+                      <span className="badge badge-error badge-dot">
+                        {employee.rejectedCount} rejected
+                      </span>
+                    )}
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden lg:block">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Department</th>
+                    <th>Regular Hours</th>
+                    <th>OT Hours</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {employeeTotals.map((employee, index) => (
+                    <tr
+                      key={employee.userId}
+                      className="cursor-pointer hover:bg-[var(--bg-secondary)] animate-fade-in"
+                      style={{ animationDelay: `${200 + index * 30}ms` }}
+                      onClick={() => router.push(`/timeclock/team/${employee.userId}`)}
+                    >
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
+                            {employee.userName}
+                          </span>
+                          {employee.hasOvertime && (
+                            <span
+                              className="text-xs px-1.5 py-0.5 rounded"
+                              style={{ background: 'var(--warning)', color: 'white' }}
+                              title={`OT: ${formatHours(employee.overtimeMinutes)}`}
+                            >
+                              OT
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                          {employee.userEmail}
+                        </div>
+                      </td>
+                      <td>{employee.departmentName || '—'}</td>
+                      <td className="font-mono">{formatHours(employee.regularMinutes)}</td>
+                      <td className="font-mono">
+                        {employee.overtimeMinutes > 0 ? (
+                          <span style={{ color: 'var(--warning)' }}>
+                            {formatHours(employee.overtimeMinutes)}
+                          </span>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td>
+                        <div className="flex flex-wrap gap-1">
+                          {employee.approvedCount > 0 && (
+                            <span className="badge badge-success">
+                              {employee.approvedCount} approved
+                            </span>
+                          )}
+                          {employee.pendingCount > 0 && (
+                            <span className="badge badge-warning badge-dot">
+                              {employee.pendingCount} pending
+                            </span>
+                          )}
+                          {employee.rejectedCount > 0 && (
+                            <span className="badge badge-error badge-dot">
+                              {employee.rejectedCount} rejected
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>

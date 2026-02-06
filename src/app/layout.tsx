@@ -70,7 +70,7 @@ export default function RootLayout({
           </div>
 
           <Navbar />
-          <main className="relative">
+          <main className="relative pb-20 lg:pb-0">
             {children}
           </main>
         </SessionProvider>

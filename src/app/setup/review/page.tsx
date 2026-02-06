@@ -102,9 +102,9 @@ export default function SetupReviewPage() {
 
   if (isLoading) {
     return (
-      <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
+      <div className="card-glass">
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--text-primary)]"></div>
         </div>
       </div>
     );
@@ -114,7 +114,7 @@ export default function SetupReviewPage() {
   const isEmailConfigured = integrationsData?.email?.provider;
 
   return (
-    <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
+    <div className="card-glass">
       {/* Progress indicator */}
       <div className="flex items-center justify-center gap-2 mb-8">
         {[1, 2, 3, 4, 5].map((step) => (
@@ -122,67 +122,67 @@ export default function SetupReviewPage() {
             key={step}
             className={`h-2 rounded-full transition-all ${
               step === 5
-                ? 'w-8 bg-blue-500'
-                : 'w-2 bg-blue-400'
+                ? 'w-8 bg-[var(--accent-primary)]'
+                : 'w-2 bg-[var(--accent-primary-hover)]'
             }`}
           />
         ))}
       </div>
 
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-white mb-2">
+        <h1 className="page-title">
           Review & Complete
         </h1>
-        <p className="text-slate-300">
+        <p className="text-[var(--text-secondary)]">
           Please review your settings before completing the setup.
         </p>
       </div>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
-          <p className="text-red-300 text-sm">{error}</p>
+        <div className="rounded-[var(--radius-lg)] border border-[var(--error-muted)] bg-[var(--error-subtle)] px-4 py-3 mb-6">
+          <p className="text-[var(--error)] text-sm">{error}</p>
         </div>
       )}
 
       <div className="space-y-6">
         {/* Admin Account Section */}
-        <div className="bg-white/5 rounded-xl p-5">
-          <h2 className="text-lg font-semibold text-white mb-4">Admin Account</h2>
+        <div className="bg-[var(--bg-surface)] rounded-[var(--radius-xl)] p-5">
+          <h2 className="section-title mb-4">Admin Account</h2>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-slate-400">Name</span>
-              <span className="text-white">{adminData?.name}</span>
+              <span className="text-[var(--text-muted)]">Name</span>
+              <span className="text-[var(--text-primary)]">{adminData?.name}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Email</span>
-              <span className="text-white">{adminData?.email}</span>
+              <span className="text-[var(--text-muted)]">Email</span>
+              <span className="text-[var(--text-primary)]">{adminData?.email}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Password</span>
-              <span className="text-white">{'••••••••'}</span>
+              <span className="text-[var(--text-muted)]">Password</span>
+              <span className="text-[var(--text-primary)]">{'••••••••'}</span>
             </div>
           </div>
         </div>
 
         {/* Organization Section */}
-        <div className="bg-white/5 rounded-xl p-5">
-          <h2 className="text-lg font-semibold text-white mb-4">Organization</h2>
+        <div className="bg-[var(--bg-surface)] rounded-[var(--radius-xl)] p-5">
+          <h2 className="section-title mb-4">Organization</h2>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-slate-400">Name</span>
-              <span className="text-white">{organizationData?.name}</span>
+              <span className="text-[var(--text-muted)]">Name</span>
+              <span className="text-[var(--text-primary)]">{organizationData?.name}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Department</span>
-              <span className="text-white">{organizationData?.department}</span>
+              <span className="text-[var(--text-muted)]">Department</span>
+              <span className="text-[var(--text-primary)]">{organizationData?.department}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Timezone</span>
-              <span className="text-white">{organizationData?.timezone}</span>
+              <span className="text-[var(--text-muted)]">Timezone</span>
+              <span className="text-[var(--text-primary)]">{organizationData?.timezone}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Fiscal Year Start</span>
-              <span className="text-white">
+              <span className="text-[var(--text-muted)]">Fiscal Year Start</span>
+              <span className="text-[var(--text-primary)]">
                 {organizationData?.fiscalYearStartMonth !== undefined
                   ? MONTH_NAMES[organizationData.fiscalYearStartMonth]
                   : 'January'}
@@ -192,37 +192,37 @@ export default function SetupReviewPage() {
         </div>
 
         {/* Integrations Section */}
-        <div className="bg-white/5 rounded-xl p-5">
-          <h2 className="text-lg font-semibold text-white mb-4">Integrations</h2>
+        <div className="bg-[var(--bg-surface)] rounded-[var(--radius-xl)] p-5">
+          <h2 className="section-title mb-4">Integrations</h2>
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-slate-400">AI</span>
+              <span className="text-[var(--text-muted)]">AI</span>
               <div className="flex items-center gap-2">
                 {isAIConfigured ? (
                   <>
-                    <CheckIcon className="h-5 w-5 text-emerald-400" />
-                    <span className="text-white">Configured</span>
+                    <CheckIcon className="h-5 w-5 text-[var(--success)]" />
+                    <span className="text-[var(--text-primary)]">Configured</span>
                   </>
                 ) : (
                   <>
-                    <XMarkIcon className="h-5 w-5 text-slate-400" />
-                    <span className="text-slate-400">Not configured</span>
+                    <XMarkIcon className="h-5 w-5 text-[var(--text-muted)]" />
+                    <span className="text-[var(--text-muted)]">Not configured</span>
                   </>
                 )}
               </div>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-400">Email</span>
+              <span className="text-[var(--text-muted)]">Email</span>
               <div className="flex items-center gap-2">
                 {isEmailConfigured ? (
                   <>
-                    <CheckIcon className="h-5 w-5 text-emerald-400" />
-                    <span className="text-white">{integrationsData?.email?.provider}</span>
+                    <CheckIcon className="h-5 w-5 text-[var(--success)]" />
+                    <span className="text-[var(--text-primary)]">{integrationsData?.email?.provider}</span>
                   </>
                 ) : (
                   <>
-                    <XMarkIcon className="h-5 w-5 text-slate-400" />
-                    <span className="text-slate-400">Not configured</span>
+                    <XMarkIcon className="h-5 w-5 text-[var(--text-muted)]" />
+                    <span className="text-[var(--text-muted)]">Not configured</span>
                   </>
                 )}
               </div>
@@ -235,7 +235,7 @@ export default function SetupReviewPage() {
         <button
           onClick={() => router.push('/setup/integrations')}
           disabled={isSubmitting}
-          className="flex-1 py-3 px-4 bg-white/5 hover:bg-white/10 text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="btn btn-secondary flex-1 flex items-center justify-center gap-2"
         >
           <ArrowLeftIcon className="h-4 w-4" />
           Back
@@ -243,7 +243,7 @@ export default function SetupReviewPage() {
         <button
           onClick={handleCompleteSetup}
           disabled={isSubmitting}
-          className="flex-1 py-3 px-4 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="btn btn-success flex-1 flex items-center justify-center gap-2"
         >
           {isSubmitting ? 'Setting up...' : 'Complete Setup'}
         </button>

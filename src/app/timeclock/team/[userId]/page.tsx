@@ -295,7 +295,7 @@ export default function EmployeeDetailPage() {
       <header className="page-header animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <h1 className="page-title font-display">
+            <h1 className="page-title">
               {employeeInfo?.userName || 'Employee Details'}
             </h1>
             <p className="page-subtitle">
@@ -390,7 +390,7 @@ export default function EmployeeDetailPage() {
       {/* Entries Table */}
       <div className="table-container animate-fade-in-up" style={{ animationDelay: '100ms' }}>
         <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: 'var(--border-subtle)' }}>
-          <h2 className="text-lg font-display font-medium" style={{ color: 'var(--text-primary)' }}>
+          <h2 className="section-title">
             Time Entries
           </h2>
           <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
@@ -424,38 +424,20 @@ export default function EmployeeDetailPage() {
             </div>
           </div>
         ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th style={{ width: '40px' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectableCount > 0 && selectedIds.size === selectableCount}
-                    onChange={handleSelectAll}
-                    disabled={selectableCount === 0}
-                    className="w-4 h-4"
-                  />
-                </th>
-                <th>Date</th>
-                <th>Clock In</th>
-                <th>Clock Out</th>
-                <th>Duration</th>
-                <th>Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            {/* Mobile Card View */}
+            <div className="lg:hidden space-y-4 p-4">
               {entries.map((entry, index) => (
-                <>
-                  <tr
-                    key={entry.id}
-                    className="animate-fade-in"
-                    style={{
-                      animationDelay: `${150 + index * 30}ms`,
-                      background: entry.status === 'rejected' ? 'var(--error-bg, rgba(239, 68, 68, 0.1))' : undefined,
-                    }}
-                  >
-                    <td>
+                <div
+                  key={entry.id}
+                  className="card animate-fade-in"
+                  style={{
+                    animationDelay: `${150 + index * 30}ms`,
+                    background: entry.status === 'rejected' ? 'var(--error-bg, rgba(239, 68, 68, 0.1))' : undefined,
+                  }}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-3">
                       {!entry.isLocked && entry.clockOut ? (
                         <input
                           type="checkbox"
@@ -466,30 +448,17 @@ export default function EmployeeDetailPage() {
                       ) : (
                         <span className="w-4 h-4 block"></span>
                       )}
-                    </td>
-                    <td className="font-mono">
-                      {new Date(entry.clockIn).toLocaleDateString()}
-                    </td>
-                    <td className="font-mono">
-                      {new Date(entry.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </td>
-                    <td className="font-mono">
-                      {entry.clockOut
-                        ? new Date(entry.clockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                        : <span className="badge badge-warning badge-dot">Active</span>}
-                    </td>
-                    <td className="font-mono font-medium">
-                      {entry.clockOut ? formatDuration(entry.duration) : '—'}
-                    </td>
-                    <td>
+                      <div>
+                        <h3 className="text-lg font-bold text-[var(--text-primary)] font-mono">
+                          {new Date(entry.clockIn).toLocaleDateString()}
+                        </h3>
+                        <p className="text-sm text-[var(--text-secondary)]">
+                          {entry.clockOut ? formatDuration(entry.duration) : 'In progress'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
                       {getStatusBadge(entry.status, entry.isLocked)}
-                      {entry.status === 'rejected' && entry.rejectedNote && (
-                        <div className="mt-1 text-xs" style={{ color: 'var(--error)' }}>
-                          {entry.rejectedNote}
-                        </div>
-                      )}
-                    </td>
-                    <td>
                       {!entry.isLocked && entry.clockOut && (
                         <button
                           onClick={() => handleStartEdit(entry)}
@@ -513,34 +482,61 @@ export default function EmployeeDetailPage() {
                           </svg>
                         </span>
                       )}
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-sm mb-2">
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">Clock In:</span>
+                      <span className="text-[var(--text-primary)] font-mono">
+                        {new Date(entry.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">Clock Out:</span>
+                      <span className="font-mono">
+                        {entry.clockOut
+                          ? <span className="text-[var(--text-primary)]">{new Date(entry.clockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          : <span className="badge badge-warning badge-dot">Active</span>}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">Duration:</span>
+                      <span className="text-[var(--text-primary)] font-mono font-medium">
+                        {entry.clockOut ? formatDuration(entry.duration) : '—'}
+                      </span>
+                    </div>
+                  </div>
+                  {entry.status === 'rejected' && entry.rejectedNote && (
+                    <div className="mt-2 text-xs" style={{ color: 'var(--error)' }}>
+                      {entry.rejectedNote}
+                    </div>
+                  )}
                   {editingId === entry.id && (
-                    <tr key={`edit-${entry.id}`} style={{ background: 'var(--bg-secondary)' }}>
-                      <td colSpan={7}>
-                        <div className="p-4 flex flex-wrap items-end gap-4">
-                          <div>
-                            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                              Clock In
-                            </label>
-                            <input
-                              type="datetime-local"
-                              value={editClockIn}
-                              onChange={(e) => setEditClockIn(e.target.value)}
-                              className="input"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                              Clock Out
-                            </label>
-                            <input
-                              type="datetime-local"
-                              value={editClockOut}
-                              onChange={(e) => setEditClockOut(e.target.value)}
-                              className="input"
-                            />
-                          </div>
+                    <div className="mt-4 pt-4 border-t border-[var(--border-default)]">
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                            Clock In
+                          </label>
+                          <input
+                            type="datetime-local"
+                            value={editClockIn}
+                            onChange={(e) => setEditClockIn(e.target.value)}
+                            className="input w-full"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                            Clock Out
+                          </label>
+                          <input
+                            type="datetime-local"
+                            value={editClockOut}
+                            onChange={(e) => setEditClockOut(e.target.value)}
+                            className="input w-full"
+                          />
+                        </div>
+                        <div className="flex gap-2">
                           <button
                             onClick={handleSaveEdit}
                             disabled={saving}
@@ -556,13 +552,156 @@ export default function EmployeeDetailPage() {
                             Cancel
                           </button>
                         </div>
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   )}
-                </>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden lg:block">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '40px' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectableCount > 0 && selectedIds.size === selectableCount}
+                        onChange={handleSelectAll}
+                        disabled={selectableCount === 0}
+                        className="w-4 h-4"
+                      />
+                    </th>
+                    <th>Date</th>
+                    <th>Clock In</th>
+                    <th>Clock Out</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries.map((entry, index) => (
+                    <>
+                      <tr
+                        key={entry.id}
+                        className="animate-fade-in"
+                        style={{
+                          animationDelay: `${150 + index * 30}ms`,
+                          background: entry.status === 'rejected' ? 'var(--error-bg, rgba(239, 68, 68, 0.1))' : undefined,
+                        }}
+                      >
+                        <td>
+                          {!entry.isLocked && entry.clockOut ? (
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.has(entry.id)}
+                              onChange={() => handleSelectEntry(entry.id)}
+                              className="w-4 h-4"
+                            />
+                          ) : (
+                            <span className="w-4 h-4 block"></span>
+                          )}
+                        </td>
+                        <td className="font-mono">
+                          {new Date(entry.clockIn).toLocaleDateString()}
+                        </td>
+                        <td className="font-mono">
+                          {new Date(entry.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td className="font-mono">
+                          {entry.clockOut
+                            ? new Date(entry.clockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            : <span className="badge badge-warning badge-dot">Active</span>}
+                        </td>
+                        <td className="font-mono font-medium">
+                          {entry.clockOut ? formatDuration(entry.duration) : '—'}
+                        </td>
+                        <td>
+                          {getStatusBadge(entry.status, entry.isLocked)}
+                          {entry.status === 'rejected' && entry.rejectedNote && (
+                            <div className="mt-1 text-xs" style={{ color: 'var(--error)' }}>
+                              {entry.rejectedNote}
+                            </div>
+                          )}
+                        </td>
+                        <td>
+                          {!entry.isLocked && entry.clockOut && (
+                            <button
+                              onClick={() => handleStartEdit(entry)}
+                              className="btn btn-secondary btn-sm"
+                              title="Edit entry"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                              </svg>
+                            </button>
+                          )}
+                          {entry.isLocked && (
+                            <span
+                              className="inline-flex items-center text-sm"
+                              style={{ color: 'var(--text-muted)' }}
+                              title="Entry is locked"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                <path d="M7 11V7a5 5 0 0110 0v4" />
+                              </svg>
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                      {editingId === entry.id && (
+                        <tr key={`edit-${entry.id}`} style={{ background: 'var(--bg-secondary)' }}>
+                          <td colSpan={7}>
+                            <div className="p-4 flex flex-wrap items-end gap-4">
+                              <div>
+                                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                                  Clock In
+                                </label>
+                                <input
+                                  type="datetime-local"
+                                  value={editClockIn}
+                                  onChange={(e) => setEditClockIn(e.target.value)}
+                                  className="input"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                                  Clock Out
+                                </label>
+                                <input
+                                  type="datetime-local"
+                                  value={editClockOut}
+                                  onChange={(e) => setEditClockOut(e.target.value)}
+                                  className="input"
+                                />
+                              </div>
+                              <button
+                                onClick={handleSaveEdit}
+                                disabled={saving}
+                                className="btn btn-primary btn-sm"
+                              >
+                                {saving ? 'Saving...' : 'Save Changes'}
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                disabled={saving}
+                                className="btn btn-secondary btn-sm"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
@@ -570,7 +709,7 @@ export default function EmployeeDetailPage() {
       {showRejectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
           <div className="card w-full max-w-md animate-fade-in">
-            <h3 className="text-lg font-display font-medium mb-4" style={{ color: 'var(--text-primary)' }}>
+            <h3 className="section-title mb-4">
               Reject {selectedIds.size} {selectedIds.size === 1 ? 'Entry' : 'Entries'}
             </h3>
             <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>

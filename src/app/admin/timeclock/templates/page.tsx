@@ -254,8 +254,8 @@ export default function TemplateEditorPage() {
     return (
       <div className="p-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+          <div className="h-8 bg-[var(--bg-hover)] rounded w-1/4"></div>
+          <div className="h-64 bg-[var(--bg-hover)] rounded"></div>
         </div>
       </div>
     );
@@ -266,11 +266,11 @@ export default function TemplateEditorPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Export Templates</h1>
+        <h1 className="page-title">Export Templates</h1>
         {!isEditing && (
           <button
             onClick={handleCreate}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            className="btn btn-primary"
           >
             Create Template
           </button>
@@ -278,27 +278,27 @@ export default function TemplateEditorPage() {
       </div>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">
+        <div className="mb-4 rounded-[var(--radius-lg)] border border-[var(--error-muted)] bg-[var(--error-subtle)] text-[var(--error)] px-4 py-3">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-md text-green-700">
+        <div className="mb-4 rounded-[var(--radius-lg)] border border-[var(--success-muted)] bg-[var(--success-subtle)] text-[var(--success)] px-4 py-3">
           {success}
         </div>
       )}
 
       {isEditing ? (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold mb-4">
+        <div className="card p-6">
+          <h2 className="section-title mb-4">
             {editingTemplate ? 'Edit Template' : 'Create New Template'}
           </h2>
 
           <div className="space-y-4">
             {/* Template Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="form-label">
                 Template Name
               </label>
               <input
@@ -306,7 +306,7 @@ export default function TemplateEditorPage() {
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
                 placeholder="e.g., Payroll Export, ADP Format"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                className="form-input"
               />
             </div>
 
@@ -317,9 +317,9 @@ export default function TemplateEditorPage() {
                 id="isDefault"
                 checked={formIsDefault}
                 onChange={(e) => setFormIsDefault(e.target.checked)}
-                className="h-4 w-4 text-blue-600 rounded border-gray-300"
+                className="h-4 w-4 text-[var(--accent-primary)] rounded border-[var(--border-default)]"
               />
-              <label htmlFor="isDefault" className="text-sm text-gray-700">
+              <label htmlFor="isDefault" className="text-sm text-[var(--text-secondary)]">
                 Set as default template
               </label>
             </div>
@@ -327,12 +327,12 @@ export default function TemplateEditorPage() {
             {/* Column Mapper */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="form-label">
                   Columns
                 </label>
                 <button
                   onClick={addColumn}
-                  className="text-sm text-blue-600 hover:text-blue-800"
+                  className="text-sm text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
                 >
                   + Add Column
                 </button>
@@ -346,12 +346,12 @@ export default function TemplateEditorPage() {
                     onDragStart={() => handleDragStart(index)}
                     onDragOver={(e) => handleDragOver(e, index)}
                     onDragEnd={handleDragEnd}
-                    className={`flex items-center gap-2 p-2 border rounded-md bg-gray-50 cursor-move ${
-                      draggedIndex === index ? 'opacity-50 border-blue-400' : 'border-gray-200'
+                    className={`flex items-center gap-2 p-2 border rounded-md cursor-move ${
+                      draggedIndex === index ? 'opacity-50 border-[var(--accent-primary)]' : 'border-[var(--border-default)]'
                     }`}
                   >
                     {/* Drag Handle */}
-                    <div className="text-gray-400 cursor-grab">
+                    <div className="text-[var(--text-muted)] cursor-grab">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
                       </svg>
@@ -361,7 +361,7 @@ export default function TemplateEditorPage() {
                     <select
                       value={col.sourceField}
                       onChange={(e) => updateColumn(index, 'sourceField', e.target.value)}
-                      className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
+                      className="flex-1 px-2 py-1 border border-[var(--border-default)] rounded text-sm bg-transparent"
                     >
                       {availableFields.map((field) => (
                         <option key={field.field} value={field.field}>
@@ -371,7 +371,7 @@ export default function TemplateEditorPage() {
                     </select>
 
                     {/* Arrow */}
-                    <span className="text-gray-400">→</span>
+                    <span className="text-[var(--text-muted)]">&rarr;</span>
 
                     {/* Header Name Input */}
                     <input
@@ -379,13 +379,13 @@ export default function TemplateEditorPage() {
                       value={col.headerName}
                       onChange={(e) => updateColumn(index, 'headerName', e.target.value)}
                       placeholder="Column Header"
-                      className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
+                      className="flex-1 px-2 py-1 border border-[var(--border-default)] rounded text-sm bg-transparent"
                     />
 
                     {/* Remove Button */}
                     <button
                       onClick={() => removeColumn(index)}
-                      className="text-red-500 hover:text-red-700 p-1"
+                      className="text-[var(--error)] hover:text-[var(--error)] p-1"
                       title="Remove column"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -396,7 +396,7 @@ export default function TemplateEditorPage() {
                 ))}
 
                 {formColumns.length === 0 && (
-                  <div className="text-center py-4 text-gray-500 border border-dashed border-gray-300 rounded-md">
+                  <div className="text-center py-4 text-[var(--text-muted)] border border-dashed border-[var(--border-default)] rounded-md">
                     No columns added. Click &quot;+ Add Column&quot; to begin.
                   </div>
                 )}
@@ -406,27 +406,27 @@ export default function TemplateEditorPage() {
             {/* Preview */}
             {formColumns.length > 0 && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="form-label mb-2">
                   Column Preview
                 </label>
-                <div className="overflow-x-auto border border-gray-200 rounded-md">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-100">
+                <div className="table-container">
+                  <table className="table">
+                    <thead>
                       <tr>
                         {formColumns.map((col, index) => (
                           <th
                             key={index}
-                            className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider"
+                            className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider"
                           >
                             {col.headerName}
                           </th>
                         ))}
                       </tr>
                     </thead>
-                    <tbody className="bg-white">
+                    <tbody>
                       <tr>
                         {formColumns.map((col, index) => (
-                          <td key={index} className="px-4 py-2 text-sm text-gray-400 italic">
+                          <td key={index} className="px-4 py-2 text-sm text-[var(--text-muted)] italic">
                             {col.sourceField}
                           </td>
                         ))}
@@ -438,17 +438,17 @@ export default function TemplateEditorPage() {
             )}
 
             {/* Action Buttons */}
-            <div className="flex justify-end gap-2 pt-4 border-t">
+            <div className="flex justify-end gap-2 pt-4 border-t border-[var(--border-default)]">
               <button
                 onClick={resetForm}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                className="btn btn-secondary"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+                className="btn btn-primary"
               >
                 {saving ? 'Saving...' : editingTemplate ? 'Update Template' : 'Create Template'}
               </button>
@@ -456,77 +456,129 @@ export default function TemplateEditorPage() {
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow">
+        <div className="card">
           {templates.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <p className="mb-4">No export templates found.</p>
-              <button
-                onClick={handleCreate}
-                className="text-blue-600 hover:text-blue-800"
-              >
-                Create your first template
-              </button>
+            <div className="empty-state">
+              <p className="empty-state-title">No export templates found</p>
+              <p className="empty-state-description">
+                <button
+                  onClick={handleCreate}
+                  className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
+                >
+                  Create your first template
+                </button>
+              </p>
             </div>
           ) : (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Columns
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Default
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created By
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {templates.map((template) => (
-                  <tr key={template.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="font-medium text-gray-900">{template.name}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {template.columns.length} column{template.columns.length !== 1 ? 's' : ''}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {template.isDefault ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Default
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {template.createdBy.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => handleEdit(template)}
-                        className="text-blue-600 hover:text-blue-900 mr-4"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(template)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Delete
-                      </button>
-                    </td>
+            <>
+            {/* Mobile Card View */}
+            <div className="lg:hidden space-y-4 p-4">
+              {templates.map((template) => (
+                <div key={template.id} className="card">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-[var(--text-primary)]">{template.name}</h3>
+                      <p className="text-sm text-[var(--text-secondary)]">
+                        {template.columns.length} column{template.columns.length !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    {template.isDefault && (
+                      <span className="badge badge-success">Default</span>
+                    )}
+                  </div>
+                  <div className="space-y-2 text-sm mb-4">
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">Created By:</span>
+                      <span className="text-[var(--text-primary)]">{template.createdBy.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">Columns:</span>
+                      <span className="text-[var(--text-primary)]">
+                        {template.columns.map((c) => c.headerName).join(', ')}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-3 border-t border-[var(--border-default)]">
+                    <button
+                      onClick={() => handleEdit(template)}
+                      className="btn btn-secondary flex-1"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(template)}
+                      className="btn btn-danger flex-1"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden lg:block table-container">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                      Columns
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                      Default
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                      Created By
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {templates.map((template) => (
+                    <tr key={template.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="font-medium text-[var(--text-primary)]">{template.name}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-muted)]">
+                        {template.columns.length} column{template.columns.length !== 1 ? 's' : ''}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {template.isDefault ? (
+                          <span className="badge badge-success">
+                            Default
+                          </span>
+                        ) : (
+                          <span className="text-[var(--text-muted)]">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-muted)]">
+                        {template.createdBy.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => handleEdit(template)}
+                          className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] mr-4"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(template)}
+                          className="text-[var(--error)] hover:text-[var(--error)]"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            </>
           )}
         </div>
       )}

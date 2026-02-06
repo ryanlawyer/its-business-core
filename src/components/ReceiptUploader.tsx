@@ -124,8 +124,8 @@ export default function ReceiptUploader({
 
   if (!canUpload) {
     return (
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-        <p className="text-sm text-gray-600">
+      <div className="card-surface">
+        <p className="text-sm text-[var(--text-secondary)]">
           You do not have permission to upload receipts
         </p>
       </div>
@@ -137,7 +137,7 @@ export default function ReceiptUploader({
       {/* Upload Buttons */}
       {!existingReceipt && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="form-label">
             Upload Receipt
           </label>
           <div className="flex flex-col sm:flex-row gap-3">
@@ -146,10 +146,10 @@ export default function ReceiptUploader({
               type="button"
               onClick={handleGalleryClick}
               disabled={uploading}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-[var(--border-default)] rounded-lg hover:border-[var(--accent-primary)] hover:bg-[var(--bg-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg
-                className="w-6 h-6 text-gray-400"
+                className="w-6 h-6 text-[var(--text-muted)]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -161,7 +161,7 @@ export default function ReceiptUploader({
                   d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                 />
               </svg>
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-sm font-medium text-[var(--text-secondary)]">
                 Choose from Gallery
               </span>
             </button>
@@ -171,10 +171,10 @@ export default function ReceiptUploader({
               type="button"
               onClick={handleCameraClick}
               disabled={uploading}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-[var(--border-default)] rounded-lg hover:border-[var(--accent-primary)] hover:bg-[var(--bg-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg
-                className="w-6 h-6 text-gray-400"
+                className="w-6 h-6 text-[var(--text-muted)]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -192,7 +192,7 @@ export default function ReceiptUploader({
                   d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
                 />
               </svg>
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-sm font-medium text-[var(--text-secondary)]">
                 Take Photo
               </span>
             </button>
@@ -221,7 +221,7 @@ export default function ReceiptUploader({
             className="hidden"
           />
 
-          <p className="mt-2 text-xs text-gray-500">
+          <p className="mt-2 text-xs text-[var(--text-muted)]">
             Supported formats: JPEG, PNG, HEIC, PDF (max 10MB)
           </p>
         </div>
@@ -229,20 +229,20 @@ export default function ReceiptUploader({
 
       {/* Upload Progress */}
       {uploading && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="rounded-[var(--radius-lg)] border border-[var(--info-muted)] bg-[var(--info-subtle)] p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-blue-900">
+            <span className="text-sm font-medium text-[var(--info)]">
               Uploading receipt...
             </span>
-            <span className="text-sm text-blue-700">{uploadProgress}%</span>
+            <span className="text-sm text-[var(--info)]">{uploadProgress}%</span>
           </div>
-          <div className="w-full bg-blue-200 rounded-full h-2">
+          <div className="w-full bg-[var(--bg-surface)] rounded-full h-2">
             <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              className="bg-[var(--info)] h-2 rounded-full transition-all duration-300"
               style={{ width: `${uploadProgress}%` }}
             />
           </div>
-          <p className="mt-2 text-xs text-blue-700">
+          <p className="mt-2 text-xs text-[var(--info)]">
             Processing image and converting to PDF...
           </p>
         </div>
@@ -250,11 +250,11 @@ export default function ReceiptUploader({
 
       {/* Existing Receipt Display */}
       {existingReceipt && !uploading && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="rounded-[var(--radius-lg)] border border-[var(--success-muted)] bg-[var(--success-subtle)] p-4">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <svg
-                className="w-10 h-10 text-green-600"
+                className="w-10 h-10 text-[var(--success)]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -267,10 +267,10 @@ export default function ReceiptUploader({
                 />
               </svg>
               <div>
-                <p className="text-sm font-medium text-green-900">
+                <p className="text-sm font-medium text-[var(--success)]">
                   Receipt Uploaded
                 </p>
-                <p className="text-xs text-green-700">{existingReceipt.filename}</p>
+                <p className="text-xs text-[var(--success)]">{existingReceipt.filename}</p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -278,21 +278,21 @@ export default function ReceiptUploader({
                 href={`/api/purchase-orders/${poId}/receipt?t=${Date.now()}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                className="text-sm text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] font-medium"
               >
                 View
               </a>
               <a
                 href={`/api/purchase-orders/${poId}/receipt?download=true&t=${Date.now()}`}
                 download
-                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                className="text-sm text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] font-medium"
               >
                 Download
               </a>
               <button
                 type="button"
                 onClick={handleDelete}
-                className="text-sm text-red-600 hover:text-red-800 font-medium"
+                className="text-sm text-[var(--error)] hover:text-[var(--error)] font-medium"
               >
                 Delete
               </button>

@@ -246,44 +246,44 @@ export default function NewPurchaseOrderPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-[var(--text-secondary)]">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen py-8">
       <div className="max-w-4xl mx-auto px-4">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
+        <div className="page-header flex justify-between items-center mb-8">
+          <h1 className="page-title">
             New Purchase Order
           </h1>
           <Link
             href="/purchase-orders"
-            className="text-blue-600 hover:text-blue-800"
+            className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
           >
-            ← Back to List
+            &larr; Back to List
           </Link>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Vendor and Department */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="card p-6">
+            <h2 className="section-title mb-4">
               Order Information
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="form-label">
                   Vendor *
                 </label>
                 <select
                   value={vendorId}
                   onChange={(e) => setVendorId(e.target.value)}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="form-input form-select"
                 >
                   <option value="">Select a vendor</option>
                   {vendors.map((vendor) => (
@@ -295,28 +295,28 @@ export default function NewPurchaseOrderPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="form-label">
                   Department
                 </label>
                 <input
                   type="text"
                   value={department}
                   onChange={(e) => setDepartment(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="form-input"
                   placeholder="Optional"
                 />
               </div>
             </div>
 
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="form-label">
                 Note
               </label>
               <textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="form-input"
                 placeholder="Optional notes..."
               />
             </div>
@@ -324,12 +324,12 @@ export default function NewPurchaseOrderPage() {
 
           {/* Receipt Upload (Optional) */}
           {canUploadReceipt && (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="card p-6">
+              <h2 className="section-title mb-4">
                 Receipt (Optional)
               </h2>
               <div className="space-y-3">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-[var(--text-secondary)]">
                   Upload a receipt image or PDF. If you upload a receipt, the PO will automatically be submitted for approval.
                 </p>
                 <div>
@@ -338,17 +338,17 @@ export default function NewPurchaseOrderPage() {
                       type="file"
                       accept="image/jpeg,image/png,image/heic,image/heif,application/pdf"
                       onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
-                      className="block w-full text-sm text-gray-500
+                      className="block w-full text-sm text-[var(--text-muted)]
                         file:mr-4 file:py-2 file:px-4
                         file:rounded file:border-0
                         file:text-sm file:font-semibold
-                        file:bg-blue-50 file:text-blue-700
-                        hover:file:bg-blue-100
+                        file:bg-[var(--accent-primary-subtle)] file:text-[var(--accent-primary)]
+                        hover:file:bg-[var(--accent-primary-subtle)]
                         cursor-pointer"
                     />
                   </label>
                   {receiptFile && (
-                    <div className="mt-2 text-sm text-gray-700">
+                    <div className="mt-2 text-sm text-[var(--text-secondary)]">
                       Selected: {receiptFile.name} ({(receiptFile.size / 1024 / 1024).toFixed(2)} MB)
                     </div>
                   )}
@@ -358,15 +358,15 @@ export default function NewPurchaseOrderPage() {
           )}
 
           {/* Line Items */}
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="card p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="section-title">
                 Line Items
               </h2>
               <button
                 type="button"
                 onClick={addLineItem}
-                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] text-sm font-medium"
               >
                 + Add Line Item
               </button>
@@ -376,17 +376,17 @@ export default function NewPurchaseOrderPage() {
               {lineItems.map((item, index) => (
                 <div
                   key={item.id}
-                  className="border border-gray-200 rounded-lg p-4"
+                  className="border border-[var(--border-default)] rounded-lg p-4"
                 >
                   <div className="flex justify-between items-start mb-3">
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-sm font-medium text-[var(--text-secondary)]">
                       Item {index + 1}
                     </span>
                     {lineItems.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeLineItem(item.id)}
-                        className="text-red-600 hover:text-red-800 text-sm"
+                        className="text-[var(--error)] hover:text-[var(--error)] text-sm"
                       >
                         Remove
                       </button>
@@ -395,7 +395,7 @@ export default function NewPurchaseOrderPage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                      <label className="form-label text-xs">
                         Budget Code *
                       </label>
                       <BudgetItemSelector
@@ -412,7 +412,7 @@ export default function NewPurchaseOrderPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                      <label className="form-label text-xs">
                         Description *
                       </label>
                       <input
@@ -422,13 +422,13 @@ export default function NewPurchaseOrderPage() {
                           updateLineItem(item.id, 'description', e.target.value)
                         }
                         required
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="form-input text-sm"
                         placeholder="Item description"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                      <label className="form-label text-xs">
                         Amount *
                       </label>
                       <input
@@ -440,7 +440,7 @@ export default function NewPurchaseOrderPage() {
                           updateLineItem(item.id, 'amount', e.target.value)
                         }
                         required
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="form-input text-sm"
                         placeholder="0.00"
                       />
                     </div>
@@ -450,12 +450,12 @@ export default function NewPurchaseOrderPage() {
             </div>
 
             {/* Total */}
-            <div className="mt-6 pt-4 border-t border-gray-200">
+            <div className="mt-6 pt-4 border-t border-[var(--border-default)]">
               <div className="flex justify-between items-center">
-                <span className="text-lg font-semibold text-gray-900">
+                <span className="text-lg font-semibold text-[var(--text-primary)]">
                   Total Amount:
                 </span>
-                <span className="text-2xl font-bold text-gray-900">
+                <span className="text-2xl font-bold text-[var(--text-primary)]">
                   ${calculateTotal().toFixed(2)}
                 </span>
               </div>
@@ -466,14 +466,14 @@ export default function NewPurchaseOrderPage() {
           <div className="flex justify-end space-x-4">
             <Link
               href="/purchase-orders"
-              className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+              className="btn btn-secondary"
             >
               Cancel
             </Link>
             <button
               type="submit"
               disabled={submitting}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="btn btn-primary"
             >
               {submitting ? 'Creating...' : 'Create Purchase Order'}
             </button>
@@ -483,43 +483,43 @@ export default function NewPurchaseOrderPage() {
         {/* Over Budget Confirmation Dialog */}
         {showOverBudgetDialog && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="border-b px-6 py-4">
-                <h2 className="text-2xl font-bold text-red-600">
-                  ⚠️ Budget Exceeded
+            <div className="card w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="border-b border-[var(--border-default)] px-6 py-4">
+                <h2 className="text-2xl font-bold text-[var(--error)]">
+                  Budget Exceeded
                 </h2>
               </div>
 
               <div className="p-6 space-y-4">
-                <p className="text-gray-700">
+                <p className="text-[var(--text-secondary)]">
                   The following budget items will be exceeded by this purchase order:
                 </p>
 
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-3">
+                <div className="card border-[var(--error-muted)] bg-[var(--error-subtle)] p-4 space-y-3">
                   {overBudgetItems.map((item, index) => (
-                    <div key={index} className="bg-white rounded p-3 border border-red-100">
+                    <div key={index} className="card p-3">
                       <div className="flex justify-between items-start mb-2">
                         <div>
-                          <div className="font-semibold text-gray-900">{item.code}</div>
-                          <div className="text-sm text-gray-600">{item.name}</div>
+                          <div className="font-semibold text-[var(--text-primary)]">{item.code}</div>
+                          <div className="text-sm text-[var(--text-secondary)]">{item.name}</div>
                         </div>
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-sm">
                         <div>
-                          <span className="text-gray-600">Available:</span>
-                          <div className="font-semibold text-green-600">
+                          <span className="text-[var(--text-secondary)]">Available:</span>
+                          <div className="font-semibold text-[var(--success)]">
                             ${item.available.toFixed(2)}
                           </div>
                         </div>
                         <div>
-                          <span className="text-gray-600">Requested:</span>
-                          <div className="font-semibold text-gray-900">
+                          <span className="text-[var(--text-secondary)]">Requested:</span>
+                          <div className="font-semibold text-[var(--text-primary)]">
                             ${item.amount.toFixed(2)}
                           </div>
                         </div>
                         <div>
-                          <span className="text-gray-600">Over by:</span>
-                          <div className="font-semibold text-red-600">
+                          <span className="text-[var(--text-secondary)]">Over by:</span>
+                          <div className="font-semibold text-[var(--error)]">
                             ${item.overBy.toFixed(2)}
                           </div>
                         </div>
@@ -528,27 +528,27 @@ export default function NewPurchaseOrderPage() {
                   ))}
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm text-blue-900">
+                <div className="card border-[var(--info-muted)] bg-[var(--info-subtle)] p-4">
+                  <p className="text-sm text-[var(--info)]">
                     <strong>Note:</strong> If you continue, the purchase order will be saved as a <strong>DRAFT</strong> and will not affect budget allocations until approved.
                   </p>
                 </div>
 
-                <p className="text-gray-700">
+                <p className="text-[var(--text-secondary)]">
                   What would you like to do?
                 </p>
               </div>
 
-              <div className="border-t px-6 py-4 flex justify-end gap-3">
+              <div className="border-t border-[var(--border-default)] px-6 py-4 flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => {
                     setShowOverBudgetDialog(false);
                     setOverBudgetItems([]);
                   }}
-                  className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="btn btn-secondary"
                 >
-                  Cancel & Revise
+                  Cancel &amp; Revise
                 </button>
                 <button
                   type="button"
@@ -556,7 +556,7 @@ export default function NewPurchaseOrderPage() {
                     setShowOverBudgetDialog(false);
                     await submitPO(true);
                   }}
-                  className="px-6 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors font-semibold"
+                  className="btn bg-[var(--warning)] hover:bg-[var(--warning)] text-white font-semibold px-6 py-2 rounded-md transition-colors"
                 >
                   Save as Draft
                 </button>

@@ -133,13 +133,13 @@ export default function FiscalYearsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'OPEN':
-        return 'bg-green-100 text-green-800';
+        return 'badge badge-success';
       case 'SOFT_CLOSED':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'badge badge-warning';
       case 'HARD_CLOSED':
-        return 'bg-red-100 text-red-800';
+        return 'badge badge-error';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'badge badge-neutral';
     }
   };
 
@@ -178,23 +178,23 @@ export default function FiscalYearsPage() {
     }
   };
 
-  if (loading) return <div className="p-4">Loading fiscal years...</div>;
-  if (error) return <div className="p-4 text-red-600">Error: {error}</div>;
+  if (loading) return <div className="p-4 text-[var(--text-secondary)]">Loading fiscal years...</div>;
+  if (error) return <div className="p-4 text-[var(--error)]">Error: {error}</div>;
 
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Fiscal Year Management</h1>
+        <h1 className="page-title">Fiscal Year Management</h1>
         <div className="flex gap-2">
           <button
             onClick={() => setShowCopyForm(true)}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            className="btn btn-success"
           >
             Copy Prior Year Budget
           </button>
           <button
             onClick={() => setShowCreateForm(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="btn btn-primary"
           >
             Create Fiscal Year
           </button>
@@ -202,11 +202,11 @@ export default function FiscalYearsPage() {
       </div>
 
       {showCreateForm && (
-        <div className="mb-6 p-4 border rounded bg-gray-50">
-          <h2 className="text-lg font-semibold mb-4">Create New Fiscal Year</h2>
+        <div className="mb-6 card p-4">
+          <h2 className="section-title mb-4">Create New Fiscal Year</h2>
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Year</label>
+              <label className="form-label">Year</label>
               <input
                 type="number"
                 value={formData.year}
@@ -214,11 +214,11 @@ export default function FiscalYearsPage() {
                   setFormData({ ...formData, year: parseInt(e.target.value) })
                 }
                 required
-                className="w-full px-3 py-2 border rounded"
+                className="form-input w-full"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">
+              <label className="form-label">
                 Start Date
               </label>
               <input
@@ -228,11 +228,11 @@ export default function FiscalYearsPage() {
                   setFormData({ ...formData, startDate: e.target.value })
                 }
                 required
-                className="w-full px-3 py-2 border rounded"
+                className="form-input w-full"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">End Date</label>
+              <label className="form-label">End Date</label>
               <input
                 type="date"
                 value={formData.endDate}
@@ -240,20 +240,20 @@ export default function FiscalYearsPage() {
                   setFormData({ ...formData, endDate: e.target.value })
                 }
                 required
-                className="w-full px-3 py-2 border rounded"
+                className="form-input w-full"
               />
             </div>
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="btn btn-primary"
               >
                 Create
               </button>
               <button
                 type="button"
                 onClick={() => setShowCreateForm(false)}
-                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                className="btn btn-secondary"
               >
                 Cancel
               </button>
@@ -263,15 +263,15 @@ export default function FiscalYearsPage() {
       )}
 
       {showCopyForm && (
-        <div className="mb-6 p-4 border rounded bg-green-50">
-          <h2 className="text-lg font-semibold mb-4">Copy Prior Year Budget</h2>
-          <p className="text-sm text-gray-600 mb-4">
+        <div className="mb-6 card p-4">
+          <h2 className="section-title mb-4">Copy Prior Year Budget</h2>
+          <p className="text-sm text-[var(--text-secondary)] mb-4">
             This will copy all budget items from the source year to the target year,
             preserving budget amounts and structure but resetting encumbered and actual spent to zero.
           </p>
           <form onSubmit={handleCopyYear} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1">
+              <label className="form-label">
                 Source Fiscal Year
               </label>
               <input
@@ -284,11 +284,11 @@ export default function FiscalYearsPage() {
                   })
                 }
                 required
-                className="w-full px-3 py-2 border rounded"
+                className="form-input w-full"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">
+              <label className="form-label">
                 Target Fiscal Year
               </label>
               <input
@@ -301,20 +301,20 @@ export default function FiscalYearsPage() {
                   })
                 }
                 required
-                className="w-full px-3 py-2 border rounded"
+                className="form-input w-full"
               />
             </div>
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                className="btn btn-success"
               >
                 Copy Budget
               </button>
               <button
                 type="button"
                 onClick={() => setShowCopyForm(false)}
-                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                className="btn btn-secondary"
               >
                 Cancel
               </button>
@@ -323,113 +323,187 @@ export default function FiscalYearsPage() {
         </div>
       )}
 
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Year
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Period
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Closed Info
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {fiscalYears.map((fy) => (
-              <tr key={fy.id}>
-                <td className="px-6 py-4 whitespace-nowrap font-medium">
-                  {fy.year}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {new Date(fy.startDate).toLocaleDateString()} -{' '}
-                  {new Date(fy.endDate).toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-semibold ${getStatusColor(
-                      fy.status
-                    )}`}
+      <div className="card overflow-hidden">
+        {/* Mobile Card View */}
+        <div className="lg:hidden space-y-4 p-4">
+          {fiscalYears.map((fy) => (
+            <div key={fy.id} className="card">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h3 className="text-lg font-bold text-[var(--text-primary)]">FY {fy.year}</h3>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    {new Date(fy.startDate).toLocaleDateString()} - {new Date(fy.endDate).toLocaleDateString()}
+                  </p>
+                </div>
+                <span className={getStatusColor(fy.status)}>
+                  {getStatusLabel(fy.status)}
+                </span>
+              </div>
+              <div className="space-y-2 text-sm mb-4">
+                {fy.closedAt && fy.closedBy && (
+                  <div className="flex justify-between">
+                    <span className="text-[var(--text-secondary)]">Closed:</span>
+                    <span className="text-[var(--text-primary)]">
+                      {new Date(fy.closedAt).toLocaleDateString()} by {fy.closedBy.name || fy.closedBy.email}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2 border-t border-[var(--border-default)] pt-3">
+                {fy.status === 'OPEN' && (
+                  <button
+                    onClick={() => handleStatusChange(fy.id, 'SOFT_CLOSED')}
+                    className="btn btn-warning px-3 py-1"
                   >
-                    {getStatusLabel(fy.status)}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {fy.closedAt && fy.closedBy ? (
-                    <div>
-                      <div>{new Date(fy.closedAt).toLocaleDateString()}</div>
-                      <div className="text-xs">
-                        by {fy.closedBy.name || fy.closedBy.email}
+                    Soft Close
+                  </button>
+                )}
+                {fy.status === 'SOFT_CLOSED' && (
+                  <>
+                    <button
+                      onClick={() => handleStatusChange(fy.id, 'OPEN')}
+                      className="btn btn-success px-3 py-1"
+                    >
+                      Reopen
+                    </button>
+                    <button
+                      onClick={() => handleStatusChange(fy.id, 'HARD_CLOSED')}
+                      className="btn btn-danger px-3 py-1"
+                    >
+                      Hard Close
+                    </button>
+                  </>
+                )}
+                {fy.status === 'HARD_CLOSED' && (
+                  <span className="text-[var(--text-muted)] italic">Locked</span>
+                )}
+                {fy.status === 'OPEN' && (
+                  <button
+                    onClick={() => handleDelete(fy.id)}
+                    className="btn btn-danger px-3 py-1"
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+          {fiscalYears.length === 0 && (
+            <div className="empty-state">
+              <p className="empty-state-title">No fiscal years found</p>
+              <p className="empty-state-description">Create one to get started.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden lg:block table-container">
+          <table className="table">
+            <thead>
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Year
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Period
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Closed Info
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {fiscalYears.map((fy) => (
+                <tr key={fy.id}>
+                  <td className="px-6 py-4 whitespace-nowrap font-medium">
+                    {fy.year}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {new Date(fy.startDate).toLocaleDateString()} -{' '}
+                    {new Date(fy.endDate).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span
+                      className={getStatusColor(fy.status)}
+                    >
+                      {getStatusLabel(fy.status)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-muted)]">
+                    {fy.closedAt && fy.closedBy ? (
+                      <div>
+                        <div>{new Date(fy.closedAt).toLocaleDateString()}</div>
+                        <div className="text-xs">
+                          by {fy.closedBy.name || fy.closedBy.email}
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    '-'
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <div className="flex gap-2">
-                    {fy.status === 'OPEN' && (
-                      <button
-                        onClick={() =>
-                          handleStatusChange(fy.id, 'SOFT_CLOSED')
-                        }
-                        className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-                      >
-                        Soft Close
-                      </button>
+                    ) : (
+                      '-'
                     )}
-                    {fy.status === 'SOFT_CLOSED' && (
-                      <>
-                        <button
-                          onClick={() => handleStatusChange(fy.id, 'OPEN')}
-                          className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                        >
-                          Reopen
-                        </button>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <div className="flex gap-2">
+                      {fy.status === 'OPEN' && (
                         <button
                           onClick={() =>
-                            handleStatusChange(fy.id, 'HARD_CLOSED')
+                            handleStatusChange(fy.id, 'SOFT_CLOSED')
                           }
-                          className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                          className="btn btn-warning px-3 py-1"
                         >
-                          Hard Close
+                          Soft Close
                         </button>
-                      </>
-                    )}
-                    {fy.status === 'HARD_CLOSED' && (
-                      <span className="text-gray-400 italic">Locked</span>
-                    )}
-                    {fy.status === 'OPEN' && (
-                      <button
-                        onClick={() => handleDelete(fy.id)}
-                        className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                      )}
+                      {fy.status === 'SOFT_CLOSED' && (
+                        <>
+                          <button
+                            onClick={() => handleStatusChange(fy.id, 'OPEN')}
+                            className="btn btn-success px-3 py-1"
+                          >
+                            Reopen
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleStatusChange(fy.id, 'HARD_CLOSED')
+                            }
+                            className="btn btn-danger px-3 py-1"
+                          >
+                            Hard Close
+                          </button>
+                        </>
+                      )}
+                      {fy.status === 'HARD_CLOSED' && (
+                        <span className="text-[var(--text-muted)] italic">Locked</span>
+                      )}
+                      {fy.status === 'OPEN' && (
+                        <button
+                          onClick={() => handleDelete(fy.id)}
+                          className="btn btn-danger px-3 py-1"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         {fiscalYears.length === 0 && (
-          <div className="p-6 text-center text-gray-500">
-            No fiscal years found. Create one to get started.
+          <div className="empty-state">
+            <p className="empty-state-title">No fiscal years found</p>
+            <p className="empty-state-description">Create one to get started.</p>
           </div>
         )}
       </div>
 
-      <div className="mt-6 p-4 bg-blue-50 rounded border border-blue-200">
+      <div className="mt-6 rounded-[var(--radius-lg)] border border-[var(--info-muted)] bg-[var(--info-subtle)] text-[var(--info)] px-4 py-3">
         <h3 className="font-semibold mb-2">Fiscal Year Status Workflow:</h3>
         <ul className="list-disc list-inside space-y-1 text-sm">
           <li>

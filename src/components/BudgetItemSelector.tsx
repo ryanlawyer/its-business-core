@@ -58,11 +58,11 @@ export default function BudgetItemSelector({
 
   // Get color class based on budget remaining percentage
   const getBudgetColor = (item: BudgetItem): string => {
-    if (!item.allocated || item.remaining === undefined) return 'text-gray-700';
+    if (!item.allocated || item.remaining === undefined) return 'text-[var(--text-secondary)]';
     const percentage = (item.remaining / item.allocated) * 100;
-    if (percentage > 20) return 'text-green-600';
-    if (percentage > 5) return 'text-yellow-600';
-    return 'text-red-600';
+    if (percentage > 20) return 'text-[var(--success)]';
+    if (percentage > 5) return 'text-[var(--warning)]';
+    return 'text-[var(--error)]';
   };
 
   // Filter budget items by user's department by default
@@ -144,7 +144,7 @@ export default function BudgetItemSelector({
           <Combobox value={selectedBudgetItemId} onChange={onChange}>
             <div className="relative">
               <Combobox.Input
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+                className="form-input pr-10"
                 displayValue={(id: string) => {
                   const item = budgetItems.find(b => b.id === id);
                   if (!item) return '';
@@ -155,7 +155,7 @@ export default function BudgetItemSelector({
                 required={required}
               />
               <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
-                <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                <ChevronUpDownIcon className="h-5 w-5 text-[var(--text-muted)]" aria-hidden="true" />
               </Combobox.Button>
 
               <Transition
@@ -165,9 +165,9 @@ export default function BudgetItemSelector({
                 leaveTo="opacity-0"
                 afterLeave={() => setQuery('')}
               >
-                <Combobox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                <Combobox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-[var(--radius-lg)] bg-[var(--bg-elevated)] py-1 text-sm shadow-lg ring-1 ring-[var(--border-default)]">
                   {filteredItems.length === 0 ? (
-                    <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
+                    <div className="relative cursor-default select-none py-2 px-4 text-[var(--text-secondary)]">
                       No budget items found.
                     </div>
                   ) : (
@@ -177,7 +177,7 @@ export default function BudgetItemSelector({
                         value={item.id}
                         className={({ active }) =>
                           `relative cursor-pointer select-none py-2 px-4 ${
-                            active ? 'bg-blue-50 text-blue-900' : 'text-gray-900'
+                            active ? 'bg-[var(--accent-primary-subtle)] text-[var(--accent-primary)]' : 'text-[var(--text-primary)]'
                           }`
                         }
                       >
@@ -203,12 +203,12 @@ export default function BudgetItemSelector({
 
           {/* Hint text */}
           {userDepartmentName && (
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-[var(--text-muted)]">
               Searching in {userDepartmentName} -
               <button
                 type="button"
                 onClick={() => setShowBrowserModal(true)}
-                className="ml-1 text-blue-600 hover:text-blue-800 underline"
+                className="ml-1 text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] underline"
               >
                 Browse All
               </button>
@@ -220,7 +220,7 @@ export default function BudgetItemSelector({
         <button
           type="button"
           onClick={() => setShowBrowserModal(true)}
-          className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md border border-gray-300 transition-colors flex items-center gap-1"
+          className="btn btn-secondary"
         >
           <MagnifyingGlassIcon className="h-4 w-4" />
           Browse
@@ -253,19 +253,19 @@ export default function BudgetItemSelector({
                 leaveFrom="opacity-100 scale-100"
                 leaveTo="opacity-0 scale-95"
               >
-                <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-lg bg-white shadow-xl transition-all md:max-h-[85vh]">
+                <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-[var(--radius-xl)] bg-[var(--bg-elevated)] shadow-xl transition-all md:max-h-[85vh]">
                   {/* Modal Header */}
-                  <div className="border-b bg-gray-50 px-6 py-4">
-                    <Dialog.Title className="text-xl font-bold text-gray-900">
+                  <div className="border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 py-4">
+                    <Dialog.Title className="text-xl font-bold text-[var(--text-primary)]">
                       Select Budget Item
                     </Dialog.Title>
                   </div>
 
                   {/* Filters */}
-                  <div className="border-b bg-white px-6 py-4">
+                  <div className="border-b border-[var(--border-subtle)] px-6 py-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="form-label">
                           Search
                         </label>
                         <input
@@ -273,17 +273,17 @@ export default function BudgetItemSelector({
                           value={modalSearch}
                           onChange={(e) => setModalSearch(e.target.value)}
                           placeholder="Search by code or description..."
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="form-input"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="form-label">
                           Department
                         </label>
                         <select
                           value={modalDepartmentFilter}
                           onChange={(e) => setModalDepartmentFilter(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="form-input form-select"
                         >
                           <option value="">All Departments</option>
                           {departments.map((dept) => (
@@ -298,39 +298,39 @@ export default function BudgetItemSelector({
 
                   {/* Table */}
                   <div className="overflow-auto max-h-96 px-6 py-4">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50 sticky top-0">
+                    <table className="min-w-full divide-y divide-[var(--border-subtle)]">
+                      <thead className="bg-[var(--bg-surface)] sticky top-0">
                         <tr>
                           <th
-                            className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                            className="px-3 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider cursor-pointer hover:bg-[var(--bg-hover)]"
                             onClick={() => handleSort('code')}
                           >
                             Code {sortColumn === 'code' && (sortDirection === 'asc' ? '↑' : '↓')}
                           </th>
                           <th
-                            className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                            className="px-3 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider cursor-pointer hover:bg-[var(--bg-hover)]"
                             onClick={() => handleSort('name')}
                           >
                             Description {sortColumn === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}
                           </th>
-                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-3 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
                             Department
                           </th>
                           <th
-                            className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                            className="px-3 py-3 text-right text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider cursor-pointer hover:bg-[var(--bg-hover)]"
                             onClick={() => handleSort('remaining')}
                           >
                             Available {sortColumn === 'remaining' && (sortDirection === 'asc' ? '↑' : '↓')}
                           </th>
-                          <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-3 py-3 text-center text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
                             Action
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="divide-y divide-[var(--border-subtle)]">
                         {modalItems.length === 0 ? (
                           <tr>
-                            <td colSpan={5} className="px-3 py-8 text-center text-gray-500">
+                            <td colSpan={5} className="px-3 py-8 text-center text-[var(--text-muted)]">
                               No budget items found
                             </td>
                           </tr>
@@ -338,17 +338,17 @@ export default function BudgetItemSelector({
                           modalItems.map((item) => (
                             <tr
                               key={item.id}
-                              className={`hover:bg-gray-50 ${
-                                selectedBudgetItemId === item.id ? 'bg-blue-50' : ''
+                              className={`hover:bg-[var(--bg-hover)] ${
+                                selectedBudgetItemId === item.id ? 'bg-[var(--accent-primary-subtle)]' : ''
                               }`}
                             >
-                              <td className="px-3 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                              <td className="px-3 py-3 whitespace-nowrap text-sm font-medium text-[var(--text-primary)]">
                                 {item.code}
                               </td>
-                              <td className="px-3 py-3 text-sm text-gray-700">
+                              <td className="px-3 py-3 text-sm text-[var(--text-secondary)]">
                                 {item.name}
                               </td>
-                              <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
+                              <td className="px-3 py-3 whitespace-nowrap text-sm text-[var(--text-muted)]">
                                 {item.department?.name || '-'}
                               </td>
                               <td className={`px-3 py-3 whitespace-nowrap text-sm text-right font-semibold ${getBudgetColor(item)}`}>
@@ -358,7 +358,7 @@ export default function BudgetItemSelector({
                                 <button
                                   type="button"
                                   onClick={() => handleModalSelect(item.id)}
-                                  className="text-blue-600 hover:text-blue-800 font-medium"
+                                  className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] font-medium"
                                 >
                                   Select
                                 </button>
@@ -371,11 +371,11 @@ export default function BudgetItemSelector({
                   </div>
 
                   {/* Modal Footer */}
-                  <div className="border-t bg-gray-50 px-6 py-4 flex justify-end">
+                  <div className="border-t border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 py-4 flex justify-end">
                     <button
                       type="button"
                       onClick={() => setShowBrowserModal(false)}
-                      className="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="btn btn-secondary"
                     >
                       Cancel
                     </button>

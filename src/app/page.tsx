@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { OvertimeAlertBanner } from '@/components/OvertimeAlertBanner';
 
 type PayPeriod = {
@@ -181,7 +181,7 @@ export default function TimeclockPage() {
       return <span className="badge badge-accent badge-dot">Active</span>;
     }
 
-    const statusConfig: Record<string, { class: string; icon?: JSX.Element }> = {
+    const statusConfig: Record<string, { class: string; icon?: React.ReactElement }> = {
       pending: { class: 'badge badge-warning badge-dot' },
       approved: {
         class: 'badge badge-success',
@@ -210,7 +210,7 @@ export default function TimeclockPage() {
     return (
       <div className="page-container">
         <div className="page-header animate-fade-in">
-          <h1 className="page-title font-display">Timeclock</h1>
+          <h1 className="page-title">Timeclock</h1>
           <p className="page-subtitle">Loading your time entries...</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -243,7 +243,7 @@ export default function TimeclockPage() {
       <header className="page-header animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <h1 className="page-title font-display">Timeclock</h1>
+            <h1 className="page-title">Timeclock</h1>
             <p className="page-subtitle">
               {currentTime.toLocaleDateString(undefined, {
                 weekday: 'long',
@@ -394,29 +394,29 @@ export default function TimeclockPage() {
       {/* Period Summary Row */}
       {periodStats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 animate-fade-in-up" style={{ animationDelay: '350ms' }}>
-          <div className="card text-center p-4">
-            <div className="text-2xl font-bold font-mono" style={{ color: 'var(--text-primary)' }}>
+          <div className="stat-card">
+            <div className="stat-value" style={{ color: 'var(--text-primary)' }}>
               {periodStats.sessionsCompleted}
             </div>
-            <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Sessions</div>
+            <div className="stat-label">Sessions</div>
           </div>
-          <div className="card text-center p-4">
-            <div className="text-2xl font-bold font-mono" style={{ color: 'var(--warning)' }}>
+          <div className="stat-card">
+            <div className="stat-value" style={{ color: 'var(--warning)' }}>
               {periodStats.pendingCount}
             </div>
-            <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Pending</div>
+            <div className="stat-label">Pending</div>
           </div>
-          <div className="card text-center p-4">
-            <div className="text-2xl font-bold font-mono" style={{ color: 'var(--success)' }}>
+          <div className="stat-card">
+            <div className="stat-value" style={{ color: 'var(--success)' }}>
               {periodStats.approvedCount}
             </div>
-            <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Approved</div>
+            <div className="stat-label">Approved</div>
           </div>
-          <div className="card text-center p-4">
-            <div className="text-2xl font-bold font-mono" style={{ color: 'var(--error)' }}>
+          <div className="stat-card">
+            <div className="stat-value" style={{ color: 'var(--error)' }}>
               {periodStats.rejectedCount}
             </div>
-            <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Rejected</div>
+            <div className="stat-label">Rejected</div>
           </div>
         </div>
       )}
@@ -461,7 +461,7 @@ export default function TimeclockPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <div className="lg:col-span-1">
           <div className="card animate-fade-in-up" style={{ animationDelay: '400ms' }}>
-            <h2 className="text-lg font-display font-medium mb-4" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="section-title mb-4">
               {activeEntry ? 'End Your Session' : 'Start Your Day'}
             </h2>
 
@@ -521,7 +521,7 @@ export default function TimeclockPage() {
         <div className="lg:col-span-2 animate-fade-in-up" style={{ animationDelay: '450ms' }}>
           <div className="table-container">
             <div className="p-4 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-              <h2 className="text-lg font-display font-medium" style={{ color: 'var(--text-primary)' }}>
+              <h2 className="section-title">
                 Period Time Entries
               </h2>
             </div>
@@ -540,33 +540,23 @@ export default function TimeclockPage() {
                 </div>
               </div>
             ) : (
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Clock In</th>
-                    <th>Clock Out</th>
-                    <th>Duration</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <>
+                {/* Mobile Card View */}
+                <div className="lg:hidden space-y-4 p-4">
                   {entries.map((entry, index) => (
-                    <tr
+                    <div
                       key={entry.id}
-                      className={`animate-fade-in ${entry.status === 'rejected' ? 'row-rejected' : ''}`}
+                      className={`card animate-fade-in`}
                       style={{
                         animationDelay: `${500 + index * 50}ms`,
                         background: entry.status === 'rejected' ? 'var(--error-bg, rgba(239, 68, 68, 0.1))' : undefined,
                       }}
                     >
-                      <td className="font-mono">{formatDateTime(entry.clockIn)}</td>
-                      <td className="font-mono">
-                        {entry.clockOut ? formatDateTime(entry.clockOut) : '—'}
-                      </td>
-                      <td className="font-mono font-medium">
-                        {entry.clockOut ? formatDuration(entry.duration) : '—'}
-                      </td>
-                      <td>
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h3 className="text-sm font-bold text-[var(--text-primary)] font-mono">{formatDateTime(entry.clockIn)}</h3>
+                          <p className="text-xs text-[var(--text-secondary)] mt-0.5">Clock In</p>
+                        </div>
                         <div className="flex items-center gap-2">
                           {getStatusBadge(entry)}
                           {entry.isLocked && entry.status === 'approved' && (
@@ -578,38 +568,126 @@ export default function TimeclockPage() {
                             </span>
                           )}
                         </div>
-                        {entry.status === 'rejected' && entry.rejectedNote && !dismissedRejections.has(entry.id) && (
-                          <div
-                            className="mt-2 p-2 rounded text-xs flex items-start gap-2"
-                            style={{
-                              background: 'var(--error-bg, rgba(239, 68, 68, 0.15))',
-                              border: '1px solid var(--error)',
-                            }}
-                          >
-                            <div className="flex-1">
-                              <div className="font-medium" style={{ color: 'var(--error)' }}>Rejection Note:</div>
-                              <div style={{ color: 'var(--text-primary)' }}>{entry.rejectedNote}</div>
-                              <div className="mt-1" style={{ color: 'var(--text-muted)' }}>
-                                Contact your manager for correction
-                              </div>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-[var(--text-secondary)]">Clock Out:</span>
+                          <span className="text-[var(--text-primary)] font-mono">
+                            {entry.clockOut ? formatDateTime(entry.clockOut) : <span style={{ color: 'var(--text-muted)' }}>--</span>}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-[var(--text-secondary)]">Duration:</span>
+                          <span className="text-[var(--text-primary)] font-mono font-medium">
+                            {entry.clockOut ? formatDuration(entry.duration) : <span style={{ color: 'var(--text-muted)' }}>--</span>}
+                          </span>
+                        </div>
+                      </div>
+                      {entry.status === 'rejected' && entry.rejectedNote && !dismissedRejections.has(entry.id) && (
+                        <div
+                          className="mt-3 p-2 rounded text-xs flex items-start gap-2"
+                          style={{
+                            background: 'var(--error-bg, rgba(239, 68, 68, 0.15))',
+                            border: '1px solid var(--error)',
+                          }}
+                        >
+                          <div className="flex-1">
+                            <div className="font-medium" style={{ color: 'var(--error)' }}>Rejection Note:</div>
+                            <div style={{ color: 'var(--text-primary)' }}>{entry.rejectedNote}</div>
+                            <div className="mt-1" style={{ color: 'var(--text-muted)' }}>
+                              Contact your manager for correction
                             </div>
-                            <button
-                              onClick={() => handleDismissRejection(entry.id)}
-                              className="flex-shrink-0 p-1 rounded hover:bg-opacity-20"
-                              style={{ color: 'var(--text-muted)' }}
-                              title="Dismiss this notice"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
                           </div>
-                        )}
-                      </td>
-                    </tr>
+                          <button
+                            onClick={() => handleDismissRejection(entry.id)}
+                            className="flex-shrink-0 p-1 rounded hover:bg-opacity-20"
+                            style={{ color: 'var(--text-muted)' }}
+                            title="Dismiss this notice"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden lg:block">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Clock In</th>
+                        <th>Clock Out</th>
+                        <th>Duration</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {entries.map((entry, index) => (
+                        <tr
+                          key={entry.id}
+                          className={`animate-fade-in ${entry.status === 'rejected' ? 'row-rejected' : ''}`}
+                          style={{
+                            animationDelay: `${500 + index * 50}ms`,
+                            background: entry.status === 'rejected' ? 'var(--error-bg, rgba(239, 68, 68, 0.1))' : undefined,
+                          }}
+                        >
+                          <td className="font-mono">{formatDateTime(entry.clockIn)}</td>
+                          <td className="font-mono">
+                            {entry.clockOut ? formatDateTime(entry.clockOut) : '—'}
+                          </td>
+                          <td className="font-mono font-medium">
+                            {entry.clockOut ? formatDuration(entry.duration) : '—'}
+                          </td>
+                          <td>
+                            <div className="flex items-center gap-2">
+                              {getStatusBadge(entry)}
+                              {entry.isLocked && entry.status === 'approved' && (
+                                <span title="Locked - cannot be modified">
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" style={{ color: 'var(--text-muted)' }}>
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                    <path d="M7 11V7a5 5 0 0110 0v4" />
+                                  </svg>
+                                </span>
+                              )}
+                            </div>
+                            {entry.status === 'rejected' && entry.rejectedNote && !dismissedRejections.has(entry.id) && (
+                              <div
+                                className="mt-2 p-2 rounded text-xs flex items-start gap-2"
+                                style={{
+                                  background: 'var(--error-bg, rgba(239, 68, 68, 0.15))',
+                                  border: '1px solid var(--error)',
+                                }}
+                              >
+                                <div className="flex-1">
+                                  <div className="font-medium" style={{ color: 'var(--error)' }}>Rejection Note:</div>
+                                  <div style={{ color: 'var(--text-primary)' }}>{entry.rejectedNote}</div>
+                                  <div className="mt-1" style={{ color: 'var(--text-muted)' }}>
+                                    Contact your manager for correction
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => handleDismissRejection(entry.id)}
+                                  className="flex-shrink-0 p-1 rounded hover:bg-opacity-20"
+                                  style={{ color: 'var(--text-muted)' }}
+                                  title="Dismiss this notice"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         </div>

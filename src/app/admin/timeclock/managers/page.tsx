@@ -172,10 +172,10 @@ export default function ManagerAssignmentsPage() {
     return (
       <div className="p-6">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-64 mb-6"></div>
+          <div className="h-8 bg-[var(--bg-hover)] rounded w-64 mb-6"></div>
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-16 bg-gray-200 rounded"></div>
+              <div key={i} className="h-16 bg-[var(--bg-hover)] rounded"></div>
             ))}
           </div>
         </div>
@@ -189,52 +189,52 @@ export default function ManagerAssignmentsPage() {
       <nav className="mb-4 text-sm">
         <ol className="flex items-center space-x-2">
           <li>
-            <Link href="/admin" className="text-blue-600 hover:underline">
+            <Link href="/admin/settings" className="text-[var(--accent-primary)] hover:underline">
               Admin
             </Link>
           </li>
-          <li className="text-gray-500">/</li>
+          <li className="text-[var(--text-muted)]">/</li>
           <li>
-            <Link href="/admin/timeclock" className="text-blue-600 hover:underline">
+            <Link href="/admin/timeclock" className="text-[var(--accent-primary)] hover:underline">
               Timeclock
             </Link>
           </li>
-          <li className="text-gray-500">/</li>
-          <li className="text-gray-700">Manager Assignments</li>
+          <li className="text-[var(--text-muted)]">/</li>
+          <li className="text-[var(--text-secondary)]">Manager Assignments</li>
         </ol>
       </nav>
 
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Manager Assignments</h1>
-      <p className="text-gray-600 mb-6">
+      <h1 className="page-title mb-2">Manager Assignments</h1>
+      <p className="text-[var(--text-secondary)] mb-6">
         Assign managers to departments they can oversee for timeclock approvals.
         Managers can be assigned to multiple departments.
       </p>
 
       {/* Alerts */}
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-700">{error}</p>
+        <div className="mb-4 rounded-[var(--radius-lg)] border border-[var(--error-muted)] bg-[var(--error-subtle)] text-[var(--error)] px-4 py-3">
+          <p>{error}</p>
         </div>
       )}
       {success && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-green-700">{success}</p>
+        <div className="mb-4 rounded-[var(--radius-lg)] border border-[var(--success-muted)] bg-[var(--success-subtle)] text-[var(--success)] px-4 py-3">
+          <p>{success}</p>
         </div>
       )}
 
       {/* Add Assignment Form */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Add New Assignment</h2>
+      <div className="card p-6 mb-6">
+        <h2 className="section-title mb-4">Add New Assignment</h2>
         <form onSubmit={handleAddAssignment} className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
-            <label htmlFor="user" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="user" className="form-label">
               Manager
             </label>
             <select
               id="user"
               value={selectedUserId}
               onChange={(e) => setSelectedUserId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="form-input form-select"
               required
             >
               <option value="">Select a user...</option>
@@ -246,14 +246,14 @@ export default function ManagerAssignmentsPage() {
             </select>
           </div>
           <div className="flex-1">
-            <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="department" className="form-label">
               Department
             </label>
             <select
               id="department"
               value={selectedDepartmentId}
               onChange={(e) => setSelectedDepartmentId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="form-input form-select"
               required
             >
               <option value="">Select a department...</option>
@@ -268,7 +268,7 @@ export default function ManagerAssignmentsPage() {
             <button
               type="submit"
               disabled={saving || !selectedUserId || !selectedDepartmentId}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn btn-primary"
             >
               {saving ? 'Adding...' : 'Add Assignment'}
             </button>
@@ -277,15 +277,15 @@ export default function ManagerAssignmentsPage() {
       </div>
 
       {/* Assignments Grid */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Current Assignments</h2>
+      <div className="card overflow-hidden">
+        <div className="p-4 border-b border-[var(--border-default)]">
+          <h2 className="section-title">Current Assignments</h2>
         </div>
 
         {Object.keys(assignmentsByUser).length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-[var(--text-muted)]">
             <svg
-              className="mx-auto h-12 w-12 text-gray-400 mb-4"
+              className="mx-auto h-12 w-12 text-[var(--text-muted)] mb-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -301,25 +301,25 @@ export default function ManagerAssignmentsPage() {
             <p className="text-sm mt-1">Use the form above to assign managers to departments.</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-[var(--border-subtle)]">
             {Object.entries(assignmentsByUser).map(([userId, { user, departments: depts }]) => (
               <div key={userId} className="p-4">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="font-medium text-gray-900">{user.name}</h3>
-                    <p className="text-sm text-gray-500">{user.email}</p>
+                    <h3 className="font-medium text-[var(--text-primary)]">{user.name}</h3>
+                    <p className="text-sm text-[var(--text-muted)]">{user.email}</p>
                   </div>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {depts.map((dept) => (
                     <span
                       key={dept.id}
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                      className="badge badge-info inline-flex items-center gap-1"
                     >
                       {dept.name}
                       <button
                         onClick={() => handleRemoveAssignment(userId, dept.id)}
-                        className="ml-1 hover:text-blue-600"
+                        className="ml-1 hover:text-[var(--accent-primary)]"
                         title="Remove assignment"
                       >
                         <svg
@@ -347,35 +347,65 @@ export default function ManagerAssignmentsPage() {
 
       {/* Summary Table */}
       {departments.length > 0 && (
-        <div className="mt-6 bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Department Overview</h2>
+        <div className="mt-6 card overflow-hidden">
+          <div className="p-4 border-b border-[var(--border-default)]">
+            <h2 className="section-title">Department Overview</h2>
           </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          {/* Mobile Card View */}
+          <div className="lg:hidden space-y-4 p-4">
+            {departments.map((dept) => {
+              const managers = assignments
+                .filter((a) => a.departmentId === dept.id)
+                .map((a) => a.user);
+              return (
+                <div key={dept.id} className="card">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-lg font-bold text-[var(--text-primary)]">{dept.name}</h3>
+                    <span className="badge badge-info">{managers.length} manager{managers.length !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="text-[var(--text-secondary)]">Assigned Managers:</span>
+                      <p className="text-[var(--text-primary)] mt-1">
+                        {managers.length === 0 ? (
+                          <span className="text-[var(--text-muted)] italic">No managers assigned</span>
+                        ) : (
+                          managers.map((m) => m.name).join(', ')
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden lg:block table-container">
+            <table className="table">
+              <thead>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                     Department
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                     Assigned Managers
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody>
                 {departments.map((dept) => {
                   const managers = assignments
                     .filter((a) => a.departmentId === dept.id)
                     .map((a) => a.user);
                   return (
                     <tr key={dept.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[var(--text-primary)]">
                         {dept.name}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
+                      <td className="px-6 py-4 text-sm text-[var(--text-muted)]">
                         {managers.length === 0 ? (
-                          <span className="text-gray-400 italic">No managers assigned</span>
+                          <span className="text-[var(--text-muted)] italic">No managers assigned</span>
                         ) : (
                           managers.map((m) => m.name).join(', ')
                         )}

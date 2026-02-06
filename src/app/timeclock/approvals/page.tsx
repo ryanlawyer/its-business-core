@@ -230,7 +230,7 @@ export default function PendingApprovalsPage() {
       <header className="page-header animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <h1 className="page-title font-display">
+            <h1 className="page-title">
               Pending Approvals
               {entries.length > 0 && (
                 <span
@@ -365,7 +365,7 @@ export default function PendingApprovalsPage() {
       {/* Entries */}
       <div className="table-container animate-fade-in-up" style={{ animationDelay: '100ms' }}>
         <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: 'var(--border-subtle)' }}>
-          <h2 className="text-lg font-display font-medium" style={{ color: 'var(--text-primary)' }}>
+          <h2 className="section-title">
             Entries Awaiting Approval
           </h2>
           {entries.length > 0 && (
@@ -477,65 +477,138 @@ export default function PendingApprovalsPage() {
           </div>
         ) : (
           // Flat list view
-          <table className="table">
-            <thead>
-              <tr>
-                <th style={{ width: '40px' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.size === entries.length}
-                    onChange={handleSelectAll}
-                    className="w-4 h-4"
-                  />
-                </th>
-                <th>Employee</th>
-                <th>Department</th>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Duration</th>
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            {/* Mobile Card View */}
+            <div className="lg:hidden space-y-4 p-4">
               {entries.map((entry, index) => (
-                <tr
+                <div
                   key={entry.id}
-                  className="animate-fade-in"
+                  className="card animate-fade-in"
                   style={{ animationDelay: `${150 + index * 30}ms` }}
                 >
-                  <td>
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(entry.id)}
-                      onChange={() => handleSelectEntry(entry.id)}
-                      className="w-4 h-4"
-                    />
-                  </td>
-                  <td>
-                    <div className="font-medium" style={{ color: 'var(--text-primary)' }}>
-                      {entry.user.name}
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(entry.id)}
+                        onChange={() => handleSelectEntry(entry.id)}
+                        className="w-4 h-4"
+                      />
+                      <div>
+                        <h3 className="text-lg font-bold text-[var(--text-primary)]">{entry.user.name}</h3>
+                        <p className="text-sm text-[var(--text-muted)]">{entry.user.email}</p>
+                      </div>
                     </div>
-                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                      {entry.user.email}
+                    <span className="badge badge-warning">Pending</span>
+                  </div>
+                  <div className="space-y-2 text-sm mb-4">
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">Department:</span>
+                      <span className="text-[var(--text-primary)]">{entry.user.department?.name || '—'}</span>
                     </div>
-                  </td>
-                  <td>{entry.user.department?.name || '—'}</td>
-                  <td className="font-mono">
-                    {new Date(entry.clockIn).toLocaleDateString()}
-                  </td>
-                  <td className="font-mono">
-                    {new Date(entry.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    {' — '}
-                    {entry.clockOut
-                      ? new Date(entry.clockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                      : '—'}
-                  </td>
-                  <td className="font-mono font-medium">
-                    {formatDuration(entry.duration)}
-                  </td>
-                </tr>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">Date:</span>
+                      <span className="text-[var(--text-primary)] font-mono">{new Date(entry.clockIn).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">Time:</span>
+                      <span className="text-[var(--text-primary)] font-mono">
+                        {new Date(entry.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {' — '}
+                        {entry.clockOut
+                          ? new Date(entry.clockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                          : '—'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">Duration:</span>
+                      <span className="text-[var(--text-primary)] font-mono font-medium">{formatDuration(entry.duration)}</span>
+                    </div>
+                  </div>
+                  <div className="border-t border-[var(--border-default)] pt-3 flex justify-end gap-2">
+                    <button
+                      onClick={handleApproveSelected}
+                      disabled={approving || !selectedIds.has(entry.id)}
+                      className="btn btn-primary btn-sm"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={handleRejectSelected}
+                      disabled={rejecting || !selectedIds.has(entry.id)}
+                      className="btn btn-secondary btn-sm"
+                      style={{ borderColor: 'var(--error)', color: 'var(--error)' }}
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden lg:block">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '40px' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.size === entries.length}
+                        onChange={handleSelectAll}
+                        className="w-4 h-4"
+                      />
+                    </th>
+                    <th>Employee</th>
+                    <th>Department</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Duration</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries.map((entry, index) => (
+                    <tr
+                      key={entry.id}
+                      className="animate-fade-in"
+                      style={{ animationDelay: `${150 + index * 30}ms` }}
+                    >
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(entry.id)}
+                          onChange={() => handleSelectEntry(entry.id)}
+                          className="w-4 h-4"
+                        />
+                      </td>
+                      <td>
+                        <div className="font-medium" style={{ color: 'var(--text-primary)' }}>
+                          {entry.user.name}
+                        </div>
+                        <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                          {entry.user.email}
+                        </div>
+                      </td>
+                      <td>{entry.user.department?.name || '—'}</td>
+                      <td className="font-mono">
+                        {new Date(entry.clockIn).toLocaleDateString()}
+                      </td>
+                      <td className="font-mono">
+                        {new Date(entry.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {' — '}
+                        {entry.clockOut
+                          ? new Date(entry.clockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                          : '—'}
+                      </td>
+                      <td className="font-mono font-medium">
+                        {formatDuration(entry.duration)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
@@ -543,7 +616,7 @@ export default function PendingApprovalsPage() {
       {showRejectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
           <div className="card w-full max-w-md animate-fade-in">
-            <h3 className="text-lg font-display font-medium mb-4" style={{ color: 'var(--text-primary)' }}>
+            <h3 className="section-title mb-4">
               Reject {selectedIds.size} {selectedIds.size === 1 ? 'Entry' : 'Entries'}
             </h3>
             <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>

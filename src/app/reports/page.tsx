@@ -170,44 +170,44 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Expense Reports</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="page-title">Expense Reports</h1>
+          <p className="text-[var(--text-secondary)] mt-1">
             Generate and export expense reports by date range, category, or department
           </p>
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Report Filters</h2>
+        <div className="card mb-8">
+          <h2 className="section-title mb-4">Report Filters</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="form-label">
                 Start Date
               </label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="form-input text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="form-label">
                 End Date
               </label>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="form-input text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="form-label">
                 Categories
               </label>
               <select
@@ -217,7 +217,7 @@ export default function ReportsPage() {
                   const values = Array.from(e.target.selectedOptions, (option) => option.value);
                   setSelectedCategories(values);
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]"
+                className="form-input text-sm min-h-[80px]"
               >
                 {categories.map((cat) => (
                   <option key={cat.id} value={cat.id}>
@@ -225,10 +225,10 @@ export default function ReportsPage() {
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">Hold Ctrl/Cmd to select multiple</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="form-label">
                 Departments
               </label>
               <select
@@ -238,7 +238,7 @@ export default function ReportsPage() {
                   const values = Array.from(e.target.selectedOptions, (option) => option.value);
                   setSelectedDepartments(values);
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]"
+                className="form-input text-sm min-h-[80px]"
               >
                 {departments.map((dept) => (
                   <option key={dept.id} value={dept.id}>
@@ -246,14 +246,14 @@ export default function ReportsPage() {
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">Hold Ctrl/Cmd to select multiple</p>
             </div>
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-4">
             <button
               onClick={generateReport}
               disabled={loading}
-              className="inline-flex items-center gap-2 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              className="btn btn-primary disabled:opacity-50"
             >
               {loading ? (
                 <>
@@ -272,7 +272,7 @@ export default function ReportsPage() {
                 <button
                   onClick={() => exportReport('csv')}
                   disabled={exporting}
-                  className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="btn btn-secondary disabled:opacity-50"
                 >
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -282,7 +282,7 @@ export default function ReportsPage() {
                 <button
                   onClick={() => exportReport('excel')}
                   disabled={exporting}
-                  className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="btn btn-secondary disabled:opacity-50"
                 >
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -299,39 +299,41 @@ export default function ReportsPage() {
           <>
             {/* Summary Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <div className="text-2xl font-bold text-gray-900">
+              <div className="stat-card">
+                <div className="stat-value">
                   {formatCurrency(report.summary.totalExpenses)}
                 </div>
-                <div className="text-sm text-gray-500">Total Expenses</div>
+                <div className="stat-label">Total Expenses</div>
               </div>
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <div className="text-2xl font-bold text-blue-600">
+              <div className="stat-card stat-card-info">
+                <div className="stat-value text-[var(--info)]">
                   {report.summary.receiptCount}
                 </div>
-                <div className="text-sm text-gray-500">Total Receipts</div>
+                <div className="stat-label">Total Receipts</div>
               </div>
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <div className="text-2xl font-bold text-gray-900">
+              <div className="stat-card">
+                <div className="stat-value">
                   {formatCurrency(report.summary.averageExpense)}
                 </div>
-                <div className="text-sm text-gray-500">Average Expense</div>
+                <div className="stat-label">Average Expense</div>
               </div>
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <div className="text-sm font-medium text-gray-900 truncate">
+              <div className="stat-card">
+                <div className="text-sm font-medium text-[var(--text-primary)] truncate">
                   {report.summary.topCategory || 'N/A'}
                 </div>
-                <div className="text-sm text-gray-500">Top Category</div>
+                <div className="stat-label">Top Category</div>
               </div>
             </div>
 
             {/* Charts/Tables Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
               {/* By Category */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Expenses by Category</h3>
+              <div className="card">
+                <h3 className="section-title mb-4">Expenses by Category</h3>
                 {report.byCategory.length === 0 ? (
-                  <p className="text-gray-500 text-sm">No data available</p>
+                  <div className="empty-state">
+                    <p className="empty-state-title">No data available</p>
+                  </div>
                 ) : (
                   <div className="space-y-3">
                     {report.byCategory.slice(0, 10).map((cat, idx) => {
@@ -339,12 +341,12 @@ export default function ReportsPage() {
                       return (
                         <div key={cat.categoryId || idx}>
                           <div className="flex justify-between text-sm mb-1">
-                            <span className="text-gray-700">{cat.categoryName}</span>
+                            <span className="text-[var(--text-secondary)]">{cat.categoryName}</span>
                             <span className="font-medium">{formatCurrency(cat.totalAmount)}</span>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="w-full bg-[var(--bg-surface)] rounded-full h-2">
                             <div
-                              className="bg-blue-600 h-2 rounded-full"
+                              className="bg-[var(--info)] h-2 rounded-full"
                               style={{ width: `${Math.min(percentage, 100)}%` }}
                             />
                           </div>
@@ -356,10 +358,12 @@ export default function ReportsPage() {
               </div>
 
               {/* By Vendor */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Top Vendors</h3>
+              <div className="card">
+                <h3 className="section-title mb-4">Top Vendors</h3>
                 {report.byVendor.length === 0 ? (
-                  <p className="text-gray-500 text-sm">No data available</p>
+                  <div className="empty-state">
+                    <p className="empty-state-title">No data available</p>
+                  </div>
                 ) : (
                   <div className="space-y-3">
                     {report.byVendor.slice(0, 10).map((vendor, idx) => {
@@ -367,12 +371,12 @@ export default function ReportsPage() {
                       return (
                         <div key={vendor.vendorId || idx}>
                           <div className="flex justify-between text-sm mb-1">
-                            <span className="text-gray-700 truncate mr-2">{vendor.vendorName}</span>
+                            <span className="text-[var(--text-secondary)] truncate mr-2">{vendor.vendorName}</span>
                             <span className="font-medium whitespace-nowrap">{formatCurrency(vendor.totalAmount)}</span>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="w-full bg-[var(--bg-surface)] rounded-full h-2">
                             <div
-                              className="bg-green-600 h-2 rounded-full"
+                              className="bg-[var(--success)] h-2 rounded-full"
                               style={{ width: `${Math.min(percentage, 100)}%` }}
                             />
                           </div>
@@ -385,58 +389,97 @@ export default function ReportsPage() {
             </div>
 
             {/* Monthly Trend */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Monthly Trend</h3>
+            <div className="card mb-8">
+              <h3 className="section-title mb-4">Monthly Trend</h3>
               {report.byMonth.length === 0 ? (
-                <p className="text-gray-500 text-sm">No data available</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Month
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Total Amount
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Receipts
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {report.byMonth.map((month) => {
-                        const maxAmount = Math.max(...report.byMonth.map((m) => m.totalAmount));
-                        const percentage = (month.totalAmount / maxAmount) * 100;
-                        return (
-                          <tr key={month.month}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                              {formatMonth(month.month)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900">
-                              {formatCurrency(month.totalAmount)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">
-                              {month.receiptCount}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="w-32 bg-gray-200 rounded-full h-2">
-                                <div
-                                  className="bg-purple-600 h-2 rounded-full"
-                                  style={{ width: `${percentage}%` }}
-                                />
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                <div className="empty-state">
+                  <p className="empty-state-title">No data available</p>
                 </div>
+              ) : (
+                <>
+                  {/* Mobile Card View */}
+                  <div className="lg:hidden space-y-4">
+                    {report.byMonth.map((month) => {
+                      const maxAmount = Math.max(...report.byMonth.map((m) => m.totalAmount));
+                      const percentage = (month.totalAmount / maxAmount) * 100;
+                      return (
+                        <div key={month.month} className="card">
+                          <div className="flex justify-between items-start mb-3">
+                            <div>
+                              <h3 className="text-sm font-bold text-[var(--text-primary)]">{formatMonth(month.month)}</h3>
+                            </div>
+                            <span className="text-sm font-semibold text-[var(--text-primary)]">
+                              {formatCurrency(month.totalAmount)}
+                            </span>
+                          </div>
+                          <div className="space-y-2 text-sm mb-3">
+                            <div className="flex justify-between">
+                              <span className="text-[var(--text-secondary)]">Receipts:</span>
+                              <span className="text-[var(--text-primary)]">{month.receiptCount}</span>
+                            </div>
+                          </div>
+                          <div className="w-full bg-[var(--bg-surface)] rounded-full h-2">
+                            <div
+                              className="bg-[var(--accent-secondary)] h-2 rounded-full"
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Desktop Table View */}
+                  <div className="hidden lg:block overflow-x-auto">
+                    <div className="table-container">
+                      <table className="table">
+                        <thead>
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                              Month
+                            </th>
+                            <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
+                              Total Amount
+                            </th>
+                            <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
+                              Receipts
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {report.byMonth.map((month) => {
+                            const maxAmount = Math.max(...report.byMonth.map((m) => m.totalAmount));
+                            const percentage = (month.totalAmount / maxAmount) * 100;
+                            return (
+                              <tr key={month.month}>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                  {formatMonth(month.month)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                                  {formatCurrency(month.totalAmount)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-[var(--text-muted)]">
+                                  {month.receiptCount}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="w-32 bg-[var(--bg-surface)] rounded-full h-2">
+                                    <div
+                                      className="bg-[var(--accent-secondary)] h-2 rounded-full"
+                                      style={{ width: `${percentage}%` }}
+                                    />
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           </>
@@ -444,13 +487,13 @@ export default function ReportsPage() {
 
         {/* Empty State */}
         {!report && !loading && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="card empty-state">
+            <svg className="mx-auto h-12 w-12 text-[var(--text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No report generated</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Select your filters and click "Generate Report" to view expense data.
+            <h3 className="empty-state-title">No report generated</h3>
+            <p className="empty-state-description">
+              Select your filters and click &quot;Generate Report&quot; to view expense data.
             </p>
           </div>
         )}

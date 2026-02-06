@@ -100,35 +100,35 @@ export default function BackupSettingsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Backup & Restore</h1>
-          <p className="text-gray-600">
+          <h1 className="page-title mb-2">Backup & Restore</h1>
+          <p className="text-[var(--text-secondary)]">
             Create backups of your system data or restore from a previous backup
           </p>
         </div>
 
         {/* Download Backups Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="card p-6 mb-6">
           <div className="flex items-center gap-3 mb-4">
-            <CloudArrowDownIcon className="h-6 w-6 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Download Backup</h2>
+            <CloudArrowDownIcon className="h-6 w-6 text-[var(--accent-primary)]" />
+            <h2 className="section-title">Download Backup</h2>
           </div>
 
-          <p className="text-gray-600 mb-6">
+          <p className="text-[var(--text-secondary)] mb-6">
             Create a backup of your system data. Choose the backup type that fits your needs.
           </p>
 
           <div className="grid md:grid-cols-2 gap-4">
             {/* Data Backup */}
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h3 className="font-medium text-gray-900 mb-2">Data Backup</h3>
-              <p className="text-sm text-gray-600 mb-4">
+            <div className="border border-[var(--border-default)] rounded-lg p-4">
+              <h3 className="font-medium text-[var(--text-primary)] mb-2">Data Backup</h3>
+              <p className="text-sm text-[var(--text-secondary)] mb-4">
                 Includes database and uploaded files. Best for routine daily backups.
               </p>
-              <ul className="text-sm text-gray-500 mb-4 space-y-1">
+              <ul className="text-sm text-[var(--text-muted)] mb-4 space-y-1">
                 <li>- SQLite database</li>
                 <li>- Uploaded receipts & files</li>
                 <li>- System settings</li>
@@ -136,7 +136,7 @@ export default function BackupSettingsPage() {
               <button
                 onClick={() => downloadBackup('data')}
                 disabled={downloading !== null}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="btn btn-primary w-full flex items-center justify-center gap-2"
               >
                 <ArrowDownTrayIcon className="h-5 w-5" />
                 {downloading === 'data' ? 'Downloading...' : 'Download Data Backup'}
@@ -144,12 +144,12 @@ export default function BackupSettingsPage() {
             </div>
 
             {/* Full Snapshot */}
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h3 className="font-medium text-gray-900 mb-2">Full Snapshot</h3>
-              <p className="text-sm text-gray-600 mb-4">
+            <div className="border border-[var(--border-default)] rounded-lg p-4">
+              <h3 className="font-medium text-[var(--text-primary)] mb-2">Full Snapshot</h3>
+              <p className="text-sm text-[var(--text-secondary)] mb-4">
                 Complete system backup including secrets. Best for migration or disaster recovery.
               </p>
-              <ul className="text-sm text-gray-500 mb-4 space-y-1">
+              <ul className="text-sm text-[var(--text-muted)] mb-4 space-y-1">
                 <li>- Everything in Data Backup</li>
                 <li>- Authentication secrets</li>
                 <li>- System configuration</li>
@@ -157,7 +157,7 @@ export default function BackupSettingsPage() {
               <button
                 onClick={() => downloadBackup('full')}
                 disabled={downloading !== null}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="btn btn-primary w-full flex items-center justify-center gap-2"
               >
                 <ArrowDownTrayIcon className="h-5 w-5" />
                 {downloading === 'full' ? 'Downloading...' : 'Download Full Snapshot'}
@@ -167,16 +167,16 @@ export default function BackupSettingsPage() {
         </div>
 
         {/* Restore Section */}
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="card p-6">
           <div className="flex items-center gap-3 mb-4">
-            <CloudArrowUpIcon className="h-6 w-6 text-amber-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Restore from Backup</h2>
+            <CloudArrowUpIcon className="h-6 w-6 text-[var(--warning)]" />
+            <h2 className="section-title">Restore from Backup</h2>
           </div>
 
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+          <div className="rounded-[var(--radius-lg)] border border-[var(--warning-muted)] bg-[var(--warning-subtle)] text-[var(--warning)] px-4 py-3 mb-6">
             <div className="flex gap-3">
-              <ExclamationTriangleIcon className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-amber-800">
+              <ExclamationTriangleIcon className="h-5 w-5 flex-shrink-0 mt-0.5" />
+              <div className="text-sm">
                 <p className="font-medium mb-1">Warning: Restore will replace all current data</p>
                 <p>This action cannot be undone. Make sure you have a current backup before proceeding.</p>
               </div>
@@ -185,21 +185,21 @@ export default function BackupSettingsPage() {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="form-label mb-2">
                 Select Backup File (.tar.gz)
               </label>
               <input
                 ref={fileInputRef}
                 type="file"
                 accept=".tar.gz,.tgz"
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 file:cursor-pointer cursor-pointer"
+                className="block w-full text-sm text-[var(--text-muted)] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[var(--bg-hover)] file:text-[var(--text-secondary)] hover:file:bg-[var(--bg-active)] file:cursor-pointer cursor-pointer"
               />
             </div>
 
             <button
               onClick={handleRestore}
               disabled={uploading}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="btn btn-warning flex items-center justify-center gap-2"
             >
               <ArrowUpTrayIcon className="h-5 w-5" />
               {uploading ? 'Restoring...' : 'Restore from Backup'}
@@ -207,26 +207,26 @@ export default function BackupSettingsPage() {
 
             {/* Status Messages */}
             {restoreStatus.type === 'success' && (
-              <div className="flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <CheckCircleIcon className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-green-800">{restoreStatus.message}</p>
+              <div className="flex items-start gap-3 rounded-[var(--radius-lg)] border border-[var(--success-muted)] bg-[var(--success-subtle)] text-[var(--success)] px-4 py-3">
+                <CheckCircleIcon className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                <p className="text-sm">{restoreStatus.message}</p>
               </div>
             )}
 
             {restoreStatus.type === 'error' && (
-              <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <XCircleIcon className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-800">{restoreStatus.message}</p>
+              <div className="flex items-start gap-3 rounded-[var(--radius-lg)] border border-[var(--error-muted)] bg-[var(--error-subtle)] text-[var(--error)] px-4 py-3">
+                <XCircleIcon className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                <p className="text-sm">{restoreStatus.message}</p>
               </div>
             )}
           </div>
         </div>
 
         {/* CLI Instructions */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="mt-6 rounded-[var(--radius-lg)] border border-[var(--info-muted)] bg-[var(--info-subtle)] text-[var(--info)] px-4 py-3">
           <div className="flex items-start gap-3">
             <svg
-              className="w-6 h-6 text-blue-600 mt-0.5"
+              className="w-6 h-6 mt-0.5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -239,16 +239,16 @@ export default function BackupSettingsPage() {
               />
             </svg>
             <div>
-              <h3 className="font-semibold text-blue-900 mb-2">Command Line Usage</h3>
-              <p className="text-sm text-blue-800 mb-3">
+              <h3 className="font-semibold mb-2">Command Line Usage</h3>
+              <p className="text-sm mb-3">
                 For automated backups or scripting, use these Docker commands:
               </p>
-              <div className="bg-gray-900 rounded-lg p-4 font-mono text-sm text-gray-100 overflow-x-auto">
-                <p className="text-gray-400"># Create data backup</p>
+              <div className="bg-[var(--bg-void)] rounded-lg p-4 font-mono text-sm text-[var(--text-primary)] overflow-x-auto">
+                <p className="text-[var(--text-muted)]"># Create data backup</p>
                 <p>docker exec its-core /app/scripts/backup.sh data &gt; backup-data.tar.gz</p>
-                <p className="mt-3 text-gray-400"># Create full backup</p>
+                <p className="mt-3 text-[var(--text-muted)]"># Create full backup</p>
                 <p>docker exec its-core /app/scripts/backup.sh full &gt; backup-full.tar.gz</p>
-                <p className="mt-3 text-gray-400"># Restore from backup</p>
+                <p className="mt-3 text-[var(--text-muted)]"># Restore from backup</p>
                 <p>docker exec -i its-core /app/scripts/restore.sh &lt; backup.tar.gz</p>
               </div>
             </div>
