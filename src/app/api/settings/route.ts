@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { getSettings, updateSettings, SystemSettings } from '@/lib/settings';
+import { getSettings, updateSettings, redactSensitiveSettings, SystemSettings } from '@/lib/settings';
 import { createAuditLog, getRequestContext } from '@/lib/audit';
 
 // GET /api/settings - Get current system settings
@@ -30,7 +30,12 @@ export async function GET(req: NextRequest) {
     }
 
     const settings = getSettings();
-    return NextResponse.json({ settings });
+
+    // Redact secrets unless explicitly requested
+    const includeSecrets = req.nextUrl.searchParams.get('includeSecrets') === 'true';
+    const responseSettings = includeSecrets ? settings : redactSensitiveSettings(settings);
+
+    return NextResponse.json({ settings: responseSettings });
   } catch (error) {
     console.error('Error fetching settings:', error);
     return NextResponse.json(
@@ -82,21 +87,21 @@ export async function PUT(req: NextRequest) {
     // Update settings
     updateSettings(newSettings);
 
-    // Audit log the change
+    // Audit log the change — redact secrets from the before/after objects
     const { ipAddress, userAgent } = getRequestContext(req);
     await createAuditLog({
       userId: session.user.id,
       action: 'SETTINGS_UPDATED',
       entityType: 'Settings',
       changes: {
-        before: oldSettings,
-        after: newSettings,
+        before: redactSensitiveSettings(oldSettings),
+        after: redactSensitiveSettings(newSettings),
       },
       ipAddress,
       userAgent,
     });
 
-    return NextResponse.json({ settings: newSettings });
+    return NextResponse.json({ settings: redactSensitiveSettings(newSettings) });
   } catch (error) {
     console.error('Error updating settings:', error);
     return NextResponse.json(

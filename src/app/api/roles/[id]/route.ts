@@ -51,6 +51,11 @@ export async function PUT(
       );
     }
 
+    // Prevent non-admin users from setting _isAdmin flag
+    if (permissions?._isAdmin === true && !userPermissions._isAdmin) {
+      return NextResponse.json({ error: 'Cannot set admin flag' }, { status: 403 });
+    }
+
     // Update role
     const role = await prisma.role.update({
       where: { id: params.id },
@@ -88,7 +93,7 @@ export async function PUT(
     });
 
     // Invalidate cache
-    cache.clear('roles:all');
+    cache.delete('roles:all');
 
     return NextResponse.json({
       role: {
@@ -191,7 +196,7 @@ export async function DELETE(
     });
 
     // Invalidate cache
-    cache.clear('roles:all');
+    cache.delete('roles:all');
 
     return NextResponse.json({ message: 'Role deleted successfully' });
   } catch (error) {

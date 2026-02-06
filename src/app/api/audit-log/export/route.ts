@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { sanitizeCSVValue } from '@/lib/csv-sanitize';
 
 // GET /api/audit-log/export - Export audit logs to CSV
 export async function GET(req: NextRequest) {
@@ -82,7 +83,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Get all logs (no pagination for export)
+    // Get all logs (capped at 50,000 for export)
     const logs = await prisma.auditLog.findMany({
       where,
       include: {
@@ -94,6 +95,7 @@ export async function GET(req: NextRequest) {
         },
       },
       orderBy: { createdAt: 'desc' },
+      take: 50000,
     });
 
     // Generate CSV
@@ -102,19 +104,19 @@ export async function GET(req: NextRequest) {
 
     const csvRows = logs.map((log) => {
       const timestamp = log.createdAt.toISOString();
-      const action = log.action;
-      const entityType = log.entityType;
-      const entityId = log.entityId || '';
-      const userName = log.user?.name || 'System';
-      const userEmail = log.user?.email || '';
-      const ipAddress = log.ipAddress || '';
-      const userAgent = log.userAgent || '';
-      const changes = log.changes.replace(/"/g, '""'); // Escape quotes for CSV
+      const action = sanitizeCSVValue(log.action);
+      const entityType = sanitizeCSVValue(log.entityType);
+      const entityId = sanitizeCSVValue(log.entityId || '');
+      const userName = sanitizeCSVValue(log.user?.name || 'System');
+      const userEmail = sanitizeCSVValue(log.user?.email || '');
+      const ipAddress = sanitizeCSVValue(log.ipAddress || '');
+      const userAgent = sanitizeCSVValue(log.userAgent || '');
+      const changes = sanitizeCSVValue(log.changes).replace(/"/g, '""'); // Escape quotes for CSV
 
       return `"${timestamp}","${action}","${entityType}","${entityId}","${userName}","${userEmail}","${ipAddress}","${userAgent}","${changes}"`;
     });
 
-    const csv = csvHeader + csvRows.join('\n');
+    const csv = '\uFEFF' + csvHeader + csvRows.join('\n');
 
     // Generate filename with timestamp
     const filename = `audit-log-${new Date().toISOString().split('T')[0]}.csv`;
@@ -125,6 +127,7 @@ export async function GET(req: NextRequest) {
       headers: {
         'Content-Type': 'text/csv',
         'Content-Disposition': `attachment; filename="${filename}"`,
+        'X-Content-Type-Options': 'nosniff',
       },
     });
   } catch (error) {

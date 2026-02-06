@@ -1,7 +1,7 @@
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
+import { getUserWithPermissions, hasPermission, getPermissionsFromSession } from '@/lib/check-permissions';
 import { createAuditLog, getRequestContext } from '@/lib/audit';
 
 type RouteContext = {
@@ -59,6 +59,15 @@ export async function POST(req: NextRequest, context: RouteContext) {
         { error: 'Receipt not found' },
         { status: 404 }
       );
+    }
+
+    // Ownership / permission check
+    const perms = getPermissionsFromSession(session);
+    if (!perms) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const isOwner = receipt.userId === session.user.id;
+    const canViewAll = hasPermission(perms.permissions, 'receipts', 'canViewAll');
+    if (!isOwner && !canViewAll) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Verify the purchase order exists and check permissions

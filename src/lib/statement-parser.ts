@@ -275,7 +275,7 @@ export async function parseStatementFile(
         return obj;
       });
     } else if (extension === 'xlsx' || extension === 'xls') {
-      const workbook = XLSX.read(buffer, { type: 'buffer' });
+      const workbook = XLSX.read(buffer, { type: 'buffer', sheetRows: 50000 });
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
       const data = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { header: 1 });
@@ -420,7 +420,7 @@ export async function getFileHeaders(buffer: Buffer, filename: string): Promise<
     const parsed = parseCSV(content);
     return parsed.length > 0 ? parsed[0] : [];
   } else if (extension === 'xlsx' || extension === 'xls') {
-    const workbook = XLSX.read(buffer, { type: 'buffer' });
+    const workbook = XLSX.read(buffer, { type: 'buffer', sheetRows: 50000 });
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
     const data = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 });

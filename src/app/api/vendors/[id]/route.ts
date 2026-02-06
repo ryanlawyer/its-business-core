@@ -1,7 +1,7 @@
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
-import { permissions } from '@/lib/permissions';
+import { getPermissionsFromSession, hasPermission } from '@/lib/check-permissions';
 
 
 export async function GET(
@@ -12,6 +12,11 @@ export async function GET(
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const perms = getPermissionsFromSession(session);
+    if (!perms || !hasPermission(perms.permissions, 'vendors', 'canView')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const vendor = await prisma.vendor.findUnique({
@@ -42,7 +47,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!permissions.canManageVendors(session.user.role as any)) {
+    const perms = getPermissionsFromSession(session);
+    if (!perms || !hasPermission(perms.permissions, 'vendors', 'canManage')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -83,7 +89,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!permissions.canManageVendors(session.user.role as any)) {
+    const perms = getPermissionsFromSession(session);
+    if (!perms || !hasPermission(perms.permissions, 'vendors', 'canManage')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

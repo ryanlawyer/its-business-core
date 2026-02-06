@@ -1,6 +1,5 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 
 // Force Node.js runtime to support Prisma and file system access
 export const runtime = "nodejs";
@@ -34,16 +33,82 @@ export function clearSetupCache() {
   setupCompleteCache = null;
 }
 
+// Proper static asset detection — no generic dot-includes check
+const STATIC_FILE_EXT = /\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|map|webp|avif|mp4|webm)$/;
+
+function isStaticAsset(pathname: string): boolean {
+  return (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/favicon") ||
+    STATIC_FILE_EXT.test(pathname)
+  );
+}
+
+// CSRF protection: validate Origin/Referer for state-changing requests
+function validateCsrf(req: Request, pathname: string): boolean {
+  const method = req.method;
+  // Only check state-changing methods
+  if (method === "GET" || method === "HEAD" || method === "OPTIONS") {
+    return true;
+  }
+
+  // Allow auth API routes (login needs to work without CSRF)
+  if (pathname.startsWith("/api/auth")) {
+    return true;
+  }
+
+  // Allow setup API (no session exists yet during setup)
+  if (pathname.startsWith("/api/setup")) {
+    return true;
+  }
+
+  const origin = req.headers.get("origin");
+  const referer = req.headers.get("referer");
+  const host = req.headers.get("host");
+
+  if (!host) {
+    return false;
+  }
+
+  // Check Origin header first (most reliable)
+  if (origin) {
+    try {
+      const originHost = new URL(origin).host;
+      return originHost === host;
+    } catch {
+      return false;
+    }
+  }
+
+  // Fall back to Referer header
+  if (referer) {
+    try {
+      const refererHost = new URL(referer).host;
+      return refererHost === host;
+    } catch {
+      return false;
+    }
+  }
+
+  // If neither header is present, allow (some browser configs strip these)
+  // This is acceptable per OWASP guidelines since we also have session cookies
+  return true;
+}
+
 export default auth(async (req) => {
   const { pathname } = req.nextUrl;
 
-  // Always allow static assets and API routes
-  if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/favicon") ||
-    pathname.includes(".")
-  ) {
+  // Always allow static assets
+  if (isStaticAsset(pathname)) {
     return NextResponse.next();
+  }
+
+  // CSRF validation for state-changing requests
+  if (!validateCsrf(req, pathname)) {
+    return NextResponse.json(
+      { error: "CSRF validation failed" },
+      { status: 403 }
+    );
   }
 
   // Always allow auth API routes (needed for session checks during setup)

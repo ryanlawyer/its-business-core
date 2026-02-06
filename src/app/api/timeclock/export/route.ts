@@ -3,7 +3,9 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
 import { calculateOvertime, TimeclockEntryForCalculation } from '@/lib/overtime';
+import { getSystemConfig } from '@/lib/setup-status';
 import { TemplateColumn } from '../templates/route';
+import { escapeCSV } from '@/lib/csv-sanitize';
 import * as XLSX from 'xlsx';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
@@ -33,16 +35,6 @@ interface ExportRow {
   status: string;
   approvedBy: string;
   approvedAt: string;
-}
-
-/**
- * Escape a value for CSV (handle commas and quotes)
- */
-function escapeCSV(value: string): string {
-  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
 }
 
 /**
@@ -79,6 +71,37 @@ export async function GET(req: NextRequest) {
         { error: 'You do not have permission to export payroll data' },
         { status: 403 }
       );
+    }
+
+    // Check if user can view all entries; if not, restrict to managed departments
+    const canViewAll = hasPermission(
+      userWithPerms.permissions,
+      'timeclock',
+      'canViewAllEntries'
+    );
+
+    let allowedDepartmentIds: string[] | null = null;
+    if (!canViewAll) {
+      // Restrict to departments the user manages via ManagerAssignment
+      const managerAssignments = await prisma.managerAssignment.findMany({
+        where: { userId: session.user.id },
+        select: { departmentId: true },
+      });
+
+      if (managerAssignments.length > 0) {
+        allowedDepartmentIds = managerAssignments.map((a) => a.departmentId);
+      } else {
+        // Fall back to user's own department
+        const currentUser = await prisma.user.findUnique({
+          where: { id: session.user.id },
+          select: { departmentId: true },
+        });
+        if (currentUser?.departmentId) {
+          allowedDepartmentIds = [currentUser.departmentId];
+        } else {
+          allowedDepartmentIds = [];
+        }
+      }
     }
 
     const { searchParams } = new URL(req.url);
@@ -137,7 +160,7 @@ export async function GET(req: NextRequest) {
       status: string;
       clockIn: { gte: Date; lte: Date };
       clockOut: { not: null };
-      user?: { departmentId: string };
+      user?: { departmentId: string | { in: string[] } };
     } = {
       status: 'approved',
       clockIn: {
@@ -151,6 +174,9 @@ export async function GET(req: NextRequest) {
 
     if (departmentId && departmentId !== 'all') {
       whereClause.user = { departmentId };
+    } else if (allowedDepartmentIds !== null) {
+      // User cannot view all entries - restrict to allowed departments
+      whereClause.user = { departmentId: { in: allowedDepartmentIds } };
     }
 
     // Fetch approved entries with user data
@@ -182,7 +208,8 @@ export async function GET(req: NextRequest) {
       status: e.status,
     }));
 
-    const overtimeResult = calculateOvertime(entriesForCalc, overtimeConfig);
+    const timezone = await getSystemConfig('timezone') || 'UTC';
+    const overtimeResult = calculateOvertime(entriesForCalc, overtimeConfig, timezone);
 
     // Get approver names
     const approverIds = [...new Set(entries.filter(e => e.approvedBy).map(e => e.approvedBy!))];
@@ -242,7 +269,7 @@ export async function GET(req: NextRequest) {
           .join(',');
       });
 
-      const csv = [headerRow, ...dataRows].join('\n');
+      const csv = '\uFEFF' + [headerRow, ...dataRows].join('\n');
 
       // Generate filename
       const filename = `timeclock-export-${periodStart}-to-${periodEnd}.csv`;
@@ -252,6 +279,7 @@ export async function GET(req: NextRequest) {
         headers: {
           'Content-Type': 'text/csv',
           'Content-Disposition': `attachment; filename="${filename}"`,
+          'X-Content-Type-Options': 'nosniff',
         },
       });
     }
@@ -335,6 +363,7 @@ export async function GET(req: NextRequest) {
         headers: {
           'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           'Content-Disposition': `attachment; filename="${filename}"`,
+          'X-Content-Type-Options': 'nosniff',
         },
       });
     }
@@ -547,6 +576,7 @@ export async function GET(req: NextRequest) {
         headers: {
           'Content-Type': 'application/pdf',
           'Content-Disposition': `attachment; filename="${filename}"`,
+          'X-Content-Type-Options': 'nosniff',
         },
       });
     }

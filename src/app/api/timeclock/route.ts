@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
 import { getCurrentPayPeriod, getRecentPeriods, PayPeriod } from '@/lib/pay-period';
 import { calculateOvertime, TimeclockEntryForCalculation } from '@/lib/overtime';
+import { getSystemConfig } from '@/lib/setup-status';
 
 export async function GET(req: NextRequest) {
   try {
@@ -114,7 +115,8 @@ export async function GET(req: NextRequest) {
       })
     );
 
-    const overtimeResult = calculateOvertime(calcEntries, overtimeConfig);
+    const timezone = await getSystemConfig('timezone') || 'UTC';
+    const overtimeResult = calculateOvertime(calcEntries, overtimeConfig, timezone);
     const userOT = overtimeResult.employees[userId];
 
     // Period stats

@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
       where.vendorId = { in: vendorIds };
     }
 
-    // Fetch receipts
+    // Fetch receipts (capped at 10,000 rows)
     const receipts = await prisma.receipt.findMany({
       where,
       include: {
@@ -89,6 +89,7 @@ export async function GET(req: NextRequest) {
         },
       },
       orderBy: { receiptDate: 'desc' },
+      take: 10000,
     });
 
     // Filter by department if specified
@@ -260,6 +261,7 @@ export async function GET(req: NextRequest) {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'Content-Disposition': `attachment; filename="${filename}"`,
+        'X-Content-Type-Options': 'nosniff',
       },
     });
   } catch (error) {

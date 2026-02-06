@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
+import { escapeCSV } from '@/lib/csv-sanitize';
 
 /**
  * GET /api/timeclock/history/export
@@ -128,13 +129,9 @@ export async function GET(req: NextRequest) {
     });
 
     // Build CSV
-    const escapeCSV = (value: string | null | undefined) => {
+    const escapeField = (value: string | null | undefined) => {
       if (value === null || value === undefined) return '';
-      const str = String(value);
-      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-        return `"${str.replace(/"/g, '""')}"`;
-      }
-      return str;
+      return escapeCSV(String(value));
     };
 
     const formatDuration = (seconds: number | null) => {
@@ -155,16 +152,16 @@ export async function GET(req: NextRequest) {
     // CSV rows
     const rows = entries.map((entry) => {
       return [
-        escapeCSV(new Date(entry.clockIn).toLocaleDateString()),
-        escapeCSV(formatDate(entry.clockIn)),
-        escapeCSV(entry.clockOut ? formatDate(entry.clockOut) : ''),
-        escapeCSV(formatDuration(entry.duration)),
-        escapeCSV(entry.status),
-        escapeCSV(entry.rejectedNote),
+        escapeField(new Date(entry.clockIn).toLocaleDateString()),
+        escapeField(formatDate(entry.clockIn)),
+        escapeField(entry.clockOut ? formatDate(entry.clockOut) : ''),
+        escapeField(formatDuration(entry.duration)),
+        escapeField(entry.status),
+        escapeField(entry.rejectedNote),
       ].join(',');
     });
 
-    const csv = [headers.join(','), ...rows].join('\n');
+    const csv = '\uFEFF' + [headers.join(','), ...rows].join('\n');
 
     // Return CSV file
     const filename = `timeclock-export-${new Date().toISOString().split('T')[0]}.csv`;

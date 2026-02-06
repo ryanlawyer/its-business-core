@@ -320,32 +320,36 @@ export async function POST(req: NextRequest) {
       }, { status: 201 });
     }
 
-    // Handle regular amendment (INCREASE/DECREASE)
-    const amendment = await prisma.budgetAmendment.create({
-      data: {
-        budgetItemId,
-        type,
-        amount,
-        reason,
-        createdById: session.user.id,
-        fiscalYear: budgetItem.fiscalYear,
-        previousAmount: budgetItem.budgetAmount,
-        newAmount,
-      },
-      include: {
-        budgetItem: {
-          select: { id: true, code: true, description: true },
+    // Handle regular amendment (INCREASE/DECREASE) in a transaction
+    const amendment = await prisma.$transaction(async (tx) => {
+      const created = await tx.budgetAmendment.create({
+        data: {
+          budgetItemId,
+          type,
+          amount,
+          reason,
+          createdById: session.user.id,
+          fiscalYear: budgetItem.fiscalYear,
+          previousAmount: budgetItem.budgetAmount,
+          newAmount,
         },
-        createdBy: {
-          select: { id: true, name: true, email: true },
+        include: {
+          budgetItem: {
+            select: { id: true, code: true, description: true },
+          },
+          createdBy: {
+            select: { id: true, name: true, email: true },
+          },
         },
-      },
-    });
+      });
 
-    // Update budget item
-    await prisma.budgetItem.update({
-      where: { id: budgetItemId },
-      data: { budgetAmount: newAmount },
+      // Update budget item
+      await tx.budgetItem.update({
+        where: { id: budgetItemId },
+        data: { budgetAmount: newAmount },
+      });
+
+      return created;
     });
 
     // Audit log

@@ -2,6 +2,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
+import { sanitizeCSVValue } from '@/lib/csv-sanitize';
 
 type ExpenseByCategory = {
   categoryId: string | null;
@@ -145,7 +146,7 @@ export async function GET(req: NextRequest) {
       where.vendorId = { in: vendorIds };
     }
 
-    // Fetch receipts
+    // Fetch receipts (capped at 10,000 rows)
     const receipts = await prisma.receipt.findMany({
       where,
       include: {
@@ -162,6 +163,7 @@ export async function GET(req: NextRequest) {
         },
       },
       orderBy: { receiptDate: 'desc' },
+      take: 10000,
     });
 
     // Filter by department if specified (needs post-filter due to nested relation)
@@ -290,6 +292,7 @@ export async function GET(req: NextRequest) {
         headers: {
           'Content-Type': 'text/csv',
           'Content-Disposition': `attachment; filename="expense-report-${queryStartDate.toISOString().split('T')[0]}-${queryEndDate.toISOString().split('T')[0]}.csv"`,
+          'X-Content-Type-Options': 'nosniff',
         },
       });
     }
@@ -306,6 +309,9 @@ export async function GET(req: NextRequest) {
 
 function generateCSV(report: ExpenseReport): string {
   const lines: string[] = [];
+
+  // UTF-8 BOM prefix
+  const bom = '\uFEFF';
 
   // Header
   lines.push('Expense Report');
@@ -324,7 +330,9 @@ function generateCSV(report: ExpenseReport): string {
   lines.push('Expenses by Category');
   lines.push('Category,Code,Total Amount,Receipt Count');
   for (const cat of report.byCategory) {
-    lines.push(`"${cat.categoryName}","${cat.categoryCode || ''}",${cat.totalAmount.toFixed(2)},${cat.receiptCount}`);
+    const catName = sanitizeCSVValue(cat.categoryName);
+    const catCode = sanitizeCSVValue(cat.categoryCode || '');
+    lines.push(`"${catName}","${catCode}",${cat.totalAmount.toFixed(2)},${cat.receiptCount}`);
   }
   lines.push('');
 
@@ -332,7 +340,8 @@ function generateCSV(report: ExpenseReport): string {
   lines.push('Expenses by Vendor');
   lines.push('Vendor,Total Amount,Receipt Count');
   for (const vendor of report.byVendor) {
-    lines.push(`"${vendor.vendorName}",${vendor.totalAmount.toFixed(2)},${vendor.receiptCount}`);
+    const vendorName = sanitizeCSVValue(vendor.vendorName);
+    lines.push(`"${vendorName}",${vendor.totalAmount.toFixed(2)},${vendor.receiptCount}`);
   }
   lines.push('');
 
@@ -341,10 +350,13 @@ function generateCSV(report: ExpenseReport): string {
   lines.push('Date,Merchant,Amount,Currency,Category,Vendor,Status');
   for (const receipt of report.receipts) {
     const date = receipt.receiptDate ? new Date(receipt.receiptDate).toLocaleDateString() : '';
+    const merchantName = sanitizeCSVValue(receipt.merchantName || '');
+    const categoryName = sanitizeCSVValue(receipt.category?.name || '');
+    const vendorName = sanitizeCSVValue(receipt.vendor?.name || '');
     lines.push(
-      `${date},"${receipt.merchantName || ''}",${(receipt.totalAmount || 0).toFixed(2)},${receipt.currency},"${receipt.category?.name || ''}","${receipt.vendor?.name || ''}",${receipt.status}`
+      `${date},"${merchantName}",${(receipt.totalAmount || 0).toFixed(2)},${receipt.currency},"${categoryName}","${vendorName}",${receipt.status}`
     );
   }
 
-  return lines.join('\n');
+  return bom + lines.join('\n');
 }

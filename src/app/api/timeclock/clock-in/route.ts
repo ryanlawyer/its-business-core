@@ -25,30 +25,36 @@ export async function POST() {
 
     const userId = user.id;
 
-    // Check if already clocked in
-    const existing = await prisma.timeclockEntry.findFirst({
-      where: {
-        userId,
-        clockOut: null,
-      },
+    // Use transaction to prevent race condition between check and create
+    const result = await prisma.$transaction(async (tx) => {
+      // Check if already clocked in
+      const openEntry = await tx.timeclockEntry.findFirst({
+        where: { userId, clockOut: null },
+      });
+
+      if (openEntry) {
+        return { error: 'Already clocked in' };
+      }
+
+      // Create new entry
+      const entry = await tx.timeclockEntry.create({
+        data: {
+          userId,
+          clockIn: new Date(),
+        },
+      });
+
+      return { entry };
     });
 
-    if (existing) {
+    if ('error' in result) {
       return NextResponse.json(
-        { error: 'Already clocked in' },
+        { error: result.error },
         { status: 400 }
       );
     }
 
-    // Create new entry
-    const entry = await prisma.timeclockEntry.create({
-      data: {
-        userId,
-        clockIn: new Date(),
-      },
-    });
-
-    return NextResponse.json({ entry });
+    return NextResponse.json({ entry: result.entry });
   } catch (error) {
     console.error('Error clocking in:', error);
     return NextResponse.json(

@@ -48,6 +48,14 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       );
     }
 
+    // Validate rejectedNote length
+    if (rejectedNote.length > 1000) {
+      return NextResponse.json(
+        { error: 'Rejection note must be 1000 characters or less' },
+        { status: 400 }
+      );
+    }
+
     // Find the entry
     const entry = await prisma.timeclockEntry.findUnique({
       where: { id },
@@ -70,6 +78,11 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     if (!entry) {
       return NextResponse.json({ error: 'Entry not found' }, { status: 404 });
+    }
+
+    // Cannot reject own entries
+    if (entry.userId === session.user.id) {
+      return NextResponse.json({ error: 'Cannot reject own entries' }, { status: 403 });
     }
 
     // Cannot reject active entries (no clockOut)

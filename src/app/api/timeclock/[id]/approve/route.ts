@@ -60,6 +60,11 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Entry not found' }, { status: 404 });
     }
 
+    // Cannot approve own entries
+    if (entry.userId === session.user.id) {
+      return NextResponse.json({ error: 'Cannot approve own entries' }, { status: 403 });
+    }
+
     // Cannot approve active entries (no clockOut)
     if (!entry.clockOut) {
       return NextResponse.json(

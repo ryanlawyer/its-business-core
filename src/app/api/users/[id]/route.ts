@@ -1,9 +1,10 @@
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
-import { permissions } from '@/lib/permissions';
+import { getPermissionsFromSession, hasPermission } from '@/lib/check-permissions';
 import bcrypt from 'bcryptjs';
 import { createAuditLog, getRequestContext, sanitizeData, getChanges } from '@/lib/audit';
+import { validatePassword } from '@/lib/settings';
 
 
 export async function PUT(
@@ -16,7 +17,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!permissions.canManageUsers(session.user.role as any)) {
+    const perms = getPermissionsFromSession(session);
+    if (!perms || !hasPermission(perms.permissions, 'users', 'canManage')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -37,6 +39,16 @@ export async function PUT(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    // Cannot change own role
+    if (id === session.user.id && roleId && roleId !== existingUser.roleId) {
+      return NextResponse.json({ error: 'Cannot change own role' }, { status: 403 });
+    }
+
+    // Cannot deactivate own account
+    if (id === session.user.id && isActive === false) {
+      return NextResponse.json({ error: 'Cannot deactivate own account' }, { status: 403 });
+    }
+
     const updateData: any = {
       email,
       name,
@@ -48,6 +60,10 @@ export async function PUT(
     // Only update password if provided
     let passwordChanged = false;
     if (password) {
+      const passwordResult = validatePassword(password);
+      if (!passwordResult.valid) {
+        return NextResponse.json({ error: passwordResult.errors.join(', ') }, { status: 400 });
+      }
       updateData.password = await bcrypt.hash(password, 10);
       passwordChanged = true;
     }

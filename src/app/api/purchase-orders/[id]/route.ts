@@ -141,41 +141,43 @@ export async function PUT(
       0
     );
 
-    // Delete existing line items and create new ones
-    await prisma.poLineItem.deleteMany({
-      where: { purchaseOrderId: id },
-    });
+    // Delete existing line items and recreate in a transaction
+    const updatedPO = await prisma.$transaction(async (tx) => {
+      await tx.poLineItem.deleteMany({
+        where: { purchaseOrderId: id },
+      });
 
-    // Update PO
-    const updatedPO = await prisma.purchaseOrder.update({
-      where: { id },
-      data: {
-        poDate: new Date(poDate),
-        vendorId,
-        notes: notes || null,
-        totalAmount,
-        lineItems: {
-          create: lineItems.map((item: any) => ({
-            description: item.description,
-            amount: parseFloat(item.amount),
-            budgetItemId: item.budgetItemId,
-          })),
+      // Update PO with new line items
+      return await tx.purchaseOrder.update({
+        where: { id },
+        data: {
+          poDate: new Date(poDate),
+          vendorId,
+          notes: notes || null,
+          totalAmount,
+          lineItems: {
+            create: lineItems.map((item: any) => ({
+              description: item.description,
+              amount: parseFloat(item.amount),
+              budgetItemId: item.budgetItemId,
+            })),
+          },
         },
-      },
-      include: {
-        vendor: true,
-        requestedBy: {
-          select: { id: true, name: true, email: true },
-        },
-        department: true,
-        lineItems: {
-          include: {
-            budgetItem: {
-              select: { id: true, code: true, description: true },
+        include: {
+          vendor: true,
+          requestedBy: {
+            select: { id: true, name: true, email: true },
+          },
+          department: true,
+          lineItems: {
+            include: {
+              budgetItem: {
+                select: { id: true, code: true, description: true },
+              },
             },
           },
         },
-      },
+      });
     });
 
     // Audit log

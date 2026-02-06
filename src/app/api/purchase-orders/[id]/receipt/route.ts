@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
+import { sanitizeFilename } from '@/lib/file-utils';
 import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 
@@ -52,6 +53,9 @@ export async function GET(
 
     // Permission check - user must be able to view POs
     const userWithPerms = await getUserWithPermissions(session.user.id);
+    if (!userWithPerms) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     const canView =
       po.requestedById === session.user.id ||
       hasPermission(userWithPerms.permissions, 'purchaseOrders', 'canView') ||
@@ -87,17 +91,19 @@ export async function GET(
     headers.set('Content-Type', 'application/pdf');
     headers.set('Content-Length', fileBuffer.length.toString());
 
+    const safeFilename = sanitizeFilename(po.receiptFileName);
+
     if (download) {
       // Force download
       headers.set(
         'Content-Disposition',
-        `attachment; filename="${po.receiptFileName}"`
+        `attachment; filename="${safeFilename}"`
       );
     } else {
       // Display inline in browser
       headers.set(
         'Content-Disposition',
-        `inline; filename="${po.receiptFileName}"`
+        `inline; filename="${safeFilename}"`
       );
     }
 
@@ -105,6 +111,7 @@ export async function GET(
     headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     headers.set('Pragma', 'no-cache');
     headers.set('Expires', '0');
+    headers.set('X-Content-Type-Options', 'nosniff');
 
     return new NextResponse(fileBuffer, {
       status: 200,
@@ -113,7 +120,7 @@ export async function GET(
   } catch (error: any) {
     console.error('Error retrieving receipt:', error);
     return NextResponse.json(
-      { error: 'Failed to retrieve receipt', message: error.message },
+      { error: 'Failed to retrieve receipt' },
       { status: 500 }
     );
   }

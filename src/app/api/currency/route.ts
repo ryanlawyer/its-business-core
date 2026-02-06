@@ -16,6 +16,14 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const baseCurrency = searchParams.get('base') || BASE_CURRENCY;
 
+    // Validate currency code format (must be exactly 3 uppercase letters)
+    if (!/^[A-Z]{3}$/.test(baseCurrency)) {
+      return NextResponse.json(
+        { error: 'Invalid currency code. Must be 3 uppercase letters.' },
+        { status: 400 }
+      );
+    }
+
     // Fetch current exchange rates
     const rates = await fetchExchangeRates(baseCurrency);
 
@@ -51,6 +59,14 @@ export async function POST(req: NextRequest) {
     if (typeof amount !== 'number' || !fromCurrency || !toCurrency) {
       return NextResponse.json(
         { error: 'Missing required fields: amount, fromCurrency, toCurrency' },
+        { status: 400 }
+      );
+    }
+
+    // Validate currency code formats
+    if (!/^[A-Z]{3}$/.test(fromCurrency) || !/^[A-Z]{3}$/.test(toCurrency)) {
+      return NextResponse.json(
+        { error: 'Invalid currency code. Must be 3 uppercase letters.' },
         { status: 400 }
       );
     }

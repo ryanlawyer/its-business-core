@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { checkAlertStatus, TimeclockEntryForCalculation } from '@/lib/overtime';
+import { getSystemConfig } from '@/lib/setup-status';
 
 /**
  * GET /api/timeclock/alerts
@@ -64,7 +65,8 @@ export async function GET() {
     }));
 
     // Calculate alert status
-    const alertStatus = checkAlertStatus(calcEntries, config, now, activeMinutes);
+    const timezone = await getSystemConfig('timezone') || 'UTC';
+    const alertStatus = checkAlertStatus(calcEntries, config, now, activeMinutes, timezone);
 
     return NextResponse.json({
       alertStatus,

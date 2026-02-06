@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { createAuditLog, getRequestContext, getChanges } from '@/lib/audit';
+import { getPermissionsFromSession, hasPermission } from '@/lib/check-permissions';
 
 // GET /api/departments/[id] - Get single department with stats
 export async function GET(
@@ -12,6 +13,11 @@ export async function GET(
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const perms = getPermissionsFromSession(session);
+    if (!perms || !hasPermission(perms.permissions, 'departments', 'canView')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { id } = await params;

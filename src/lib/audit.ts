@@ -62,7 +62,10 @@ export type AuditAction =
   | 'BANK_STATEMENT_PARSED'
   | 'BANK_STATEMENT_DELETED'
   | 'BANK_TRANSACTION_MATCHED'
-  | 'BANK_TRANSACTION_UNMATCHED';
+  | 'BANK_TRANSACTION_UNMATCHED'
+  // System actions
+  | 'BACKUP_DOWNLOADED'
+  | 'BACKUP_RESTORED';
 
 export type AuditEntityType =
   | 'User'
@@ -76,7 +79,13 @@ export type AuditEntityType =
   | 'Auth'
   | 'Receipt'
   | 'BankStatement'
-  | 'BankTransaction';
+  | 'BankTransaction'
+  | 'TimeclockEntry'
+  | 'PayPeriodConfig'
+  | 'OvertimeConfig'
+  | 'ManagerAssignment'
+  | 'ExportTemplate'
+  | 'System';
 
 interface AuditLogData {
   userId?: string;

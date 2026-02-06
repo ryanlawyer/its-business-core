@@ -116,12 +116,30 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { vendorId, department, note, lineItems } = body;
 
-    // Validate
+    // Validate required fields
     if (!vendorId || !lineItems || lineItems.length === 0) {
       return NextResponse.json(
         { error: 'Vendor and line items are required' },
         { status: 400 }
       );
+    }
+
+    // Validate each line item
+    for (let i = 0; i < lineItems.length; i++) {
+      const item = lineItems[i];
+      const amount = parseFloat(item.amount);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        return NextResponse.json(
+          { error: `Line item ${i + 1} has an invalid amount. Amount must be a finite positive number.` },
+          { status: 400 }
+        );
+      }
+      if (!item.description || typeof item.description !== 'string' || item.description.trim().length === 0) {
+        return NextResponse.json(
+          { error: `Line item ${i + 1} has an empty description. Description is required.` },
+          { status: 400 }
+        );
+      }
     }
 
     // Calculate total
@@ -130,39 +148,55 @@ export async function POST(request: Request) {
       0
     );
 
-    // Generate PO number
-    const year = new Date().getFullYear();
-    const count = await prisma.purchaseOrder.count();
-    const poNumber = `PO-${year}-${String(count + 1).padStart(3, '0')}`;
+    // Retry up to 3 times on unique constraint violation (P2002)
+    let po;
+    const maxRetries = 3;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        po = await prisma.$transaction(async (tx) => {
+          // Generate PO number inside transaction to prevent race conditions
+          const year = new Date().getFullYear();
+          const count = await tx.purchaseOrder.count();
+          const poNumber = `PO-${year}-${String(count + 1).padStart(3, '0')}`;
 
-    // Create PO with line items
-    const po = await prisma.purchaseOrder.create({
-      data: {
-        poNumber,
-        poDate: new Date(),
-        vendorId,
-        requestedById: user.id,
-        departmentId: user.departmentId,
-        notes: note || null,
-        status: 'DRAFT',
-        totalAmount,
-        lineItems: {
-          create: lineItems.map((item: any) => ({
-            description: item.description,
-            amount: parseFloat(item.amount),
-            budgetItemId: item.budgetItemId,
-          })),
-        },
-      },
-      include: {
-        vendor: true,
-        lineItems: {
-          include: {
-            budgetItem: true,
-          },
-        },
-      },
-    });
+          // Create PO with line items
+          return await tx.purchaseOrder.create({
+            data: {
+              poNumber,
+              poDate: new Date(),
+              vendorId,
+              requestedById: user.id,
+              departmentId: user.departmentId,
+              notes: note || null,
+              status: 'DRAFT',
+              totalAmount,
+              lineItems: {
+                create: lineItems.map((item: any) => ({
+                  description: item.description,
+                  amount: parseFloat(item.amount),
+                  budgetItemId: item.budgetItemId,
+                })),
+              },
+            },
+            include: {
+              vendor: true,
+              lineItems: {
+                include: {
+                  budgetItem: true,
+                },
+              },
+            },
+          });
+        });
+        break; // Success, exit retry loop
+      } catch (err: any) {
+        if (err?.code === 'P2002' && attempt < maxRetries - 1) {
+          // Unique constraint violation - retry with new number
+          continue;
+        }
+        throw err;
+      }
+    }
 
     return NextResponse.json({ po });
   } catch (error) {

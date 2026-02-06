@@ -1,7 +1,7 @@
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
+import { getUserWithPermissions, hasPermission, getPermissionsFromSession } from '@/lib/check-permissions';
 import { createAuditLog, getRequestContext } from '@/lib/audit';
 import { processReceiptWithRetry, isOCRConfigured, OCRServiceError } from '@/lib/ocr';
 import { existsSync } from 'fs';
@@ -10,6 +10,28 @@ import { fileTypeFromFile } from 'file-type';
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
+
+// Simple per-user rate limiter for OCR processing
+const ocrRateLimit = new Map<string, { count: number; resetAt: number }>();
+const OCR_RATE_LIMIT_MAX = 10;
+const OCR_RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+
+function checkOcrRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const entry = ocrRateLimit.get(userId);
+
+  if (!entry || now >= entry.resetAt) {
+    ocrRateLimit.set(userId, { count: 1, resetAt: now + OCR_RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+
+  if (entry.count >= OCR_RATE_LIMIT_MAX) {
+    return false;
+  }
+
+  entry.count++;
+  return true;
+}
 
 /**
  * POST /api/receipts/[id]/process
@@ -40,8 +62,16 @@ export async function POST(req: NextRequest, context: RouteContext) {
     // Check if OCR is configured
     if (!isOCRConfigured()) {
       return NextResponse.json(
-        { error: 'OCR service is not configured. Please set ANTHROPIC_API_KEY environment variable.' },
+        { error: 'OCR service is not configured. Please contact an administrator.' },
         { status: 503 }
+      );
+    }
+
+    // Rate limit OCR requests per user
+    if (!checkOcrRateLimit(session.user.id)) {
+      return NextResponse.json(
+        { error: 'Too many OCR requests. Please wait before trying again.' },
+        { status: 429 }
       );
     }
 
@@ -50,6 +80,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
       where: { id: receiptId },
       select: {
         id: true,
+        userId: true,
         status: true,
         imageUrl: true,
       },
@@ -60,6 +91,15 @@ export async function POST(req: NextRequest, context: RouteContext) {
         { error: 'Receipt not found' },
         { status: 404 }
       );
+    }
+
+    // Ownership / permission check
+    const perms = getPermissionsFromSession(session);
+    if (!perms) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const isOwner = receipt.userId === session.user.id;
+    const canViewAll = hasPermission(perms.permissions, 'receipts', 'canViewAll');
+    if (!isOwner && !canViewAll) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     if (!receipt.imageUrl) {

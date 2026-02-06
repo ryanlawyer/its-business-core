@@ -1,7 +1,114 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 
 const SETTINGS_PATH = path.join(process.cwd(), 'config', 'system-settings.json');
+
+// Encryption helpers for secrets at rest
+const ALGORITHM = 'aes-256-gcm';
+const IV_LENGTH = 16;
+const TAG_LENGTH = 16;
+const ENCRYPTED_PREFIX = 'enc:';
+
+function getEncryptionKey(): Buffer | null {
+  const secret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET;
+  if (!secret) return null;
+  return crypto.scryptSync(secret, 'settings-encryption-salt', 32);
+}
+
+function encryptValue(value: string): string {
+  const key = getEncryptionKey();
+  if (!key || !value) return value;
+
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+  let encrypted = cipher.update(value, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  const tag = cipher.getAuthTag();
+
+  return ENCRYPTED_PREFIX + iv.toString('hex') + ':' + tag.toString('hex') + ':' + encrypted;
+}
+
+function decryptValue(value: string): string {
+  if (!value || !value.startsWith(ENCRYPTED_PREFIX)) return value;
+
+  const key = getEncryptionKey();
+  if (!key) return value;
+
+  try {
+    const payload = value.slice(ENCRYPTED_PREFIX.length);
+    const [ivHex, tagHex, encrypted] = payload.split(':');
+    const iv = Buffer.from(ivHex, 'hex');
+    const tag = Buffer.from(tagHex, 'hex');
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+    decipher.setAuthTag(tag);
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  } catch {
+    // If decryption fails (e.g., key changed), return empty string
+    return '';
+  }
+}
+
+// Fields that should be encrypted at rest
+const SENSITIVE_PATHS = [
+  'ai.anthropic.apiKey',
+  'ai.openai.apiKey',
+  'email.gmail.clientSecret',
+  'email.gmail.refreshToken',
+  'email.office365.clientSecret',
+  'email.office365.refreshToken',
+  'email.smtp.password',
+];
+
+function getNestedValue(obj: any, path: string): string {
+  return path.split('.').reduce((o, k) => o?.[k], obj) ?? '';
+}
+
+function setNestedValue(obj: any, path: string, value: string): void {
+  const keys = path.split('.');
+  const last = keys.pop()!;
+  const target = keys.reduce((o, k) => o?.[k], obj);
+  if (target) target[last] = value;
+}
+
+function encryptSensitiveFields(settings: SystemSettings): SystemSettings {
+  const copy = JSON.parse(JSON.stringify(settings));
+  for (const fieldPath of SENSITIVE_PATHS) {
+    const val = getNestedValue(copy, fieldPath);
+    if (val && !val.startsWith(ENCRYPTED_PREFIX)) {
+      setNestedValue(copy, fieldPath, encryptValue(val));
+    }
+  }
+  return copy;
+}
+
+function decryptSensitiveFields(settings: SystemSettings): SystemSettings {
+  const copy = JSON.parse(JSON.stringify(settings));
+  for (const fieldPath of SENSITIVE_PATHS) {
+    const val = getNestedValue(copy, fieldPath);
+    if (val && val.startsWith(ENCRYPTED_PREFIX)) {
+      setNestedValue(copy, fieldPath, decryptValue(val));
+    }
+  }
+  return copy;
+}
+
+/**
+ * Redact sensitive fields for API responses (show only last 4 chars)
+ */
+export function redactSensitiveSettings(settings: SystemSettings): SystemSettings {
+  const copy = JSON.parse(JSON.stringify(settings));
+  for (const fieldPath of SENSITIVE_PATHS) {
+    const val = getNestedValue(copy, fieldPath);
+    if (val && typeof val === 'string' && val.length > 0) {
+      const visible = val.slice(-4);
+      setNestedValue(copy, fieldPath, `****${visible}`);
+    }
+  }
+  return copy;
+}
 
 export interface SystemSettings {
   organization: {
@@ -73,12 +180,13 @@ export interface SystemSettings {
 }
 
 /**
- * Get current system settings
+ * Get current system settings (decrypted)
  */
 export function getSettings(): SystemSettings {
   try {
     const data = fs.readFileSync(SETTINGS_PATH, 'utf-8');
-    return JSON.parse(data);
+    const settings = JSON.parse(data);
+    return decryptSensitiveFields(settings);
   } catch (error) {
     console.error('Error reading settings file:', error);
     // Return default settings if file doesn't exist
@@ -87,7 +195,7 @@ export function getSettings(): SystemSettings {
 }
 
 /**
- * Update system settings
+ * Update system settings (encrypts sensitive fields before writing)
  */
 export function updateSettings(settings: SystemSettings): void {
   try {
@@ -97,8 +205,9 @@ export function updateSettings(settings: SystemSettings): void {
       fs.mkdirSync(configDir, { recursive: true });
     }
 
-    // Write settings to file
-    fs.writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2), 'utf-8');
+    // Encrypt sensitive fields before writing to disk
+    const encrypted = encryptSensitiveFields(settings);
+    fs.writeFileSync(SETTINGS_PATH, JSON.stringify(encrypted, null, 2), 'utf-8');
   } catch (error) {
     console.error('Error writing settings file:', error);
     throw new Error('Failed to update settings');

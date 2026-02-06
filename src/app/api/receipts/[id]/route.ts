@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
 import { createAuditLog, getRequestContext, getChanges } from '@/lib/audit';
 import { convertToBaseCurrency, BASE_CURRENCY } from '@/lib/currency';
+import { resolveUploadPath } from '@/lib/file-utils';
 import { unlink } from 'fs/promises';
 import { existsSync } from 'fs';
 
@@ -297,37 +298,24 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
       );
     }
 
-    // Check permission
+    // Check permission - allow delete if user has canDelete permission
+    // OR if user owns the receipt and has canViewOwn permission
     const canDelete = hasPermission(permissions, 'receipts', 'canDelete');
+    const canViewOwn = hasPermission(permissions, 'receipts', 'canViewOwn');
     const isOwner = receipt.userId === user.id;
 
-    if (!canDelete && !isOwner) {
+    if (!canDelete && !(canViewOwn && isOwner)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Delete the receipt (cascades to line items and tags)
-    await prisma.receipt.delete({
-      where: { id },
+    // Delete the receipt in a transaction (cascades to line items and tags)
+    await prisma.$transaction(async (tx) => {
+      await tx.receipt.delete({
+        where: { id },
+      });
     });
 
-    // Delete associated files
-    if (receipt.imageUrl && existsSync(receipt.imageUrl)) {
-      try {
-        await unlink(receipt.imageUrl);
-      } catch (e) {
-        console.error('Error deleting receipt image:', e);
-      }
-    }
-
-    if (receipt.thumbnailUrl && receipt.thumbnailUrl !== receipt.imageUrl && existsSync(receipt.thumbnailUrl)) {
-      try {
-        await unlink(receipt.thumbnailUrl);
-      } catch (e) {
-        console.error('Error deleting receipt thumbnail:', e);
-      }
-    }
-
-    // Create audit log
+    // After transaction succeeds, create audit log
     const { ipAddress, userAgent } = getRequestContext(req);
     await createAuditLog({
       userId: session.user.id,
@@ -343,6 +331,25 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
       ipAddress,
       userAgent,
     });
+
+    // After transaction succeeds, clean up files (best-effort)
+    if (receipt.imageUrl) {
+      const resolvedImagePath = resolveUploadPath(receipt.imageUrl);
+      if (resolvedImagePath && existsSync(resolvedImagePath)) {
+        try {
+          await unlink(resolvedImagePath);
+        } catch { /* file cleanup is best-effort */ }
+      }
+    }
+
+    if (receipt.thumbnailUrl && receipt.thumbnailUrl !== receipt.imageUrl) {
+      const resolvedThumbPath = resolveUploadPath(receipt.thumbnailUrl);
+      if (resolvedThumbPath && existsSync(resolvedThumbPath)) {
+        try {
+          await unlink(resolvedThumbPath);
+        } catch { /* file cleanup is best-effort */ }
+      }
+    }
 
     return NextResponse.json({ message: 'Receipt deleted successfully' });
   } catch (error) {

@@ -177,6 +177,14 @@ export async function POST(req: NextRequest) {
       lineItems,
     } = body;
 
+    // Cap line items at 500 per receipt
+    if (Array.isArray(lineItems) && lineItems.length > 500) {
+      return NextResponse.json(
+        { error: 'Too many line items. Maximum 500 items per receipt.' },
+        { status: 400 }
+      );
+    }
+
     // Create the receipt
     const receipt = await prisma.receipt.create({
       data: {

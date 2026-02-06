@@ -79,6 +79,14 @@ export async function POST(req: NextRequest) {
         file: tempArchive,
         cwd: extractPath,
         strip: 0,
+        filter: (entryPath: string) => {
+          // Block path traversal: reject entries containing '..' or starting with '/'
+          if (entryPath.includes('..') || entryPath.startsWith('/')) {
+            console.warn('Blocked suspicious tar entry path:', entryPath);
+            return false;
+          }
+          return true;
+        },
       });
 
       // Validate manifest
@@ -195,7 +203,6 @@ export async function POST(req: NextRequest) {
           backupVersion: manifest.version,
           restoredAt: new Date().toISOString(),
           restoredBy: session.user.email,
-          safetyBackupLocation: safetyBackupDir,
         },
       });
     } catch (extractError) {
@@ -211,7 +218,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error: 'Failed to restore backup',
-        details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }
     );

@@ -3,7 +3,43 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
+// Validate NEXTAUTH_SECRET at startup - reject placeholder values
+const secret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET;
+if (process.env.NODE_ENV === 'production' && (!secret || secret === 'change-this-to-a-random-secret-in-production')) {
+  throw new Error('NEXTAUTH_SECRET must be set to a strong random value in production');
+}
+
+// In-memory rate limiter for login attempts
+const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+function checkRateLimit(email: string): boolean {
+  const now = Date.now();
+  const record = loginAttempts.get(email);
+
+  if (!record || now > record.resetAt) {
+    loginAttempts.set(email, { count: 1, resetAt: now + LOGIN_WINDOW_MS });
+    return true;
+  }
+
+  if (record.count >= MAX_LOGIN_ATTEMPTS) {
+    return false;
+  }
+
+  record.count++;
+  return true;
+}
+
+function resetRateLimit(email: string): void {
+  loginAttempts.delete(email);
+}
+
+// JWT re-validation interval (5 minutes)
+const JWT_REVALIDATION_INTERVAL_MS = 5 * 60 * 1000;
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  secret,
   providers: [
     CredentialsProvider({
       credentials: {
@@ -15,8 +51,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
+        const email = (credentials.email as string).toLowerCase().trim();
+
+        // Rate limiting
+        if (!checkRateLimit(email)) {
+          return null;
+        }
+
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
+          where: { email },
           include: {
             department: true,
             role: true,
@@ -35,6 +78,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!isValidPassword) {
           return null;
         }
+
+        // Successful login - reset rate limit
+        resetRateLimit(email);
 
         return {
           id: user.id,
@@ -62,12 +108,47 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.departmentId = user.departmentId;
         token.departmentName = user.departmentName;
         token.permissions = user.permissions;
+        token.lastValidated = Date.now();
         // Legacy support
         token.role = user.roleCode;
       }
+
+      // Re-validate permissions every 5 minutes
+      const lastValidated = (token.lastValidated as number) || 0;
+      if (Date.now() - lastValidated > JWT_REVALIDATION_INTERVAL_MS) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            include: { role: true, department: true },
+          });
+
+          if (!dbUser || !dbUser.isActive || !dbUser.role) {
+            // User deactivated or role removed - invalidate token
+            return { ...token, id: null };
+          }
+
+          // Update token with current permissions
+          token.roleId = dbUser.roleId;
+          token.roleCode = dbUser.role.code;
+          token.roleName = dbUser.role.name;
+          token.departmentId = dbUser.departmentId;
+          token.departmentName = dbUser.department?.name;
+          token.permissions = dbUser.role.permissions;
+          token.role = dbUser.role.code;
+          token.lastValidated = Date.now();
+        } catch {
+          // DB error - keep existing token, try again next time
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
+      // If token was invalidated (user deactivated), clear session
+      if (!token.id) {
+        return { ...session, user: undefined } as any;
+      }
+
       if (session.user) {
         session.user.id = token.id as string;
         session.user.roleId = token.roleId as string;
@@ -87,6 +168,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   session: {
     strategy: "jwt",
+    maxAge: 8 * 60 * 60, // 8 hours
   },
-  trustHost: true,
+  trustHost: process.env.NODE_ENV === 'development',
 });

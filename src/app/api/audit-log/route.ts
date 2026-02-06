@@ -108,11 +108,19 @@ export async function GET(req: NextRequest) {
       take: limit,
     });
 
-    // Parse changes JSON
-    const logsWithParsedChanges = logs.map((log) => ({
-      ...log,
-      changes: JSON.parse(log.changes),
-    }));
+    // Parse changes JSON safely
+    const logsWithParsedChanges = logs.map((log) => {
+      let parsedChanges = {};
+      try {
+        parsedChanges = JSON.parse(log.changes);
+      } catch {
+        parsedChanges = { raw: log.changes };
+      }
+      return {
+        ...log,
+        changes: parsedChanges,
+      };
+    });
 
     return NextResponse.json({
       logs: logsWithParsedChanges,

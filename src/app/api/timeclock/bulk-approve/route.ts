@@ -100,6 +100,13 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
+        // Cannot approve own entry
+        if (entry.userId === session.user.id) {
+          results.skipped++;
+          results.details.push({ id: entryId, status: 'skipped', reason: 'Cannot approve own entry' });
+          continue;
+        }
+
         // Already approved
         if (entry.status === 'approved') {
           results.skipped++;

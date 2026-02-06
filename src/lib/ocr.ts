@@ -1,9 +1,22 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-// Initialize Anthropic client
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+// Lazy-initialized Anthropic client to prevent crashes when API key is not set
+let _anthropic: Anthropic | null = null;
+
+function getAnthropicClient(): Anthropic {
+  if (!_anthropic) {
+    if (!isOCRConfigured()) {
+      throw new OCRServiceError(
+        'NOT_CONFIGURED',
+        'OCR service is not configured. ANTHROPIC_API_KEY environment variable is not set.'
+      );
+    }
+    _anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    });
+  }
+  return _anthropic;
+}
 
 export interface LineItem {
   description: string;
@@ -127,7 +140,7 @@ export async function extractReceiptData(
       ? buildPdfContent(data)
       : buildImageContent(data, mediaType as ImageMediaType);
 
-    const response = await anthropic.messages.create({
+    const response = await getAnthropicClient().messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1024,
       messages: [

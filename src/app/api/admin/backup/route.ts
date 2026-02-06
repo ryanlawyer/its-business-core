@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
 import { prisma } from '@/lib/prisma';
+import { createAuditLog, getRequestContext } from '@/lib/audit';
 import * as fs from 'fs';
 import * as path from 'path';
 import archiver from 'archiver';
@@ -111,11 +112,7 @@ export async function GET(req: NextRequest) {
 
     // Full backup extras
     if (backupType === 'full') {
-      // Add secrets file if exists
-      if (fs.existsSync(secretsPath)) {
-        archive.file(secretsPath, { name: '.secrets' });
-        manifest.files_included.push('.secrets');
-      }
+      // NOTE: .secrets file is intentionally excluded from backups for security
 
       // Add system config export from database
       try {
@@ -163,6 +160,24 @@ export async function GET(req: NextRequest) {
     // Combine chunks into buffer
     const archiveBuffer = Buffer.concat(chunks);
 
+    // Audit log for backup download
+    const { ipAddress, userAgent } = getRequestContext(req);
+    await createAuditLog({
+      userId: session.user.id,
+      action: 'BACKUP_DOWNLOADED',
+      entityType: 'System',
+      entityId: 'backup',
+      changes: {
+        after: {
+          backupType,
+          filename,
+          filesIncluded: manifest.files_included,
+        },
+      },
+      ipAddress,
+      userAgent,
+    });
+
     // Return as downloadable file
     return new NextResponse(archiveBuffer, {
       status: 200,
@@ -177,7 +192,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       {
         error: 'Failed to create backup',
-        details: error instanceof Error ? error.message : String(error)
       },
       { status: 500 }
     );

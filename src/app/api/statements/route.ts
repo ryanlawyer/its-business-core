@@ -119,6 +119,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Validate file size (50MB max)
+    const MAX_STATEMENT_SIZE = 50 * 1024 * 1024; // 50MB
+    if (file.size > MAX_STATEMENT_SIZE) {
+      return NextResponse.json(
+        { error: 'File too large. Maximum size is 50MB.' },
+        { status: 400 }
+      );
+    }
+
     // Validate file type
     const allowedExtensions = ['.csv', '.xlsx', '.xls', '.txt'];
     const extension = path.extname(file.name).toLowerCase();

@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { isSetupComplete, markSetupComplete, setSystemConfig } from '@/lib/setup-status';
-import { updateSettings, getDefaultSettings } from '@/lib/settings';
+import { updateSettings, getDefaultSettings, validatePassword } from '@/lib/settings';
 import { clearSetupCache } from '@/middleware';
 import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
 
 interface SetupData {
   admin: {
@@ -38,12 +36,16 @@ function validateSetupData(data: SetupData): { valid: boolean; errors: string[] 
   if (!orgName) errors.push('Organization name is required');
   if (!data.organization?.departmentName) errors.push('Department name is required');
 
-  if (data.admin?.password && data.admin.password.length < 8) {
-    errors.push('Password must be at least 8 characters');
-  }
-
   if (data.admin?.email && !data.admin.email.includes('@')) {
     errors.push('Invalid email format');
+  }
+
+  // Apply full password policy
+  if (data.admin?.password) {
+    const passwordResult = validatePassword(data.admin.password);
+    if (!passwordResult.valid) {
+      errors.push(...passwordResult.errors);
+    }
   }
 
   return { valid: errors.length === 0, errors };
@@ -51,14 +53,6 @@ function validateSetupData(data: SetupData): { valid: boolean; errors: string[] 
 
 export async function POST(req: NextRequest) {
   try {
-    // Prevent setup if already complete
-    if (await isSetupComplete()) {
-      return NextResponse.json(
-        { error: 'Setup already completed' },
-        { status: 400 }
-      );
-    }
-
     const data: SetupData = await req.json();
 
     // Validate input
@@ -70,193 +64,229 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create default roles if they don't exist
-    const adminRole = await prisma.role.upsert({
-      where: { code: 'ADMIN' },
-      update: {},
-      create: {
-        name: 'Administrator',
-        code: 'ADMIN',
-        description: 'Full system access and configuration',
-        isSystem: true,
-        permissions: JSON.stringify({
-          _isAdmin: true,
-          timeclock: {
-            canClockInOut: true,
-            canViewOwnEntries: true,
-            canViewTeamEntries: true,
-            canEditTeamEntries: true,
-            canApproveEntries: true,
-            canExportPayroll: true,
-            canViewAllEntries: true,
-            canManageConfig: true,
-            canManageExportTemplates: true,
-            canAssignManagers: true,
-          },
-          purchaseOrders: {
-            canCreate: true,
-            canViewOwn: true,
-            canViewDepartment: true,
-            canViewAll: true,
-            canEdit: true,
-            canApprove: true,
-            canDelete: true,
-            canVoid: true,
-            canUploadReceipts: true,
-          },
-          budgetItems: {
-            canView: true,
-            canManage: true,
-            canCreateAmendments: true,
-            canTransferFunds: true,
-            canViewAllCategories: true,
-            canManageCategories: true,
-            canCloseFiscalYear: true,
-            canAccessClosedYears: true,
-            canExportReports: true,
-          },
-          vendors: { canView: true, canManage: true },
-          users: { canManage: true },
-          departments: { canView: true, canManage: true, canViewAll: true },
-          roles: { canManage: true },
-          auditLog: { canView: true, canViewAll: true, canExport: true },
-          settings: { canManage: true },
-        }),
-      },
+    // Use a transaction to atomically check and perform setup
+    // This prevents race conditions where two requests both pass the "not setup" check
+    const result = await prisma.$transaction(async (tx) => {
+      // Atomic guard: check if setup is already complete inside the transaction
+      const existing = await tx.systemConfig.findUnique({
+        where: { key: 'setup_complete' },
+      });
+
+      if (existing?.value === 'true') {
+        return { alreadyComplete: true };
+      }
+
+      // Create default roles if they don't exist
+      const adminRole = await tx.role.upsert({
+        where: { code: 'ADMIN' },
+        update: {},
+        create: {
+          name: 'Administrator',
+          code: 'ADMIN',
+          description: 'Full system access and configuration',
+          isSystem: true,
+          permissions: JSON.stringify({
+            _isAdmin: true,
+            timeclock: {
+              canClockInOut: true,
+              canViewOwnEntries: true,
+              canViewTeamEntries: true,
+              canEditTeamEntries: true,
+              canApproveEntries: true,
+              canExportPayroll: true,
+              canViewAllEntries: true,
+              canManageConfig: true,
+              canManageExportTemplates: true,
+              canAssignManagers: true,
+            },
+            purchaseOrders: {
+              canCreate: true,
+              canViewOwn: true,
+              canViewDepartment: true,
+              canViewAll: true,
+              canEdit: true,
+              canApprove: true,
+              canDelete: true,
+              canVoid: true,
+              canUploadReceipts: true,
+            },
+            budgetItems: {
+              canView: true,
+              canManage: true,
+              canCreateAmendments: true,
+              canTransferFunds: true,
+              canViewAllCategories: true,
+              canManageCategories: true,
+              canCloseFiscalYear: true,
+              canAccessClosedYears: true,
+              canExportReports: true,
+            },
+            vendors: { canView: true, canManage: true },
+            users: { canManage: true },
+            departments: { canView: true, canManage: true, canViewAll: true },
+            roles: { canManage: true },
+            auditLog: { canView: true, canViewAll: true, canExport: true },
+            settings: { canManage: true },
+          }),
+        },
+      });
+
+      // Create Manager and User roles
+      await tx.role.upsert({
+        where: { code: 'MANAGER' },
+        update: {},
+        create: {
+          name: 'Manager',
+          code: 'MANAGER',
+          description: 'Department management with approval authority',
+          isSystem: true,
+          permissions: JSON.stringify({
+            timeclock: {
+              canClockInOut: true,
+              canViewOwnEntries: true,
+              canViewTeamEntries: true,
+              canEditTeamEntries: true,
+              canApproveEntries: true,
+              canExportPayroll: true,
+              canViewAllEntries: false,
+              canManageConfig: false,
+              canManageExportTemplates: false,
+              canAssignManagers: false,
+            },
+            purchaseOrders: {
+              canCreate: true,
+              canViewOwn: true,
+              canViewDepartment: true,
+              canViewAll: false,
+              canEdit: true,
+              canApprove: true,
+              canDelete: false,
+              canVoid: true,
+              canUploadReceipts: true,
+            },
+            budgetItems: {
+              canView: true,
+              canManage: true,
+              canCreateAmendments: true,
+              canTransferFunds: true,
+              canViewAllCategories: true,
+              canManageCategories: false,
+              canCloseFiscalYear: false,
+              canAccessClosedYears: false,
+              canExportReports: true,
+            },
+            vendors: { canView: true, canManage: true },
+            users: { canManage: false },
+            departments: { canView: true, canManage: false, canViewAll: true },
+            roles: { canManage: false },
+            auditLog: { canView: true, canViewAll: false, canExport: true },
+            settings: { canManage: false },
+          }),
+        },
+      });
+
+      await tx.role.upsert({
+        where: { code: 'USER' },
+        update: {},
+        create: {
+          name: 'User',
+          code: 'USER',
+          description: 'Basic employee access for day-to-day operations',
+          isSystem: true,
+          permissions: JSON.stringify({
+            timeclock: {
+              canClockInOut: true,
+              canViewOwnEntries: true,
+              canViewTeamEntries: false,
+              canEditTeamEntries: false,
+              canApproveEntries: false,
+              canExportPayroll: false,
+              canViewAllEntries: false,
+              canManageConfig: false,
+              canManageExportTemplates: false,
+              canAssignManagers: false,
+            },
+            purchaseOrders: {
+              canCreate: true,
+              canViewOwn: true,
+              canViewDepartment: false,
+              canViewAll: false,
+              canEdit: false,
+              canApprove: false,
+              canDelete: false,
+              canVoid: false,
+              canUploadReceipts: false,
+            },
+            budgetItems: {
+              canView: true,
+              canManage: false,
+              canCreateAmendments: false,
+              canTransferFunds: false,
+              canViewAllCategories: false,
+              canManageCategories: false,
+              canCloseFiscalYear: false,
+              canAccessClosedYears: false,
+              canExportReports: false,
+            },
+            vendors: { canView: true, canManage: false },
+            users: { canManage: false },
+            departments: { canView: false, canManage: false, canViewAll: false },
+            roles: { canManage: false },
+            auditLog: { canView: false, canViewAll: false, canExport: false },
+            settings: { canManage: false },
+          }),
+        },
+      });
+
+      // Create department
+      const department = await tx.department.create({
+        data: {
+          name: data.organization.departmentName,
+          description: 'Initial department',
+        },
+      });
+
+      // Create admin user
+      const hashedPassword = await bcrypt.hash(data.admin.password, 10);
+      await tx.user.create({
+        data: {
+          email: data.admin.email,
+          password: hashedPassword,
+          name: data.admin.name,
+          roleId: adminRole.id,
+          departmentId: department.id,
+          authProvider: 'local',
+        },
+      });
+
+      // Store timezone
+      await tx.systemConfig.upsert({
+        where: { key: 'timezone' },
+        update: { value: data.organization.timezone || 'UTC' },
+        create: { key: 'timezone', value: data.organization.timezone || 'UTC' },
+      });
+
+      // Mark setup as complete atomically
+      await tx.systemConfig.upsert({
+        where: { key: 'setup_complete' },
+        update: { value: 'true' },
+        create: { key: 'setup_complete', value: 'true' },
+      });
+
+      return { alreadyComplete: false, data };
     });
 
-    // Create Manager and User roles (use the full permission objects from the plan)
-    await prisma.role.upsert({
-      where: { code: 'MANAGER' },
-      update: {},
-      create: {
-        name: 'Manager',
-        code: 'MANAGER',
-        description: 'Department management with approval authority',
-        isSystem: true,
-        permissions: JSON.stringify({
-          timeclock: {
-            canClockInOut: true,
-            canViewOwnEntries: true,
-            canViewTeamEntries: true,
-            canEditTeamEntries: true,
-            canApproveEntries: true,
-            canExportPayroll: true,
-            canViewAllEntries: false,
-            canManageConfig: false,
-            canManageExportTemplates: false,
-            canAssignManagers: false,
-          },
-          purchaseOrders: {
-            canCreate: true,
-            canViewOwn: true,
-            canViewDepartment: true,
-            canViewAll: false,
-            canEdit: true,
-            canApprove: true,
-            canDelete: false,
-            canVoid: true,
-            canUploadReceipts: true,
-          },
-          budgetItems: {
-            canView: true,
-            canManage: true,
-            canCreateAmendments: true,
-            canTransferFunds: true,
-            canViewAllCategories: true,
-            canManageCategories: false,
-            canCloseFiscalYear: false,
-            canAccessClosedYears: false,
-            canExportReports: true,
-          },
-          vendors: { canView: true, canManage: true },
-          users: { canManage: false },
-          departments: { canView: true, canManage: false, canViewAll: true },
-          roles: { canManage: false },
-          auditLog: { canView: true, canViewAll: false, canExport: true },
-          settings: { canManage: false },
-        }),
-      },
-    });
+    if (result.alreadyComplete) {
+      return NextResponse.json(
+        { error: 'Setup already completed' },
+        { status: 400 }
+      );
+    }
 
-    await prisma.role.upsert({
-      where: { code: 'USER' },
-      update: {},
-      create: {
-        name: 'User',
-        code: 'USER',
-        description: 'Basic employee access for day-to-day operations',
-        isSystem: true,
-        permissions: JSON.stringify({
-          timeclock: {
-            canClockInOut: true,
-            canViewOwnEntries: true,
-            canViewTeamEntries: false,
-            canEditTeamEntries: false,
-            canApproveEntries: false,
-            canExportPayroll: false,
-            canViewAllEntries: false,
-            canManageConfig: false,
-            canManageExportTemplates: false,
-            canAssignManagers: false,
-          },
-          purchaseOrders: {
-            canCreate: true,
-            canViewOwn: true,
-            canViewDepartment: false,
-            canViewAll: false,
-            canEdit: false,
-            canApprove: false,
-            canDelete: false,
-            canVoid: false,
-            canUploadReceipts: false,
-          },
-          budgetItems: {
-            canView: true,
-            canManage: false,
-            canCreateAmendments: false,
-            canTransferFunds: false,
-            canViewAllCategories: false,
-            canManageCategories: false,
-            canCloseFiscalYear: false,
-            canAccessClosedYears: false,
-            canExportReports: false,
-          },
-          vendors: { canView: true, canManage: false },
-          users: { canManage: false },
-          departments: { canView: false, canManage: false, canViewAll: false },
-          roles: { canManage: false },
-          auditLog: { canView: false, canViewAll: false, canExport: false },
-          settings: { canManage: false },
-        }),
-      },
-    });
-
-    // Create department
-    const department = await prisma.department.create({
-      data: {
-        name: data.organization.departmentName,
-        description: 'Initial department',
-      },
-    });
-
-    // Create admin user
-    const hashedPassword = await bcrypt.hash(data.admin.password, 10);
-    await prisma.user.create({
-      data: {
-        email: data.admin.email,
-        password: hashedPassword,
-        name: data.admin.name,
-        roleId: adminRole.id,
-        departmentId: department.id,
-        authProvider: 'local',
-      },
-    });
-
-    // Update system settings
+    // Update system settings (file-based, outside transaction)
     const settings = getDefaultSettings();
-    // Accept either 'name' or 'organizationName' from frontend
-    settings.organization.name = data.organization.name || data.organization.organizationName || '';
+    const orgName = data.organization.name || data.organization.organizationName || '';
+    settings.organization.name = orgName;
     settings.organization.logo = data.organization.logo || null;
     settings.fiscalYear.startMonth = data.organization.fiscalYearStartMonth || 1;
 
@@ -302,25 +332,6 @@ export async function POST(req: NextRequest) {
 
     updateSettings(settings);
 
-    // Store timezone
-    await setSystemConfig('timezone', data.organization.timezone || 'UTC');
-
-    // Store detected NEXTAUTH_URL if not already set
-    const host = req.headers.get('host');
-    const protocol = req.headers.get('x-forwarded-proto') || 'http';
-    if (host) {
-      await setSystemConfig('nextauth_url', `${protocol}://${host}`);
-    }
-
-    // Generate NEXTAUTH_SECRET if not provided via env
-    if (!process.env.NEXTAUTH_SECRET || process.env.NEXTAUTH_SECRET === 'change-this-to-a-random-secret-in-production') {
-      const secret = crypto.randomBytes(32).toString('base64');
-      await setSystemConfig('nextauth_secret', secret);
-    }
-
-    // Mark setup as complete
-    await markSetupComplete();
-
     // Clear the middleware cache so subsequent requests see the new state
     clearSetupCache();
 
@@ -331,7 +342,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Setup error:', error);
     return NextResponse.json(
-      { error: 'Setup failed', details: String(error) },
+      { error: 'Setup failed' },
       { status: 500 }
     );
   }

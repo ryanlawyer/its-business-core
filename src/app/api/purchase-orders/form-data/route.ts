@@ -33,8 +33,9 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Check cache first
-    const cacheKey = CacheKeys.formData();
+    // Include permission level in cache key so different permission levels don't share cached data
+    const isAdmin = permissions?._isAdmin || false;
+    const cacheKey = `po-form-data:${isAdmin ? 'admin' : 'user'}`;
     const cached = cache.get<{ vendors: any[]; budgetItems: any[] }>(cacheKey);
 
     if (cached) {

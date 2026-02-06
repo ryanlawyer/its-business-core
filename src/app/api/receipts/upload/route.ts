@@ -69,10 +69,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Generate unique filename
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 8);
     const ext = path.extname(validation.sanitizedFilename || file.name);
-    const uniqueFilename = `receipt_${timestamp}_${random}${ext}`;
+    const uniqueFilename = `receipt_${crypto.randomUUID()}${ext}`;
     const filePath = path.join(uploadDir, uniqueFilename);
 
     // Write file to disk
@@ -84,9 +82,9 @@ export async function POST(req: NextRequest) {
         userId: session.user.id,
         status: 'PENDING',
         source: 'UPLOAD',
-        imageUrl: filePath,
+        imageUrl: `receipts/${uniqueFilename}`,
         // Generate thumbnail URL for images (placeholder - will be implemented in OCR phase)
-        thumbnailUrl: isImageFile(validation.mimeType!) ? filePath : null,
+        thumbnailUrl: isImageFile(validation.mimeType!) ? `receipts/${uniqueFilename}` : null,
       },
       include: {
         user: { select: { id: true, name: true, email: true } },

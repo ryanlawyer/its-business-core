@@ -1,9 +1,10 @@
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
-import { permissions } from '@/lib/permissions';
+import { getPermissionsFromSession, hasPermission } from '@/lib/check-permissions';
 import bcrypt from 'bcryptjs';
 import { createAuditLog, getRequestContext, sanitizeData } from '@/lib/audit';
+import { validatePassword } from '@/lib/settings';
 
 
 export async function GET(req: NextRequest) {
@@ -13,7 +14,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!permissions.canManageUsers(session.user.role as any)) {
+    const perms = getPermissionsFromSession(session);
+    if (!perms || !hasPermission(perms.permissions, 'users', 'canManage')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -106,7 +108,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!permissions.canManageUsers(session.user.role as any)) {
+    const perms = getPermissionsFromSession(session);
+    if (!perms || !hasPermission(perms.permissions, 'users', 'canManage')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -118,6 +121,12 @@ export async function POST(request: Request) {
         { error: 'Email, name, password, and role are required' },
         { status: 400 }
       );
+    }
+
+    // Validate password against policy
+    const passwordResult = validatePassword(password);
+    if (!passwordResult.valid) {
+      return NextResponse.json({ error: passwordResult.errors.join(', ') }, { status: 400 });
     }
 
     // Check if email already exists

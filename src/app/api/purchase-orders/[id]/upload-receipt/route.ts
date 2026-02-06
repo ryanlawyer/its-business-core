@@ -309,7 +309,6 @@ export async function POST(
     return NextResponse.json(
       {
         error: 'Failed to upload receipt',
-        message: error.message || 'Unknown error',
       },
       { status: 500 }
     );
@@ -413,7 +412,7 @@ export async function DELETE(
   } catch (error: any) {
     console.error('Error deleting receipt:', error);
     return NextResponse.json(
-      { error: 'Failed to delete receipt', message: error.message },
+      { error: 'Failed to delete receipt' },
       { status: 500 }
     );
   }

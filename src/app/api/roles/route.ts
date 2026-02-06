@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { cache } from '@/lib/cache';
 import { createAuditLog, getRequestContext } from '@/lib/audit';
+import { getPermissionsFromSession, hasPermission } from '@/lib/check-permissions';
 
 // GET /api/roles - Get all roles (with caching)
 export async function GET(req: NextRequest) {
@@ -10,6 +11,11 @@ export async function GET(req: NextRequest) {
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const perms = getPermissionsFromSession(session);
+    if (!perms || !hasPermission(perms.permissions, 'roles', 'canManage')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Check cache first
@@ -88,6 +94,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Prevent non-admin users from setting _isAdmin flag
+    if (permissions?._isAdmin === true && !userPermissions._isAdmin) {
+      return NextResponse.json({ error: 'Cannot set admin flag' }, { status: 403 });
+    }
+
     // Create role
     const role = await prisma.role.create({
       data: {
@@ -119,7 +130,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Invalidate cache
-    cache.clear('roles:all');
+    cache.delete('roles:all');
 
     return NextResponse.json({
       role: {

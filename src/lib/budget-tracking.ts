@@ -1,17 +1,24 @@
 import { prisma } from './prisma';
-import { POStatus } from '@prisma/client';
+import { PrismaClient, POStatus } from '@prisma/client';
+
+type PrismaTransactionClient = Parameters<Parameters<PrismaClient['$transaction']>[0]>[0];
+type PrismaLike = PrismaClient | PrismaTransactionClient;
 
 /**
  * Update budget item encumbered and actualSpent amounts based on PO status
- * This is called whenever a PO status changes
+ * This is called whenever a PO status changes.
+ * Accepts an optional transaction client (tx) for transactional consistency.
  */
 export async function updateBudgetFromPO(
   purchaseOrderId: string,
   oldStatus: POStatus | null,
-  newStatus: POStatus
+  newStatus: POStatus,
+  tx?: PrismaTransactionClient
 ) {
+  const db: PrismaLike = tx || prisma;
+
   // Get the PO with line items
-  const po = await prisma.purchaseOrder.findUnique({
+  const po = await db.purchaseOrder.findUnique({
     where: { id: purchaseOrderId },
     include: {
       lineItems: {
@@ -35,27 +42,21 @@ export async function updateBudgetFromPO(
 
   // Update each affected budget item
   for (const [budgetItemId, amount] of budgetItemGroups.entries()) {
-    await updateBudgetItem(budgetItemId, amount, oldStatus, newStatus);
+    await updateBudgetItem(db, budgetItemId, amount, oldStatus, newStatus);
   }
 }
 
 /**
  * Update a single budget item's encumbered and actualSpent based on status change
+ * Uses atomic increment/decrement operations to prevent read-then-write race conditions
  */
 async function updateBudgetItem(
+  db: PrismaLike,
   budgetItemId: string,
   amount: number,
   oldStatus: POStatus | null,
   newStatus: POStatus
 ) {
-  const budgetItem = await prisma.budgetItem.findUnique({
-    where: { id: budgetItemId },
-  });
-
-  if (!budgetItem) {
-    return;
-  }
-
   let encumberedDelta = 0;
   let actualSpentDelta = 0;
 
@@ -88,12 +89,17 @@ async function updateBudgetItem(
     }
   }
 
-  // Update the budget item
-  await prisma.budgetItem.update({
+  // Skip update if no changes
+  if (encumberedDelta === 0 && actualSpentDelta === 0) {
+    return;
+  }
+
+  // Use atomic increment/decrement to prevent race conditions
+  await db.budgetItem.update({
     where: { id: budgetItemId },
     data: {
-      encumbered: Math.max(0, budgetItem.encumbered + encumberedDelta),
-      actualSpent: Math.max(0, budgetItem.actualSpent + actualSpentDelta),
+      encumbered: { increment: encumberedDelta },
+      actualSpent: { increment: actualSpentDelta },
     },
   });
 }

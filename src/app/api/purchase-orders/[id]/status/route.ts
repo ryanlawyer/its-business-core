@@ -67,6 +67,10 @@ export async function POST(
       if (!hasPermission(permissions, 'purchaseOrders', 'canApprove')) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
+      // Cannot approve own purchase orders
+      if (po.requestedById === session.user.id) {
+        return NextResponse.json({ error: 'Cannot approve own purchase orders' }, { status: 403 });
+      }
     } else if (newStatus === 'COMPLETED') {
       // Complete - must have approve permission, and must have receipt
       if (!hasPermission(permissions, 'purchaseOrders', 'canApprove')) {
@@ -134,14 +138,18 @@ export async function POST(
       auditAction = 'PO_REJECTED';
     }
 
-    // Update PO
-    const updated = await prisma.purchaseOrder.update({
-      where: { id },
-      data: updateData,
-    });
+    // Update PO and budget tracking in a transaction for consistency
+    const updated = await prisma.$transaction(async (tx) => {
+      const updatedPO = await tx.purchaseOrder.update({
+        where: { id },
+        data: updateData,
+      });
 
-    // Update budget tracking (encumbered/actualSpent)
-    await updateBudgetFromPO(id, po.status, newStatus);
+      // Update budget tracking (encumbered/actualSpent)
+      await updateBudgetFromPO(id, po.status, newStatus, tx);
+
+      return updatedPO;
+    });
 
     // Audit log
     const { ipAddress, userAgent } = getRequestContext(req);

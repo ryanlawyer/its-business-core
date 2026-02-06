@@ -1,6 +1,13 @@
 import sharp from 'sharp';
 
 /**
+ * XML-escape a string for safe insertion into SVG/XML templates.
+ */
+function xmlEscape(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+}
+
+/**
  * Compression quality settings
  */
 const COMPRESSION_QUALITY = 85; // 85% quality (good balance)
@@ -132,11 +139,11 @@ export async function addWatermark(
       hour12: true,
     });
 
-    // Create watermark text
+    // Create watermark text (XML-escaped to prevent SVG injection)
     const watermarkLines = [
-      `Uploaded: ${dateStr}`,
-      `Time: ${timeStr}`,
-      `By: ${userName}`,
+      `Uploaded: ${xmlEscape(dateStr)}`,
+      `Time: ${xmlEscape(timeStr)}`,
+      `By: ${xmlEscape(userName)}`,
     ];
 
     // Calculate watermark dimensions

@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
 import { calculateOvertime, TimeclockEntryForCalculation } from '@/lib/overtime';
+import { getSystemConfig } from '@/lib/setup-status';
 
 /**
  * GET /api/timeclock/team
@@ -213,7 +214,8 @@ export async function GET(req: NextRequest) {
         status: e.status,
       }));
 
-    const overtimeResult = calculateOvertime(calcEntries, overtimeConfig);
+    const timezone = await getSystemConfig('timezone') || 'UTC';
+    const overtimeResult = calculateOvertime(calcEntries, overtimeConfig, timezone);
 
     // Update employee totals with OT breakdown
     for (const userId in employeeTotals) {

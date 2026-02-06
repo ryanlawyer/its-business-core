@@ -36,21 +36,35 @@ export interface OvertimeCalculationResult {
 }
 
 /**
- * Get the start of the day for a given date (midnight local time)
+ * Get the local date string for a given date and timezone.
+ * Uses en-CA locale which provides YYYY-MM-DD format.
  */
-function getDateKey(date: Date): string {
-  return date.toISOString().split('T')[0];
+function getLocalDateString(date: Date, timezone: string): string {
+  try {
+    return date.toLocaleDateString('en-CA', { timeZone: timezone }); // en-CA gives YYYY-MM-DD format
+  } catch {
+    // Fallback if timezone is invalid
+    return date.toISOString().split('T')[0];
+  }
 }
 
 /**
- * Get the start of the week (Sunday) for a given date
+ * Get the start of the day for a given date in the specified timezone
  */
-function getWeekStart(date: Date): string {
-  const d = new Date(date);
+function getDateKey(date: Date, timezone: string = 'UTC'): string {
+  return getLocalDateString(date, timezone);
+}
+
+/**
+ * Get the start of the week (Sunday) for a given date in the specified timezone
+ */
+function getWeekStart(date: Date, timezone: string = 'UTC'): string {
+  // Get the local date components in the target timezone
+  const localDateStr = getLocalDateString(date, timezone);
+  const d = new Date(localDateStr + 'T12:00:00'); // Use noon to avoid DST issues
   const day = d.getDay();
   d.setDate(d.getDate() - day);
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString().split('T')[0];
+  return getLocalDateString(d, timezone);
 }
 
 /**
@@ -65,7 +79,8 @@ function getWeekStart(date: Date): string {
  */
 export function calculateOvertime(
   entries: TimeclockEntryForCalculation[],
-  config: OvertimeConfig | null
+  config: OvertimeConfig | null,
+  timezone: string = 'UTC'
 ): OvertimeCalculationResult {
   // Group entries by employee
   const employeeEntries: Record<string, TimeclockEntryForCalculation[]> = {};
@@ -91,7 +106,8 @@ export function calculateOvertime(
   for (const userId of Object.keys(employeeEntries)) {
     const employeeResult = calculateEmployeeOvertime(
       employeeEntries[userId],
-      config
+      config,
+      timezone
     );
     result.employees[userId] = employeeResult;
     result.totalRegularMinutes += employeeResult.regularMinutes;
@@ -107,7 +123,8 @@ export function calculateOvertime(
  */
 function calculateEmployeeOvertime(
   entries: TimeclockEntryForCalculation[],
-  config: OvertimeConfig | null
+  config: OvertimeConfig | null,
+  timezone: string = 'UTC'
 ): EmployeeOvertimeResult {
   const userId = entries[0]?.userId || '';
 
@@ -134,7 +151,7 @@ function calculateEmployeeOvertime(
   const dailyMinutes: Record<string, number> = {};
 
   for (const entry of entries) {
-    const dateKey = getDateKey(entry.clockIn);
+    const dateKey = getDateKey(entry.clockIn, timezone);
     const minutes = Math.floor((entry.duration || 0) / 60);
     dailyMinutes[dateKey] = (dailyMinutes[dateKey] || 0) + minutes;
   }
@@ -167,8 +184,8 @@ function calculateEmployeeOvertime(
     const weeklyRegular: Record<string, number> = {};
 
     for (const dateKey of Object.keys(dailyRegularByDay)) {
-      const date = new Date(dateKey);
-      const weekKey = getWeekStart(date);
+      const date = new Date(dateKey + 'T12:00:00'); // Use noon to avoid DST issues
+      const weekKey = getWeekStart(date, timezone);
       weeklyRegular[weekKey] = (weeklyRegular[weekKey] || 0) + dailyRegularByDay[dateKey];
     }
 
@@ -201,12 +218,13 @@ function calculateEmployeeOvertime(
  */
 export function calculateDailyMinutes(
   entries: TimeclockEntryForCalculation[],
-  targetDate: Date
+  targetDate: Date,
+  timezone: string = 'UTC'
 ): number {
-  const dateKey = getDateKey(targetDate);
+  const dateKey = getDateKey(targetDate, timezone);
 
   return entries.reduce((sum, entry) => {
-    if (getDateKey(entry.clockIn) === dateKey && entry.duration !== null) {
+    if (getDateKey(entry.clockIn, timezone) === dateKey && entry.duration !== null) {
       return sum + Math.floor(entry.duration / 60);
     }
     return sum;
@@ -219,19 +237,14 @@ export function calculateDailyMinutes(
  */
 export function calculateWeeklyMinutes(
   entries: TimeclockEntryForCalculation[],
-  referenceDate: Date
+  referenceDate: Date,
+  timezone: string = 'UTC'
 ): number {
-  const weekStart = getWeekStart(referenceDate);
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekEnd.getDate() + 7);
+  const weekStartStr = getWeekStart(referenceDate, timezone);
 
   return entries.reduce((sum, entry) => {
-    const entryDate = entry.clockIn;
-    if (
-      entryDate >= new Date(weekStart) &&
-      entryDate < weekEnd &&
-      entry.duration !== null
-    ) {
+    const entryWeekStart = getWeekStart(entry.clockIn, timezone);
+    if (entryWeekStart === weekStartStr && entry.duration !== null) {
       return sum + Math.floor(entry.duration / 60);
     }
     return sum;
@@ -271,7 +284,8 @@ export function checkAlertStatus(
   entries: TimeclockEntryForCalculation[],
   config: OvertimeConfig | null,
   referenceDate: Date = new Date(),
-  activeMinutes: number = 0
+  activeMinutes: number = 0,
+  timezone: string = 'UTC'
 ): AlertStatus | null {
   // Return null if no config or both thresholds disabled
   if (!config) return null;
@@ -280,11 +294,11 @@ export function checkAlertStatus(
   }
 
   // Calculate current day total
-  const dailyMinutesCompleted = calculateDailyMinutes(entries, referenceDate);
+  const dailyMinutesCompleted = calculateDailyMinutes(entries, referenceDate, timezone);
   const dailyTotal = dailyMinutesCompleted + activeMinutes;
 
   // Calculate current week total
-  const weeklyMinutesCompleted = calculateWeeklyMinutes(entries, referenceDate);
+  const weeklyMinutesCompleted = calculateWeeklyMinutes(entries, referenceDate, timezone);
   const weeklyTotal = weeklyMinutesCompleted + activeMinutes;
 
   // Check daily threshold

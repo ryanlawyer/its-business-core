@@ -2,6 +2,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
+import { resolveUploadPath } from '@/lib/file-utils';
 import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import { fileTypeFromFile } from 'file-type';
@@ -71,7 +72,16 @@ export async function GET(req: NextRequest, context: RouteContext) {
       );
     }
 
-    if (!existsSync(filePath)) {
+    // Resolve and validate the file path to prevent path traversal
+    const resolvedPath = resolveUploadPath(filePath);
+    if (!resolvedPath) {
+      return NextResponse.json(
+        { error: 'Invalid file path' },
+        { status: 400 }
+      );
+    }
+
+    if (!existsSync(resolvedPath)) {
       return NextResponse.json(
         { error: 'Image file not found' },
         { status: 404 }
@@ -79,10 +89,10 @@ export async function GET(req: NextRequest, context: RouteContext) {
     }
 
     // Read the file
-    const buffer = await readFile(filePath);
+    const buffer = await readFile(resolvedPath);
 
     // Detect content type
-    const fileType = await fileTypeFromFile(filePath);
+    const fileType = await fileTypeFromFile(resolvedPath);
     const contentType = fileType?.mime || 'application/octet-stream';
 
     // Return the image with proper headers
@@ -91,6 +101,8 @@ export async function GET(req: NextRequest, context: RouteContext) {
         'Content-Type': contentType,
         'Content-Length': buffer.length.toString(),
         'Cache-Control': 'private, max-age=3600',
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Disposition': 'inline',
       },
     });
   } catch (error) {

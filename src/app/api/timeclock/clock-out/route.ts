@@ -25,7 +25,9 @@ export async function POST() {
 
     const userId = user.id;
 
-    // Find active entry
+    const now = new Date();
+
+    // Find active entry to calculate duration
     const entry = await prisma.timeclockEntry.findFirst({
       where: {
         userId,
@@ -35,22 +37,30 @@ export async function POST() {
 
     if (!entry) {
       return NextResponse.json(
-        { error: 'No active clock-in found' },
+        { error: 'Not clocked in' },
         { status: 400 }
       );
     }
 
-    const clockOut = new Date();
     const clockIn = new Date(entry.clockIn);
-    const duration = Math.floor((clockOut.getTime() - clockIn.getTime()) / 1000);
+    const durationSeconds = Math.floor((now.getTime() - clockIn.getTime()) / 1000);
 
-    // Update entry
-    const updated = await prisma.timeclockEntry.update({
+    // Use updateMany to atomically update only entries with clockOut IS NULL
+    const result = await prisma.timeclockEntry.updateMany({
+      where: { userId, clockOut: null },
+      data: { clockOut: now, duration: durationSeconds, updatedAt: now },
+    });
+
+    if (result.count === 0) {
+      return NextResponse.json(
+        { error: 'Not clocked in' },
+        { status: 400 }
+      );
+    }
+
+    // Fetch the updated entry for the response
+    const updated = await prisma.timeclockEntry.findUnique({
       where: { id: entry.id },
-      data: {
-        clockOut,
-        duration,
-      },
     });
 
     return NextResponse.json({ entry: updated });

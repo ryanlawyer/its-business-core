@@ -78,6 +78,17 @@ function getWeeklyPeriod(date: Date, startDayOfWeek: number): PayPeriod {
 }
 
 /**
+ * Count the number of days between two dates, normalized to noon
+ * to avoid DST boundary drift when using millisecond arithmetic.
+ */
+function daysBetween(dateA: Date, dateB: Date): number {
+  // Normalize to noon to avoid DST boundary issues
+  const a = new Date(dateA.getFullYear(), dateA.getMonth(), dateA.getDate(), 12, 0, 0);
+  const b = new Date(dateB.getFullYear(), dateB.getMonth(), dateB.getDate(), 12, 0, 0);
+  return Math.round((a.getTime() - b.getTime()) / (24 * 60 * 60 * 1000));
+}
+
+/**
  * Get biweekly pay period
  * Uses a reference start date to determine which week we're in
  */
@@ -93,11 +104,9 @@ function getBiweeklyPeriod(
   const ref = referenceDate ? new Date(referenceDate) : new Date('2025-01-05'); // A known Sunday
   const referenceWeekStart = getWeekStart(ref, startDayOfWeek);
 
-  // Calculate weeks since reference
-  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-  const weeksSinceRef = Math.floor(
-    (currentWeekStart.getTime() - referenceWeekStart.getTime()) / msPerWeek
-  );
+  // Calculate weeks since reference using day-counting to avoid DST drift
+  const daysSinceRef = daysBetween(currentWeekStart, referenceWeekStart);
+  const weeksSinceRef = Math.floor(daysSinceRef / 7);
 
   // Determine if we're in the first or second week of the biweekly period
   const periodOffset = ((weeksSinceRef % 2) + 2) % 2; // Handle negative modulo
