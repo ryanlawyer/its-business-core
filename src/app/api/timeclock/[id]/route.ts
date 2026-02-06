@@ -143,6 +143,24 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       );
     }
 
+    // Check pay period lock for this entry's date
+    const { getPayPeriodLockStatus } = await import('@/lib/pay-period-lock');
+    // We need the pay period boundaries for this entry's clockIn
+    // Simple approach: check if any lock covers this entry's clockIn date
+    const locks = await (await import('@/lib/prisma')).prisma.payPeriodLock.findMany({
+      where: {
+        isActive: true,
+        periodStart: { lte: entry.clockIn },
+        periodEnd: { gte: entry.clockIn },
+      },
+    });
+    if (locks.length > 0 && !canViewAll) {
+      return NextResponse.json(
+        { error: 'This pay period is locked. Only administrators can edit entries in locked periods.' },
+        { status: 403 }
+      );
+    }
+
     // Check department assignment if not admin
     if (!canViewAll) {
       const assignments = await prisma.managerAssignment.findMany({

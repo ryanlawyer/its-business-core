@@ -16,10 +16,20 @@ type TimeclockEntry = {
   clockIn: string;
   clockOut: string | null;
   duration: number | null;
+  rawDuration: number | null;
+  breakDeducted: number | null;
+  autoApproved: boolean;
+  flagReason: string | null;
   status: string;
   isLocked: boolean;
   rejectedNote: string | null;
 };
+
+type RulesConfig = {
+  attestationEnabled: boolean;
+  breakDeductionEnabled: boolean;
+  roundingMode: string;
+} | null;
 
 type PeriodStats = {
   totalMinutes: number;
@@ -56,6 +66,9 @@ export default function TimeclockPage() {
   const [periodStats, setPeriodStats] = useState<PeriodStats | null>(null);
   const [todayStats, setTodayStats] = useState<TodayStats | null>(null);
   const [dismissedRejections, setDismissedRejections] = useState<Set<string>>(new Set());
+  const [rulesConfig, setRulesConfig] = useState<RulesConfig>(null);
+  const [submittingIds, setSubmittingIds] = useState<Set<string>>(new Set());
+  const [submittingAll, setSubmittingAll] = useState(false);
 
   // Callback to trigger alert banner refresh
   const refreshAlerts = useCallback(() => {
@@ -66,8 +79,21 @@ export default function TimeclockPage() {
     setMounted(true);
     if (user) {
       fetchEntries();
+      fetchRulesConfig();
     }
   }, [user]);
+
+  const fetchRulesConfig = async () => {
+    try {
+      const res = await fetch('/api/timeclock/config');
+      const data = await res.json();
+      if (res.ok && data.rulesConfig) {
+        setRulesConfig(data.rulesConfig);
+      }
+    } catch {
+      // Non-critical, ignore errors
+    }
+  };
 
   // Update current time every second
   useEffect(() => {
@@ -146,6 +172,43 @@ export default function TimeclockPage() {
     }
   };
 
+  const handleSubmitEntry = async (entryId: string) => {
+    setSubmittingIds((prev) => new Set([...prev, entryId]));
+    try {
+      const res = await fetch(`/api/timeclock/${entryId}/submit`, { method: 'POST' });
+      if (res.ok) {
+        await fetchEntries();
+      }
+    } catch (error) {
+      console.error('Error submitting entry:', error);
+    } finally {
+      setSubmittingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(entryId);
+        return next;
+      });
+    }
+  };
+
+  const handleSubmitAll = async () => {
+    const pendingCompleted = entries.filter(
+      (e) => e.status === 'pending' && e.clockOut !== null
+    );
+    if (pendingCompleted.length === 0) return;
+
+    setSubmittingAll(true);
+    try {
+      for (const entry of pendingCompleted) {
+        await fetch(`/api/timeclock/${entry.id}/submit`, { method: 'POST' });
+      }
+      await fetchEntries();
+    } catch (error) {
+      console.error('Error submitting entries:', error);
+    } finally {
+      setSubmittingAll(false);
+    }
+  };
+
   const formatDuration = (seconds: number | null) => {
     if (!seconds) return '0h 0m';
     const hours = Math.floor(seconds / 3600);
@@ -183,6 +246,7 @@ export default function TimeclockPage() {
 
     const statusConfig: Record<string, { class: string; icon?: React.ReactElement }> = {
       pending: { class: 'badge badge-warning badge-dot' },
+      submitted: { class: 'badge badge-accent badge-dot' },
       approved: {
         class: 'badge badge-success',
         icon: entry.isLocked ? (
@@ -457,6 +521,40 @@ export default function TimeclockPage() {
         </div>
       )}
 
+      {/* Attestation Submit All Banner */}
+      {rulesConfig?.attestationEnabled && entries.filter((e) => e.status === 'pending' && e.clockOut).length > 0 && (
+        <div
+          className="mb-8 p-4 rounded-lg border animate-fade-in-up"
+          style={{
+            animationDelay: '390ms',
+            background: 'var(--info-subtle, rgba(59, 130, 246, 0.1))',
+            borderColor: 'var(--info, #3b82f6)',
+          }}
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" style={{ color: 'var(--info)' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <h3 className="font-semibold" style={{ color: 'var(--info)' }}>Attestation Required</h3>
+                <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+                  You have {entries.filter((e) => e.status === 'pending' && e.clockOut).length} completed entries awaiting your attestation.
+                  Submit them to confirm your hours are accurate.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleSubmitAll}
+              disabled={submittingAll}
+              className="btn btn-primary btn-sm flex-shrink-0"
+            >
+              {submittingAll ? 'Submitting...' : 'Submit All'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Clock In/Out Action */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <div className="lg:col-span-1">
@@ -582,7 +680,31 @@ export default function TimeclockPage() {
                             {entry.clockOut ? formatDuration(entry.duration) : <span style={{ color: 'var(--text-muted)' }}>--</span>}
                           </span>
                         </div>
+                        {entry.breakDeducted && entry.breakDeducted > 0 && (
+                          <div className="text-xs" style={{ color: 'var(--info)' }}>
+                            {Math.round(entry.breakDeducted / 60)}m break deducted
+                          </div>
+                        )}
+                        {entry.rawDuration !== null && entry.duration !== null && entry.rawDuration !== entry.duration && !entry.breakDeducted && (
+                          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                            Rounded from {formatDuration(entry.rawDuration)}
+                          </div>
+                        )}
+                        {entry.autoApproved && (
+                          <div className="text-xs font-medium" style={{ color: 'var(--success)' }}>Auto-approved</div>
+                        )}
                       </div>
+                      {rulesConfig?.attestationEnabled && entry.status === 'pending' && entry.clockOut && (
+                        <div className="mt-3 pt-3 border-t border-[var(--border-default)]">
+                          <button
+                            onClick={() => handleSubmitEntry(entry.id)}
+                            disabled={submittingIds.has(entry.id)}
+                            className="btn btn-primary btn-sm w-full"
+                          >
+                            {submittingIds.has(entry.id) ? 'Submitting...' : 'Submit for Review'}
+                          </button>
+                        </div>
+                      )}
                       {entry.status === 'rejected' && entry.rejectedNote && !dismissedRejections.has(entry.id) && (
                         <div
                           className="mt-3 p-2 rounded text-xs flex items-start gap-2"
@@ -640,11 +762,38 @@ export default function TimeclockPage() {
                             {entry.clockOut ? formatDateTime(entry.clockOut) : '—'}
                           </td>
                           <td className="font-mono font-medium">
-                            {entry.clockOut ? formatDuration(entry.duration) : '—'}
+                            <div className="flex items-center gap-2">
+                              <span>{entry.clockOut ? formatDuration(entry.duration) : '—'}</span>
+                              {entry.breakDeducted && entry.breakDeducted > 0 && (
+                                <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--info-subtle, rgba(59, 130, 246, 0.1))', color: 'var(--info)' }}>
+                                  -{Math.round(entry.breakDeducted / 60)}m break
+                                </span>
+                              )}
+                              {entry.rawDuration !== null && entry.duration !== null && entry.rawDuration !== entry.duration && !entry.breakDeducted && (
+                                <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-surface)', color: 'var(--text-muted)' }}>
+                                  rounded
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td>
                             <div className="flex items-center gap-2">
                               {getStatusBadge(entry)}
+                              {entry.autoApproved && (
+                                <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--success-subtle, rgba(34, 197, 94, 0.1))', color: 'var(--success)' }}>
+                                  Auto
+                                </span>
+                              )}
+                              {rulesConfig?.attestationEnabled && entry.status === 'pending' && entry.clockOut && (
+                                <button
+                                  onClick={() => handleSubmitEntry(entry.id)}
+                                  disabled={submittingIds.has(entry.id)}
+                                  className="text-xs px-2 py-1 rounded font-medium"
+                                  style={{ background: 'var(--accent-primary)', color: 'white' }}
+                                >
+                                  {submittingIds.has(entry.id) ? '...' : 'Submit'}
+                                </button>
+                              )}
                               {entry.isLocked && entry.status === 'approved' && (
                                 <span title="Locked - cannot be modified">
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" style={{ color: 'var(--text-muted)' }}>

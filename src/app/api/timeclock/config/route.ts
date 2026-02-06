@@ -62,9 +62,14 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // Get or create default rules config (singleton pattern)
+    const { getTimeclockRulesConfig } = await import('@/lib/timeclock-rules');
+    const rulesConfig = await getTimeclockRulesConfig();
+
     return NextResponse.json({
       payPeriodConfig,
       overtimeConfig,
+      rulesConfig,
       // Keep backwards compatibility with 'config' field
       config: payPeriodConfig,
     });

@@ -21,6 +21,10 @@ type TimeclockEntry = {
   clockIn: string;
   clockOut: string | null;
   duration: number | null;
+  rawDuration: number | null;
+  breakDeducted: number | null;
+  autoApproved: boolean;
+  flagReason: string | null;
   status: string;
   isLocked: boolean;
   rejectedNote: string | null;
@@ -34,6 +38,8 @@ type TimeclockEntry = {
     } | null;
   };
 };
+
+type MissedPunch = TimeclockEntry & { clockOut: null };
 
 type GroupedEntries = {
   [userId: string]: {
@@ -50,6 +56,7 @@ export default function PendingApprovalsPage() {
 
   // Data
   const [entries, setEntries] = useState<TimeclockEntry[]>([]);
+  const [missedPunches, setMissedPunches] = useState<TimeclockEntry[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [periods, setPeriods] = useState<PayPeriod[]>([]);
 
@@ -102,6 +109,7 @@ export default function PendingApprovalsPage() {
 
       if (res.ok) {
         setEntries(data.entries || []);
+        setMissedPunches(data.missedPunches || []);
         setDepartments(data.departments || []);
         setSelectedIds(new Set()); // Clear selection on filter change
       } else if (res.status === 403) {
@@ -137,6 +145,14 @@ export default function PendingApprovalsPage() {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     return `${hours}h ${minutes}m`;
+  };
+
+  const getElapsedHours = (clockIn: string) => {
+    const now = new Date();
+    const start = new Date(clockIn);
+    const diffMs = now.getTime() - start.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+    return diffHours.toFixed(1);
   };
 
   const handleSelectAll = () => {
@@ -222,6 +238,62 @@ export default function PendingApprovalsPage() {
     } finally {
       setRejecting(false);
     }
+  };
+
+  const renderEntryBadges = (entry: TimeclockEntry) => {
+    const badges: React.ReactNode[] = [];
+
+    if (entry.flagReason === 'min_duration') {
+      badges.push(
+        <span
+          key="min-duration"
+          className="badge text-xs"
+          style={{ background: 'var(--warning)', color: 'white' }}
+        >
+          Min Duration
+        </span>
+      );
+    }
+
+    if (entry.flagReason === 'missed_punch') {
+      badges.push(
+        <span
+          key="missed-punch"
+          className="badge text-xs"
+          style={{ background: 'var(--error)', color: 'white' }}
+        >
+          Missed Punch
+        </span>
+      );
+    }
+
+    if (entry.breakDeducted && entry.breakDeducted > 0) {
+      badges.push(
+        <span
+          key="break"
+          className="badge text-xs"
+          style={{ background: 'var(--info)', color: 'white' }}
+        >
+          Break: {Math.round(entry.breakDeducted / 60)}m
+        </span>
+      );
+    }
+
+    if (entry.autoApproved) {
+      badges.push(
+        <span
+          key="auto-approved"
+          className="badge text-xs"
+          style={{ background: 'var(--success)', color: 'white' }}
+        >
+          Auto-approved
+        </span>
+      );
+    }
+
+    if (badges.length === 0) return null;
+
+    return <span className="inline-flex gap-1 ml-2">{badges}</span>;
   };
 
   return (
@@ -320,6 +392,90 @@ export default function PendingApprovalsPage() {
           </div>
         </div>
       </div>
+
+      {/* Needs Attention - Missed Punches */}
+      {missedPunches.length > 0 && (
+        <div
+          className="card mb-6 animate-fade-in-up"
+          style={{
+            animationDelay: '75ms',
+            borderColor: 'var(--error)',
+            borderWidth: '1px',
+            borderStyle: 'solid',
+            background: 'var(--error-bg, rgba(239, 68, 68, 0.1))',
+          }}
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              style={{ color: 'var(--error)' }}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+              />
+            </svg>
+            <h2 className="section-title" style={{ color: 'var(--error)', margin: 0 }}>
+              Needs Attention
+            </h2>
+            <span
+              className="badge text-xs"
+              style={{ background: 'var(--error)', color: 'white' }}
+            >
+              {missedPunches.length}
+            </span>
+          </div>
+          <div className="space-y-3">
+            {missedPunches.map((punch) => (
+              <div
+                key={punch.id}
+                className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-3 rounded-lg"
+                style={{ background: 'var(--bg-primary, rgba(255, 255, 255, 0.5))' }}
+              >
+                <div className="flex-1">
+                  <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
+                    {punch.user.name}
+                  </span>
+                  <span className="ml-2 text-sm" style={{ color: 'var(--text-muted)' }}>
+                    {punch.user.department?.name || 'No Department'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="font-mono" style={{ color: 'var(--text-secondary)' }}>
+                    Clocked in: {new Date(punch.clockIn).toLocaleString([], {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                  <span
+                    className="badge text-xs"
+                    style={{ background: 'var(--error)', color: 'white' }}
+                  >
+                    {getElapsedHours(punch.clockIn)}h elapsed
+                  </span>
+                  <button
+                    onClick={() => console.log('Edit missed punch:', punch.id)}
+                    className="btn btn-sm btn-secondary"
+                    style={{ borderColor: 'var(--error)', color: 'var(--error)' }}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                    </svg>
+                    Edit
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Bulk Actions */}
       {selectedIds.size > 0 && (
@@ -468,6 +624,7 @@ export default function PendingApprovalsPage() {
                         <span className="font-mono text-sm font-medium">
                           {formatDuration(entry.duration)}
                         </span>
+                        {renderEntryBadges(entry)}
                       </div>
                     ))}
                   </div>
@@ -520,9 +677,12 @@ export default function PendingApprovalsPage() {
                           : '—'}
                       </span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-[var(--text-secondary)]">Duration:</span>
-                      <span className="text-[var(--text-primary)] font-mono font-medium">{formatDuration(entry.duration)}</span>
+                      <span className="text-[var(--text-primary)] font-mono font-medium inline-flex items-center">
+                        {formatDuration(entry.duration)}
+                        {renderEntryBadges(entry)}
+                      </span>
                     </div>
                   </div>
                   <div className="border-t border-[var(--border-default)] pt-3 flex justify-end gap-2">
@@ -601,7 +761,10 @@ export default function PendingApprovalsPage() {
                           : '—'}
                       </td>
                       <td className="font-mono font-medium">
-                        {formatDuration(entry.duration)}
+                        <span className="inline-flex items-center">
+                          {formatDuration(entry.duration)}
+                          {renderEntryBadges(entry)}
+                        </span>
                       </td>
                     </tr>
                   ))}

@@ -133,10 +133,17 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // Fetch missed punch entries with same department scoping
+    const { getMissedPunchEntries } = await import('@/lib/timeclock-rules');
+    const missedPunches = await getMissedPunchEntries(
+      canViewAll ? undefined : assignedDeptIds
+    );
+
     return NextResponse.json({
       entries,
       totalCount,
       departments,
+      missedPunches,
     });
   } catch (error) {
     console.error('Error fetching pending approvals:', error);
