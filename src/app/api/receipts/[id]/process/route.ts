@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserWithPermissions, hasPermission, getPermissionsFromSession } from '@/lib/check-permissions';
 import { createAuditLog, getRequestContext } from '@/lib/audit';
 import { processReceiptWithRetry, isOCRConfigured, OCRServiceError } from '@/lib/ocr';
+import { resolveUploadPath } from '@/lib/file-utils';
 import { existsSync } from 'fs';
 import { fileTypeFromFile } from 'file-type';
 
@@ -109,7 +110,8 @@ export async function POST(req: NextRequest, context: RouteContext) {
       );
     }
 
-    if (!existsSync(receipt.imageUrl)) {
+    const resolvedImagePath = resolveUploadPath(receipt.imageUrl);
+    if (!resolvedImagePath || !existsSync(resolvedImagePath)) {
       return NextResponse.json(
         { error: 'Receipt image file not found on disk' },
         { status: 404 }
@@ -141,12 +143,12 @@ export async function POST(req: NextRequest, context: RouteContext) {
     });
 
     // Detect file type
-    const fileType = await fileTypeFromFile(receipt.imageUrl);
+    const fileType = await fileTypeFromFile(resolvedImagePath);
     const mimeType = fileType?.mime || 'image/jpeg';
 
     // Process with OCR
     try {
-      const ocrResult = await processReceiptWithRetry(receipt.imageUrl, mimeType);
+      const ocrResult = await processReceiptWithRetry(resolvedImagePath, mimeType);
 
       // Update receipt with extracted data
       const updatedReceipt = await prisma.receipt.update({
