@@ -195,6 +195,25 @@ export function getSettings(): SystemSettings {
 }
 
 /**
+ * Preserve existing secrets when incoming values are redacted placeholders.
+ * The UI receives redacted values like "****xQAA" and may send them back on save.
+ */
+function preserveRedactedSecrets(incoming: SystemSettings, existing: SystemSettings): SystemSettings {
+  const merged = JSON.parse(JSON.stringify(incoming));
+  for (const fieldPath of SENSITIVE_PATHS) {
+    const val = getNestedValue(merged, fieldPath);
+    if (typeof val === 'string' && val.startsWith('****')) {
+      // Replace redacted placeholder with the real value from existing settings
+      const existingVal = getNestedValue(existing, fieldPath);
+      if (existingVal) {
+        setNestedValue(merged, fieldPath, existingVal);
+      }
+    }
+  }
+  return merged;
+}
+
+/**
  * Update system settings (encrypts sensitive fields before writing)
  */
 export function updateSettings(settings: SystemSettings): void {
@@ -205,8 +224,12 @@ export function updateSettings(settings: SystemSettings): void {
       fs.mkdirSync(configDir, { recursive: true });
     }
 
+    // Preserve secrets that were redacted in the UI round-trip
+    const existing = getSettings();
+    const merged = preserveRedactedSecrets(settings, existing);
+
     // Encrypt sensitive fields before writing to disk
-    const encrypted = encryptSensitiveFields(settings);
+    const encrypted = encryptSensitiveFields(merged);
     fs.writeFileSync(SETTINGS_PATH, JSON.stringify(encrypted, null, 2), 'utf-8');
   } catch (error) {
     console.error('Error writing settings file:', error);
