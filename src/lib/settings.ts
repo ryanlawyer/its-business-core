@@ -252,7 +252,7 @@ export function getDefaultSettings(): SystemSettings {
       provider: 'none',
       anthropic: {
         apiKey: '',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-5-20250929',
       },
       openai: {
         apiKey: '',

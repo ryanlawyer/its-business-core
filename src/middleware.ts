@@ -154,5 +154,5 @@ export default auth(async (req) => {
 });
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/receipts/upload|api/purchase-orders/.*/upload-receipt|api/statements|api/admin/restore).*)"],
 };

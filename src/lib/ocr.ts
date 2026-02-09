@@ -1,21 +1,32 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { getSettings } from '@/lib/settings';
 
-// Lazy-initialized Anthropic client to prevent crashes when API key is not set
+// Lazy-initialized Anthropic client — recreated when API key changes
 let _anthropic: Anthropic | null = null;
+let _lastApiKey: string | undefined;
 
 function getAnthropicClient(): Anthropic {
-  if (!_anthropic) {
-    if (!isOCRConfigured()) {
-      throw new OCRServiceError(
-        'NOT_CONFIGURED',
-        'OCR service is not configured. ANTHROPIC_API_KEY environment variable is not set.'
-      );
-    }
-    _anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    });
+  const settings = getSettings();
+  const apiKey = settings.ai.anthropic?.apiKey || process.env.ANTHROPIC_API_KEY;
+
+  if (!apiKey) {
+    throw new OCRServiceError(
+      'NOT_CONFIGURED',
+      'OCR service is not configured. Set an Anthropic API key in Admin Settings or the ANTHROPIC_API_KEY environment variable.'
+    );
+  }
+
+  // Recreate client if API key changed
+  if (!_anthropic || _lastApiKey !== apiKey) {
+    _anthropic = new Anthropic({ apiKey });
+    _lastApiKey = apiKey;
   }
   return _anthropic;
+}
+
+function getModel(): string {
+  const settings = getSettings();
+  return settings.ai.anthropic?.model || 'claude-sonnet-4-5-20250929';
 }
 
 export interface LineItem {
@@ -141,7 +152,7 @@ export async function extractReceiptData(
       : buildImageContent(data, mediaType as ImageMediaType);
 
     const response = await getAnthropicClient().messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: getModel(),
       max_tokens: 1024,
       messages: [
         {
@@ -299,7 +310,8 @@ function normalizeDate(date: string | null | undefined): string | null {
  * Check if the OCR service is properly configured
  */
 export function isOCRConfigured(): boolean {
-  return !!process.env.ANTHROPIC_API_KEY;
+  const settings = getSettings();
+  return !!(settings.ai.anthropic?.apiKey || process.env.ANTHROPIC_API_KEY);
 }
 
 /**

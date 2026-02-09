@@ -644,7 +644,7 @@ export default function SettingsPage() {
                             Model
                           </label>
                           <select
-                            value={settings.ai.anthropic?.model || 'claude-sonnet-4-20250514'}
+                            value={settings.ai.anthropic?.model || 'claude-sonnet-4-5-20250929'}
                             onChange={(e) =>
                               setSettings({
                                 ...settings,
@@ -659,10 +659,10 @@ export default function SettingsPage() {
                             }
                             className="form-input form-select w-64"
                           >
-                            <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (Recommended)</option>
+                            <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5 (Recommended)</option>
                             <option value="claude-opus-4-20250514">Claude Opus 4 (Most Capable)</option>
-                            <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
-                            <option value="claude-3-haiku-20240307">Claude 3 Haiku (Fastest)</option>
+                            <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
+                            <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (Fastest)</option>
                           </select>
                         </div>
                       </div>
