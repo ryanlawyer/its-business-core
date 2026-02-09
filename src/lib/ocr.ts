@@ -7,7 +7,7 @@ let _lastApiKey: string | undefined;
 
 function getAnthropicClient(): Anthropic {
   const settings = getSettings();
-  const apiKey = settings.ai.anthropic?.apiKey || process.env.ANTHROPIC_API_KEY;
+  const apiKey = settings.ai?.anthropic?.apiKey || process.env.ANTHROPIC_API_KEY;
 
   if (!apiKey) {
     throw new OCRServiceError(
@@ -26,7 +26,7 @@ function getAnthropicClient(): Anthropic {
 
 function getModel(): string {
   const settings = getSettings();
-  return settings.ai.anthropic?.model || 'claude-sonnet-4-5-20250929';
+  return settings.ai?.anthropic?.model || 'claude-sonnet-4-5-20250929';
 }
 
 export interface LineItem {
@@ -311,7 +311,7 @@ function normalizeDate(date: string | null | undefined): string | null {
  */
 export function isOCRConfigured(): boolean {
   const settings = getSettings();
-  return !!(settings.ai.anthropic?.apiKey || process.env.ANTHROPIC_API_KEY);
+  return !!(settings.ai?.anthropic?.apiKey || process.env.ANTHROPIC_API_KEY);
 }
 
 /**
