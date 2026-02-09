@@ -389,6 +389,8 @@ export default function ReceiptDetailPage({ params }: { params: Promise<{ id: st
       cat.code.toLowerCase().includes(categorySearchTerm.toLowerCase())
   );
 
+  const isPdf = (url: string | null) => url?.toLowerCase().endsWith('.pdf') ?? false;
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString();
@@ -528,19 +530,43 @@ export default function ReceiptDetailPage({ params }: { params: Promise<{ id: st
           {/* Image Section */}
           <div className="card overflow-hidden">
             <div className="p-4 border-b border-[var(--border-default)]">
-              <h2 className="section-title">Receipt Image</h2>
+              <h2 className="section-title">Receipt {isPdf(receipt.imageUrl) ? 'Document' : 'Image'}</h2>
             </div>
-            <div
-              className="p-4 cursor-pointer"
-              onClick={() => setShowFullImage(true)}
-            >
+            <div className="p-4">
               {receipt.imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={`/api/receipts/${receipt.id}/image?t=${Date.now()}`}
-                  alt="Receipt"
-                  className="w-full h-auto rounded-lg"
-                />
+                isPdf(receipt.imageUrl) ? (
+                  <div>
+                    <iframe
+                      src={`/api/receipts/${receipt.id}/image?t=${Date.now()}`}
+                      className="w-full rounded-lg border border-[var(--border-default)]"
+                      style={{ height: '600px' }}
+                      title="Receipt PDF"
+                    />
+                    <a
+                      href={`/api/receipts/${receipt.id}/image`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 btn btn-secondary btn-sm inline-flex items-center"
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                      </svg>
+                      Open PDF in new tab
+                    </a>
+                  </div>
+                ) : (
+                  <div
+                    className="cursor-pointer"
+                    onClick={() => setShowFullImage(true)}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`/api/receipts/${receipt.id}/image?t=${Date.now()}`}
+                      alt="Receipt"
+                      className="w-full h-auto rounded-lg"
+                    />
+                  </div>
+                )
               ) : (
                 <div className="aspect-[4/3] bg-[var(--bg-surface)] rounded-lg flex items-center justify-center">
                   <span className="text-[var(--text-muted)]">No image available</span>
@@ -1136,8 +1162,8 @@ export default function ReceiptDetailPage({ params }: { params: Promise<{ id: st
         </div>
       )}
 
-      {/* Full Image Modal */}
-      {showFullImage && receipt.imageUrl && (
+      {/* Full Image Modal (images only, not PDFs) */}
+      {showFullImage && receipt.imageUrl && !isPdf(receipt.imageUrl) && (
         <div
           className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
           onClick={() => setShowFullImage(false)}
