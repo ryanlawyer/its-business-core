@@ -9,8 +9,12 @@ export const runtime = "nodejs";
 let setupCompleteCache: boolean | null = null;
 
 async function checkSetupComplete(): Promise<boolean> {
-  if (setupCompleteCache !== null) {
-    return setupCompleteCache;
+  // Only cache true — false must always re-check the DB so the middleware
+  // picks up the change immediately after setup completes (the API route
+  // and middleware may run in separate runtime contexts, so clearSetupCache
+  // from the API route may not reach this module instance).
+  if (setupCompleteCache === true) {
+    return true;
   }
 
   try {
@@ -19,8 +23,11 @@ async function checkSetupComplete(): Promise<boolean> {
     const config = await prisma.systemConfig.findUnique({
       where: { key: "setup_complete" },
     });
-    setupCompleteCache = config?.value === "true";
-    return setupCompleteCache;
+    const isComplete = config?.value === "true";
+    if (isComplete) {
+      setupCompleteCache = true;
+    }
+    return isComplete;
   } catch (error) {
     // Database might not exist yet - setup not complete
     console.error("Setup check error:", error);

@@ -16,11 +16,12 @@ export function normalizeMerchantName(merchantName: string): string {
  */
 export async function suggestCategoryFromMerchant(
   merchantName: string,
-  userId?: string
+  userId?: string,
+  useAI: boolean = false,
 ): Promise<{
   suggestedCategoryId: string | null;
   confidence: 'high' | 'medium' | 'low' | 'none';
-  source: 'user_mapping' | 'global_mapping' | 'pattern' | 'none';
+  source: 'user_mapping' | 'global_mapping' | 'pattern' | 'ai' | 'none';
   alternatives: Array<{ categoryId: string; categoryName: string; matchCount: number }>;
 }> {
   const normalizedName = normalizeMerchantName(merchantName);
@@ -147,6 +148,28 @@ export async function suggestCategoryFromMerchant(
         source: 'pattern',
         alternatives,
       };
+    }
+  }
+
+  // 4. Optional AI fallback
+  if (useAI) {
+    try {
+      const { getSettings } = await import('@/lib/settings');
+      const settings = getSettings();
+      if (settings.ai?.features?.aiCategorizationEnabled && settings.ai?.provider !== 'none') {
+        const { aiCategorizeMerchant } = await import('@/lib/ai/tasks/categorize');
+        const aiResult = await aiCategorizeMerchant(merchantName, userId);
+        if (aiResult.categoryId) {
+          return {
+            suggestedCategoryId: aiResult.categoryId,
+            confidence: aiResult.confidence === 'high' ? 'medium' : 'low',
+            source: 'ai' as const,
+            alternatives: [],
+          };
+        }
+      }
+    } catch {
+      // AI fallback is best-effort
     }
   }
 

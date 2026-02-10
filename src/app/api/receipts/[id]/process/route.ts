@@ -148,7 +148,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
 
     // Process with OCR
     try {
-      const ocrResult = await processReceiptWithRetry(resolvedImagePath, mimeType);
+      const ocrResult = await processReceiptWithRetry(resolvedImagePath, mimeType, 3, session.user.id, receiptId);
 
       // Update receipt with extracted data
       const updatedReceipt = await prisma.receipt.update({

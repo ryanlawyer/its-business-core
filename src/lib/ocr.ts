@@ -1,33 +1,5 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { getSettings } from '@/lib/settings';
-
-// Lazy-initialized Anthropic client — recreated when API key changes
-let _anthropic: Anthropic | null = null;
-let _lastApiKey: string | undefined;
-
-function getAnthropicClient(): Anthropic {
-  const settings = getSettings();
-  const apiKey = settings.ai?.anthropic?.apiKey || process.env.ANTHROPIC_API_KEY;
-
-  if (!apiKey) {
-    throw new OCRServiceError(
-      'NOT_CONFIGURED',
-      'OCR service is not configured. Set an Anthropic API key in Admin Settings or the ANTHROPIC_API_KEY environment variable.'
-    );
-  }
-
-  // Recreate client if API key changed
-  if (!_anthropic || _lastApiKey !== apiKey) {
-    _anthropic = new Anthropic({ apiKey });
-    _lastApiKey = apiKey;
-  }
-  return _anthropic;
-}
-
-function getModel(): string {
-  const settings = getSettings();
-  return settings.ai?.anthropic?.model || 'claude-sonnet-4-5-20250929';
-}
+import { getAIProvider, AINotConfiguredError, trackAICall } from '@/lib/ai';
 
 export interface LineItem {
   description: string;
@@ -89,88 +61,36 @@ Rules:
 - Do not include any text outside the JSON object`;
 
 // Supported media types for images and documents
-type ImageMediaType = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
-type DocumentMediaType = 'application/pdf';
-type SupportedMediaType = ImageMediaType | DocumentMediaType;
+type SupportedMediaType = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp' | 'application/pdf';
+
+const USER_PROMPT = 'Please extract all receipt data from this image/document and return it as JSON.';
 
 /**
- * Build message content for image files
- */
-function buildImageContent(data: string, mediaType: ImageMediaType) {
-  return [
-    {
-      type: 'image' as const,
-      source: {
-        type: 'base64' as const,
-        media_type: mediaType,
-        data: data,
-      },
-    },
-    {
-      type: 'text' as const,
-      text: 'Please extract all receipt data from this image and return it as JSON.',
-    },
-  ];
-}
-
-/**
- * Build message content for PDF files
- */
-function buildPdfContent(data: string) {
-  return [
-    {
-      type: 'document' as const,
-      source: {
-        type: 'base64' as const,
-        media_type: 'application/pdf' as const,
-        data: data,
-      },
-    },
-    {
-      type: 'text' as const,
-      text: 'Please extract all receipt data from this PDF document and return it as JSON.',
-    },
-  ];
-}
-
-/**
- * Extract data from a receipt image or PDF using Claude Vision API
- * @param data - Base64 encoded data
- * @param mediaType - MIME type of the file
- * @returns Extracted receipt data
+ * Extract data from a receipt image or PDF using the configured AI provider
  */
 export async function extractReceiptData(
   data: string,
-  mediaType: SupportedMediaType
+  mediaType: SupportedMediaType,
+  userId?: string,
+  entityId?: string,
 ): Promise<OCRResult> {
   try {
-    // Build the content based on whether it's an image or PDF
-    const isPdf = mediaType === 'application/pdf';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const content: any = isPdf
-      ? buildPdfContent(data)
-      : buildImageContent(data, mediaType as ImageMediaType);
+    const provider = await getAIProvider();
 
-    const response = await getAnthropicClient().messages.create({
-      model: getModel(),
-      max_tokens: 1024,
-      messages: [
-        {
-          role: 'user',
-          content,
-        },
-      ],
-      system: SYSTEM_PROMPT,
-    });
-
-    // Extract text content from response
-    const textContent = response.content.find((block) => block.type === 'text');
-    if (!textContent || textContent.type !== 'text') {
-      throw new Error('No text response from Claude Vision API');
-    }
+    const aiResponse = await trackAICall(
+      { taskType: 'ocr', userId, entityType: 'Receipt', entityId },
+      () =>
+        provider.vision({
+          system: SYSTEM_PROMPT,
+          prompt: USER_PROMPT,
+          imageData: data,
+          mediaType,
+          maxTokens: 1024,
+        }),
+    );
 
     // Parse JSON response
-    const jsonText = textContent.text.trim();
+    const jsonText = aiResponse.text.trim();
 
     // Try to extract JSON if wrapped in markdown code blocks
     let cleanJson = jsonText;
@@ -188,6 +108,7 @@ export async function extractReceiptData(
       totalAmount: typeof result.totalAmount === 'number' ? result.totalAmount : null,
       currency: result.currency || 'USD',
       taxAmount: typeof result.taxAmount === 'number' ? result.taxAmount : null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       lineItems: Array.isArray(result.lineItems) ? result.lineItems.map((item: any) => ({
         description: item.description || '',
         quantity: typeof item.quantity === 'number' ? item.quantity : undefined,
@@ -197,11 +118,10 @@ export async function extractReceiptData(
       confidence: typeof result.confidence === 'number' ? result.confidence : undefined,
     };
   } catch (error) {
-    // Handle specific Anthropic API errors
-    if (error instanceof Anthropic.APIError) {
+    if (error instanceof AINotConfiguredError) {
       throw new OCRServiceError(
-        `API_ERROR_${error.status}`,
-        `Claude Vision API error: ${error.message}`
+        'NOT_CONFIGURED',
+        'OCR service is not configured. Please configure an AI provider in Admin Settings.'
       );
     }
 
@@ -213,7 +133,7 @@ export async function extractReceiptData(
       );
     }
 
-    // Re-throw other errors
+    // Re-throw OCR errors
     if (error instanceof OCRServiceError) {
       throw error;
     }
@@ -227,22 +147,19 @@ export async function extractReceiptData(
 
 /**
  * Extract data from a receipt file on disk
- * @param filePath - Path to the receipt file
- * @param mimeType - MIME type of the file
- * @returns Extracted receipt data
  */
 export async function extractReceiptDataFromFile(
   filePath: string,
-  mimeType: string
+  mimeType: string,
+  userId?: string,
+  entityId?: string,
 ): Promise<OCRResult> {
   const { readFile } = await import('fs/promises');
 
   try {
-    // Read the file
     const buffer = await readFile(filePath);
     const base64 = buffer.toString('base64');
 
-    // Map content type to supported media type
     let mediaType: SupportedMediaType;
 
     if (mimeType.includes('pdf')) {
@@ -262,7 +179,7 @@ export async function extractReceiptDataFromFile(
       );
     }
 
-    return extractReceiptData(base64, mediaType);
+    return extractReceiptData(base64, mediaType, userId, entityId);
   } catch (error) {
     if (error instanceof OCRServiceError) {
       throw error;
@@ -295,7 +212,6 @@ function normalizeDate(date: string | null | undefined): string | null {
   if (!date) return null;
 
   try {
-    // Try parsing as ISO date
     const parsed = new Date(date);
     if (!isNaN(parsed.getTime())) {
       return parsed.toISOString().split('T')[0];
@@ -311,32 +227,46 @@ function normalizeDate(date: string | null | undefined): string | null {
  */
 export function isOCRConfigured(): boolean {
   const settings = getSettings();
-  return !!(settings.ai?.anthropic?.apiKey || process.env.ANTHROPIC_API_KEY);
+  if (!settings.ai || settings.ai.provider === 'none') return false;
+  if (settings.ai.features && !settings.ai.features.ocrEnabled) return false;
+
+  switch (settings.ai.provider) {
+    case 'anthropic':
+      return !!(settings.ai.anthropic?.apiKey || process.env.ANTHROPIC_API_KEY);
+    case 'openai':
+      return !!settings.ai.openai?.apiKey;
+    case 'openrouter':
+      return !!settings.ai.openrouter?.apiKey;
+    case 'ollama':
+      return !!settings.ai.ollama?.baseUrl;
+    case 'custom':
+      return !!settings.ai.custom?.baseUrl;
+    default:
+      return false;
+  }
 }
 
 /**
  * Process a receipt with retry logic
- * @param filePath - Path to the receipt file
- * @param mimeType - MIME type of the file
- * @param maxRetries - Maximum number of retry attempts (default 3)
- * @returns Extracted receipt data
  */
 export async function processReceiptWithRetry(
   filePath: string,
   mimeType: string,
-  maxRetries: number = 3
+  maxRetries: number = 3,
+  userId?: string,
+  entityId?: string,
 ): Promise<OCRResult> {
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      return await extractReceiptDataFromFile(filePath, mimeType);
+      return await extractReceiptDataFromFile(filePath, mimeType, userId, entityId);
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
 
       // Don't retry on non-retriable errors
       if (error instanceof OCRServiceError) {
-        const nonRetriableErrors = ['UNSUPPORTED_TYPE', 'FILE_READ_ERROR', 'PARSE_ERROR'];
+        const nonRetriableErrors = ['UNSUPPORTED_TYPE', 'FILE_READ_ERROR', 'PARSE_ERROR', 'NOT_CONFIGURED'];
         if (nonRetriableErrors.includes(error.code)) {
           throw error;
         }
@@ -344,7 +274,7 @@ export async function processReceiptWithRetry(
 
       // Wait before retrying (exponential backoff)
       if (attempt < maxRetries) {
-        const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+        const delay = Math.pow(2, attempt) * 1000;
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }

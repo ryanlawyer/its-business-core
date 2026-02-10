@@ -995,3 +995,103 @@ Phase 5: Manager UI (TC-018 to TC-021) - COMPLETE
 Phase 6: Export Features (TC-022 to TC-027) - COMPLETE
 
 The timeclock enhancement project is now complete.
+
+---
+
+# AI Provider Expansion
+
+## Overview
+Expanded AI from Anthropic-only OCR to multi-provider support with new text AI tasks and usage tracking.
+
+## Iteration 1 - AI Provider Abstraction Layer
+
+### What was implemented
+
+**Phase 1: Foundation**
+- Installed `openai` SDK dependency
+- Added `AIUsageLog` Prisma model for tracking AI usage (tokens, cost, duration, success/failure)
+- Expanded `SystemSettings.ai` type to support 6 providers: Anthropic, OpenAI, OpenRouter, Ollama, Custom (OpenAI-compatible), None
+- Added feature toggles: `ocrEnabled`, `aiCategorizationEnabled`, `aiSummariesEnabled`
+- Added `ai.openrouter.apiKey` and `ai.custom.apiKey` to `SENSITIVE_PATHS` for encryption at rest
+- Updated `getDefaultSettings()` with new provider defaults
+
+**Phase 2: Provider Abstraction Layer**
+- Created `src/lib/ai/provider.ts` - `AIProvider` interface with `complete()`, `vision()`, `testConnection()` methods; `getAIProvider()` factory with lazy caching
+- Created `src/lib/ai/adapters/anthropic.ts` - wraps `@anthropic-ai/sdk`, supports text completion and vision (images + native PDF)
+- Created `src/lib/ai/adapters/openai-compatible.ts` - wraps `openai` SDK with configurable `baseURL` for OpenAI, OpenRouter, Ollama, LM Studio, custom endpoints; PDF-to-image conversion via sharp/pdf-lib
+- Created `src/lib/ai/cost-estimator.ts` - per-token pricing lookup for known models, $0 for local providers
+- Created `src/lib/ai/usage-tracker.ts` - `trackAICall()` wrapper: times calls, logs to `AIUsageLog`, fire-and-forget DB writes
+- Created `src/lib/ai/index.ts` - barrel export
+
+**Phase 3: Refactor OCR**
+- Rewrote `src/lib/ocr.ts` to use `getAIProvider().vision()` + `trackAICall()` instead of direct Anthropic SDK calls
+- `isOCRConfigured()` now checks all providers and respects `features.ocrEnabled`
+- Updated `src/app/api/receipts/[id]/process/route.ts` to pass `userId` for usage tracking
+
+**Phase 4: New AI Text Tasks**
+- Created `src/lib/ai/tasks/categorize.ts` - AI-powered budget category suggestion from merchant name
+- Created `src/lib/ai/tasks/summarize.ts` - AI-powered expense summary generation
+- Created `src/app/api/receipts/[id]/ai-categorize/route.ts` - trigger AI categorization endpoint
+- Created `src/app/api/receipts/summarize/route.ts` - generate expense summary endpoint
+- Created `src/app/api/settings/test-ai/route.ts` - test provider connectivity endpoint
+- Updated `src/lib/categorizer.ts` with AI fallback when DB-driven categorizer returns low confidence
+- Updated `src/app/api/receipts/[id]/suggest-category/route.ts` with `?useAI=true` query param
+
+**Phase 5: Settings UI**
+- Expanded AI/OCR tab on `/admin/settings` with:
+  - 6 provider options in dropdown (None, Anthropic, OpenAI, OpenRouter, Ollama, Custom)
+  - Conditional config forms per provider (API key, model, base URL as appropriate)
+  - Test Connection button calling `POST /api/settings/test-ai`
+  - Feature toggles section (OCR, AI categorization, AI summaries)
+
+**Phase 6: Usage Dashboard**
+- Created `src/app/api/admin/ai-usage/route.ts` - aggregated usage stats by month/task/provider/day
+- Created `src/app/admin/ai-usage/page.tsx` - dashboard with stat cards (requests, tokens, cost, avg response time), tabs (Overview, By Task, By Day, History), month/year selector, CSV export
+- Added "AI Usage" link in Navbar admin dropdown (desktop and mobile)
+
+**Phase 7: Polish**
+- Added AI audit actions: `AI_PROVIDER_CONFIGURED`, `AI_CONNECTION_TESTED`, `AI_CATEGORIZATION_REQUESTED`, `AI_SUMMARY_GENERATED`
+- Added `AIUsage` to audit entity types
+- Created `eslint.config.mjs` for ESLint flat config
+
+### Key decisions
+- Two-adapter architecture: Anthropic SDK adapter + OpenAI-compatible adapter (covers OpenAI, OpenRouter, Ollama, custom endpoints)
+- Provider factory uses lazy caching keyed on config to avoid re-creating SDK clients
+- Usage tracking is fire-and-forget (never breaks actual AI calls)
+- PDF OCR on non-Anthropic providers converts first page to image via sharp/pdf-lib
+- Cost estimates are best-effort; local models (Ollama, custom) show $0
+- All new settings fields use optional chaining for backward compat with existing config files
+
+### Files created
+- `src/lib/ai/provider.ts` - Core interfaces and factory
+- `src/lib/ai/adapters/anthropic.ts` - Anthropic adapter
+- `src/lib/ai/adapters/openai-compatible.ts` - OpenAI-compatible adapter
+- `src/lib/ai/cost-estimator.ts` - Cost estimation
+- `src/lib/ai/usage-tracker.ts` - Usage tracking wrapper
+- `src/lib/ai/tasks/categorize.ts` - AI categorization task
+- `src/lib/ai/tasks/summarize.ts` - AI summarization task
+- `src/lib/ai/index.ts` - Barrel export
+- `src/app/api/receipts/[id]/ai-categorize/route.ts` - AI categorize endpoint
+- `src/app/api/receipts/summarize/route.ts` - Expense summary endpoint
+- `src/app/api/settings/test-ai/route.ts` - Test connection endpoint
+- `src/app/api/admin/ai-usage/route.ts` - Usage stats endpoint
+- `src/app/admin/ai-usage/page.tsx` - Usage dashboard page
+- `eslint.config.mjs` - ESLint flat config
+
+### Files modified
+- `package.json` - Added `openai` dependency
+- `prisma/schema.prisma` - Added `AIUsageLog` model
+- `src/lib/settings.ts` - Expanded `SystemSettings.ai` type, added SENSITIVE_PATHS
+- `src/lib/ocr.ts` - Refactored to use provider abstraction
+- `src/lib/categorizer.ts` - Added AI fallback
+- `src/lib/audit.ts` - Added AI audit actions
+- `src/app/admin/settings/page.tsx` - Expanded AI/OCR settings UI
+- `src/app/api/receipts/[id]/process/route.ts` - Pass userId for tracking
+- `src/app/api/receipts/[id]/suggest-category/route.ts` - Added useAI param
+- `src/components/Navbar.tsx` - Added AI Usage nav link
+
+### Quality checks
+- TypeScript: 0 errors
+- ESLint: no new warnings (all existing are pre-existing)
+- Build: passes successfully
+- Browser testing: all pages render with zero console errors (signin, homepage, settings AI/OCR tab, AI usage dashboard)

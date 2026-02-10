@@ -1,6 +1,6 @@
 {
   "organization": {
-    "name": "ACME Corp.",
+    "name": "Integrated Tech Solutions",
     "logo": null
   },
   "security": {
@@ -27,5 +27,45 @@
   },
   "auditLog": {
     "retentionMonths": 0
+  },
+  "ai": {
+    "provider": "anthropic",
+    "anthropic": {
+      "apiKey": "enc:94423901db3bfe35eefece3df2008b05:73a4cd71aff1e33248a9a0ec95ed6fde:55d6f59256af47afb6c7a25f59ed3bc891652ad1e7528724349a15b207a33ca33d2b41e5dcf41033af66e0b31574e98f5f23d37103e95da17c776868c77c9f9cb8d9ff92b2dd675d4b4af4d127921ba0c7291f74d2434de3371d146bee0c0644c18c5c0e2b484ea1ed072f53",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    "openai": {
+      "apiKey": "",
+      "model": "gpt-4o"
+    },
+    "features": {
+      "aiCategorizationEnabled": true
+    }
+  },
+  "email": {
+    "provider": "none",
+    "gmail": {
+      "clientId": "",
+      "clientSecret": "",
+      "refreshToken": ""
+    },
+    "office365": {
+      "clientId": "",
+      "clientSecret": "",
+      "tenantId": "",
+      "refreshToken": ""
+    },
+    "smtp": {
+      "host": "",
+      "port": 587,
+      "secure": false,
+      "username": "",
+      "password": "",
+      "fromAddress": ""
+    },
+    "receiptForwarding": {
+      "enabled": false,
+      "forwardingAddress": ""
+    }
   }
 }

@@ -39,6 +39,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('organization');
   const [showApiKey, setShowApiKey] = useState(false);
+  const [testingAI, setTestingAI] = useState(false);
   const [testingEmail, setTestingEmail] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -569,9 +570,9 @@ export default function SettingsPage() {
             {activeTab === 'ai' && (
               <div className="space-y-8">
                 <div>
-                  <h3 className="section-title mb-2">AI Provider for OCR & Receipt Processing</h3>
+                  <h3 className="section-title mb-2">AI Provider</h3>
                   <p className="text-sm text-[var(--text-secondary)] mb-4">
-                    Configure the AI provider used for optical character recognition (OCR) to extract data from receipts and documents.
+                    Configure the AI provider used for OCR, categorization, and expense summaries.
                   </p>
 
                   <div className="space-y-4">
@@ -586,26 +587,27 @@ export default function SettingsPage() {
                             ...settings,
                             ai: {
                               ...settings.ai,
-                              provider: e.target.value as 'anthropic' | 'openai' | 'none',
+                              provider: e.target.value as SystemSettings['ai']['provider'],
                             },
                           })
                         }
-                        className="form-input form-select w-64"
+                        className="form-input form-select w-72"
                       >
                         <option value="none">None (Disabled)</option>
                         <option value="anthropic">Anthropic (Claude)</option>
                         <option value="openai">OpenAI (GPT-4)</option>
+                        <option value="openrouter">OpenRouter (Multi-model)</option>
+                        <option value="ollama">Ollama (Local)</option>
+                        <option value="custom">Custom (OpenAI-compatible)</option>
                       </select>
                     </div>
 
+                    {/* Anthropic Config */}
                     {settings.ai?.provider === 'anthropic' && (
                       <div className="ml-4 border-l-2 border-[var(--accent-primary-muted)] pl-4 space-y-4">
                         <h4 className="font-medium text-[var(--text-primary)]">Anthropic Configuration</h4>
-
                         <div>
-                          <label className="form-label mb-2">
-                            API Key
-                          </label>
+                          <label className="form-label mb-2">API Key</label>
                           <div className="flex items-center gap-2 max-w-md">
                             <input
                               type={showApiKey ? 'text' : 'password'}
@@ -613,24 +615,13 @@ export default function SettingsPage() {
                               onChange={(e) =>
                                 setSettings({
                                   ...settings,
-                                  ai: {
-                                    ...settings.ai,
-                                    anthropic: {
-                                      ...settings.ai.anthropic,
-                                      apiKey: e.target.value,
-                                    },
-                                  },
+                                  ai: { ...settings.ai, anthropic: { ...settings.ai.anthropic, apiKey: e.target.value } },
                                 })
                               }
                               placeholder="sk-ant-..."
                               className="form-input w-full"
                             />
-                            <button
-                              type="button"
-                              onClick={() => setShowApiKey(!showApiKey)}
-                              className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-                              title={showApiKey ? 'Hide API key' : 'Show API key'}
-                            >
+                            <button type="button" onClick={() => setShowApiKey(!showApiKey)} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors" title={showApiKey ? 'Hide' : 'Show'}>
                               {showApiKey ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                             </button>
                           </div>
@@ -638,23 +629,14 @@ export default function SettingsPage() {
                             Get your API key from <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer" className="text-[var(--accent-primary)] hover:underline">console.anthropic.com</a>
                           </p>
                         </div>
-
                         <div>
-                          <label className="form-label mb-2">
-                            Model
-                          </label>
+                          <label className="form-label mb-2">Model</label>
                           <select
                             value={settings.ai.anthropic?.model || 'claude-sonnet-4-5-20250929'}
                             onChange={(e) =>
                               setSettings({
                                 ...settings,
-                                ai: {
-                                  ...settings.ai,
-                                  anthropic: {
-                                    ...settings.ai.anthropic,
-                                    model: e.target.value,
-                                  },
-                                },
+                                ai: { ...settings.ai, anthropic: { ...settings.ai.anthropic, model: e.target.value } },
                               })
                             }
                             className="form-input form-select w-64"
@@ -668,14 +650,12 @@ export default function SettingsPage() {
                       </div>
                     )}
 
+                    {/* OpenAI Config */}
                     {settings.ai?.provider === 'openai' && (
                       <div className="ml-4 border-l-2 border-[var(--success-muted)] pl-4 space-y-4">
                         <h4 className="font-medium text-[var(--text-primary)]">OpenAI Configuration</h4>
-
                         <div>
-                          <label className="form-label mb-2">
-                            API Key
-                          </label>
+                          <label className="form-label mb-2">API Key</label>
                           <div className="flex items-center gap-2 max-w-md">
                             <input
                               type={showApiKey ? 'text' : 'password'}
@@ -683,24 +663,13 @@ export default function SettingsPage() {
                               onChange={(e) =>
                                 setSettings({
                                   ...settings,
-                                  ai: {
-                                    ...settings.ai,
-                                    openai: {
-                                      ...settings.ai.openai,
-                                      apiKey: e.target.value,
-                                    },
-                                  },
+                                  ai: { ...settings.ai, openai: { ...settings.ai.openai, apiKey: e.target.value } },
                                 })
                               }
                               placeholder="sk-..."
                               className="form-input w-full"
                             />
-                            <button
-                              type="button"
-                              onClick={() => setShowApiKey(!showApiKey)}
-                              className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-                              title={showApiKey ? 'Hide API key' : 'Show API key'}
-                            >
+                            <button type="button" onClick={() => setShowApiKey(!showApiKey)} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors" title={showApiKey ? 'Hide' : 'Show'}>
                               {showApiKey ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                             </button>
                           </div>
@@ -708,23 +677,14 @@ export default function SettingsPage() {
                             Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-[var(--accent-primary)] hover:underline">platform.openai.com</a>
                           </p>
                         </div>
-
                         <div>
-                          <label className="form-label mb-2">
-                            Model
-                          </label>
+                          <label className="form-label mb-2">Model</label>
                           <select
                             value={settings.ai.openai?.model || 'gpt-4o'}
                             onChange={(e) =>
                               setSettings({
                                 ...settings,
-                                ai: {
-                                  ...settings.ai,
-                                  openai: {
-                                    ...settings.ai.openai,
-                                    model: e.target.value,
-                                  },
-                                },
+                                ai: { ...settings.ai, openai: { ...settings.ai.openai, model: e.target.value } },
                               })
                             }
                             className="form-input form-select w-64"
@@ -736,8 +696,247 @@ export default function SettingsPage() {
                         </div>
                       </div>
                     )}
+
+                    {/* OpenRouter Config */}
+                    {settings.ai?.provider === 'openrouter' && (
+                      <div className="ml-4 border-l-2 border-[var(--info-muted)] pl-4 space-y-4">
+                        <h4 className="font-medium text-[var(--text-primary)]">OpenRouter Configuration</h4>
+                        <div>
+                          <label className="form-label mb-2">API Key</label>
+                          <div className="flex items-center gap-2 max-w-md">
+                            <input
+                              type={showApiKey ? 'text' : 'password'}
+                              value={settings.ai.openrouter?.apiKey || ''}
+                              onChange={(e) =>
+                                setSettings({
+                                  ...settings,
+                                  ai: { ...settings.ai, openrouter: { ...settings.ai.openrouter, apiKey: e.target.value } },
+                                })
+                              }
+                              placeholder="sk-or-..."
+                              className="form-input w-full"
+                            />
+                            <button type="button" onClick={() => setShowApiKey(!showApiKey)} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors" title={showApiKey ? 'Hide' : 'Show'}>
+                              {showApiKey ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                            </button>
+                          </div>
+                          <p className="text-sm text-[var(--text-muted)] mt-1">
+                            Get your API key from <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-[var(--accent-primary)] hover:underline">openrouter.ai/keys</a>
+                          </p>
+                        </div>
+                        <div>
+                          <label className="form-label mb-2">Model</label>
+                          <input
+                            type="text"
+                            value={settings.ai.openrouter?.model || ''}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                ai: { ...settings.ai, openrouter: { ...settings.ai.openrouter, model: e.target.value } },
+                              })
+                            }
+                            placeholder="anthropic/claude-sonnet-4-5"
+                            className="form-input w-full max-w-md"
+                          />
+                          <p className="text-sm text-[var(--text-muted)] mt-1">
+                            Browse models at <a href="https://openrouter.ai/models" target="_blank" rel="noopener noreferrer" className="text-[var(--accent-primary)] hover:underline">openrouter.ai/models</a>
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Ollama Config */}
+                    {settings.ai?.provider === 'ollama' && (
+                      <div className="ml-4 border-l-2 border-[var(--warning-muted)] pl-4 space-y-4">
+                        <h4 className="font-medium text-[var(--text-primary)]">Ollama Configuration (Local)</h4>
+                        <div>
+                          <label className="form-label mb-2">Base URL</label>
+                          <input
+                            type="text"
+                            value={settings.ai.ollama?.baseUrl || 'http://localhost:11434'}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                ai: { ...settings.ai, ollama: { ...settings.ai.ollama, baseUrl: e.target.value } },
+                              })
+                            }
+                            placeholder="http://localhost:11434"
+                            className="form-input w-full max-w-md"
+                          />
+                        </div>
+                        <div>
+                          <label className="form-label mb-2">Model</label>
+                          <input
+                            type="text"
+                            value={settings.ai.ollama?.model || ''}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                ai: { ...settings.ai, ollama: { ...settings.ai.ollama, model: e.target.value } },
+                              })
+                            }
+                            placeholder="llama3.2-vision"
+                            className="form-input w-full max-w-md"
+                          />
+                          <p className="text-sm text-[var(--text-muted)] mt-1">
+                            For OCR, use a vision-capable model (e.g., llava, llama3.2-vision). No API key needed.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Custom Config */}
+                    {settings.ai?.provider === 'custom' && (
+                      <div className="ml-4 border-l-2 border-[var(--border-strong)] pl-4 space-y-4">
+                        <h4 className="font-medium text-[var(--text-primary)]">Custom OpenAI-Compatible Provider</h4>
+                        <p className="text-sm text-[var(--text-secondary)]">
+                          Works with LM Studio, vLLM, text-generation-webui, and other OpenAI-compatible endpoints.
+                        </p>
+                        <div>
+                          <label className="form-label mb-2">Base URL</label>
+                          <input
+                            type="text"
+                            value={settings.ai.custom?.baseUrl || ''}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                ai: { ...settings.ai, custom: { ...settings.ai.custom, baseUrl: e.target.value } },
+                              })
+                            }
+                            placeholder="http://localhost:1234/v1"
+                            className="form-input w-full max-w-md"
+                          />
+                        </div>
+                        <div>
+                          <label className="form-label mb-2">API Key (optional)</label>
+                          <div className="flex items-center gap-2 max-w-md">
+                            <input
+                              type={showApiKey ? 'text' : 'password'}
+                              value={settings.ai.custom?.apiKey || ''}
+                              onChange={(e) =>
+                                setSettings({
+                                  ...settings,
+                                  ai: { ...settings.ai, custom: { ...settings.ai.custom, apiKey: e.target.value } },
+                                })
+                              }
+                              placeholder="Leave empty if not required"
+                              className="form-input w-full"
+                            />
+                            <button type="button" onClick={() => setShowApiKey(!showApiKey)} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors" title={showApiKey ? 'Hide' : 'Show'}>
+                              {showApiKey ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="form-label mb-2">Model</label>
+                          <input
+                            type="text"
+                            value={settings.ai.custom?.model || ''}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                ai: { ...settings.ai, custom: { ...settings.ai.custom, model: e.target.value } },
+                              })
+                            }
+                            placeholder="model-name"
+                            className="form-input w-full max-w-md"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Test Connection */}
+                    {settings.ai?.provider && settings.ai.provider !== 'none' && (
+                      <div className="border-t border-[var(--border-default)] pt-4 mt-4">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setTestingAI(true);
+                            try {
+                              const res = await fetch('/api/settings/test-ai', { method: 'POST' });
+                              const data = await res.json();
+                              setFeedback({
+                                type: data.success ? 'success' : 'error',
+                                message: data.message,
+                              });
+                            } catch {
+                              setFeedback({ type: 'error', message: 'Failed to test AI connection.' });
+                            } finally {
+                              setTestingAI(false);
+                            }
+                          }}
+                          disabled={testingAI}
+                          className="btn btn-secondary"
+                        >
+                          {testingAI ? 'Testing...' : 'Test Connection'}
+                        </button>
+                        <p className="text-sm text-[var(--text-muted)] mt-2">
+                          Save settings first, then test the connection to verify the provider is reachable.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
+
+                {/* Feature Toggles */}
+                {settings.ai?.provider && settings.ai.provider !== 'none' && (
+                  <div className="border-t border-[var(--border-default)] pt-6">
+                    <h3 className="section-title mb-4">AI Features</h3>
+                    <div className="space-y-3">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={settings.ai.features?.ocrEnabled ?? true}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              ai: {
+                                ...settings.ai,
+                                features: { ...settings.ai.features, ocrEnabled: e.target.checked },
+                              },
+                            })
+                          }
+                          className="mr-2"
+                        />
+                        <span className="text-sm font-medium text-[var(--text-secondary)]">Enable OCR for receipts</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={settings.ai.features?.aiCategorizationEnabled ?? false}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              ai: {
+                                ...settings.ai,
+                                features: { ...settings.ai.features, aiCategorizationEnabled: e.target.checked },
+                              },
+                            })
+                          }
+                          className="mr-2"
+                        />
+                        <span className="text-sm font-medium text-[var(--text-secondary)]">Enable AI category suggestions</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={settings.ai.features?.aiSummariesEnabled ?? false}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              ai: {
+                                ...settings.ai,
+                                features: { ...settings.ai.features, aiSummariesEnabled: e.target.checked },
+                              },
+                            })
+                          }
+                          className="mr-2"
+                        />
+                        <span className="text-sm font-medium text-[var(--text-secondary)]">Enable AI expense summaries</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

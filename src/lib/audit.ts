@@ -100,6 +100,11 @@ export type AuditAction =
   | 'EXPORT_TEMPLATE_UPDATED'
   | 'EXPORT_TEMPLATE_DELETED'
   | 'TIMECLOCK_RULES_CONFIG_UPDATED'
+  // AI actions
+  | 'AI_PROVIDER_CONFIGURED'
+  | 'AI_CONNECTION_TESTED'
+  | 'AI_CATEGORIZATION_REQUESTED'
+  | 'AI_SUMMARY_GENERATED'
   // System actions
   | 'BACKUP_DOWNLOADED'
   | 'BACKUP_RESTORED';
@@ -128,6 +133,7 @@ export type AuditEntityType =
   | 'ExportTemplate'
   | 'TimeclockRulesConfig'
   | 'PayPeriodLock'
+  | 'AIUsage'
   | 'System';
 
 interface AuditLogData {

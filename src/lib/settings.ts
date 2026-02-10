@@ -55,6 +55,8 @@ function decryptValue(value: string): string {
 const SENSITIVE_PATHS = [
   'ai.anthropic.apiKey',
   'ai.openai.apiKey',
+  'ai.openrouter.apiKey',
+  'ai.custom.apiKey',
   'email.gmail.clientSecret',
   'email.gmail.refreshToken',
   'email.office365.clientSecret',
@@ -141,7 +143,7 @@ export interface SystemSettings {
     retentionMonths: number; // 0 = keep forever
   };
   ai: {
-    provider: 'anthropic' | 'openai' | 'none';
+    provider: 'anthropic' | 'openai' | 'openrouter' | 'ollama' | 'custom' | 'none';
     anthropic: {
       apiKey: string;
       model: string;
@@ -149,6 +151,24 @@ export interface SystemSettings {
     openai: {
       apiKey: string;
       model: string;
+    };
+    openrouter: {
+      apiKey: string;
+      model: string;
+    };
+    ollama: {
+      baseUrl: string;
+      model: string;
+    };
+    custom: {
+      apiKey: string;
+      baseUrl: string;
+      model: string;
+    };
+    features: {
+      ocrEnabled: boolean;
+      aiCategorizationEnabled: boolean;
+      aiSummariesEnabled: boolean;
     };
   };
   email: {
@@ -280,6 +300,24 @@ export function getDefaultSettings(): SystemSettings {
       openai: {
         apiKey: '',
         model: 'gpt-4o',
+      },
+      openrouter: {
+        apiKey: '',
+        model: 'anthropic/claude-sonnet-4-5',
+      },
+      ollama: {
+        baseUrl: 'http://localhost:11434',
+        model: 'llama3.2-vision',
+      },
+      custom: {
+        apiKey: '',
+        baseUrl: '',
+        model: '',
+      },
+      features: {
+        ocrEnabled: true,
+        aiCategorizationEnabled: false,
+        aiSummariesEnabled: false,
       },
     },
     email: {

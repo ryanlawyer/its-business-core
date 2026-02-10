@@ -407,6 +407,14 @@ export default function Navbar() {
                   )}
                   {canManageSettings && (
                     <Link
+                      href="/admin/ai-usage"
+                      className={`nav-dropdown-link ${isActive('/admin/ai-usage') ? 'nav-dropdown-link-active' : ''}`}
+                    >
+                      AI Usage
+                    </Link>
+                  )}
+                  {canManageSettings && (
+                    <Link
                       href="/admin/settings"
                       className={`nav-dropdown-link ${isActive('/admin/settings') ? 'nav-dropdown-link-active' : ''}`}
                     >
@@ -688,6 +696,15 @@ export default function Navbar() {
                   className={`nav-mobile-link ${isActive('/admin/departments') ? 'nav-mobile-link-active' : ''}`}
                 >
                   Departments
+                </Link>
+              )}
+              {canManageSettings && (
+                <Link
+                  href="/admin/ai-usage"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`nav-mobile-link ${isActive('/admin/ai-usage') ? 'nav-mobile-link-active' : ''}`}
+                >
+                  AI Usage
                 </Link>
               )}
               {canManageSettings && (

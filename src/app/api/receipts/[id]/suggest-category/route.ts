@@ -68,10 +68,12 @@ export async function GET(req: NextRequest, context: RouteContext) {
       });
     }
 
-    // Get category suggestion
+    // Get category suggestion (optionally with AI fallback)
+    const useAI = req.nextUrl.searchParams.get('useAI') === 'true';
     const suggestion = await suggestCategoryFromMerchant(
       receipt.merchantName,
-      user.id
+      user.id,
+      useAI,
     );
 
     // Enrich with category details if we have a suggestion
