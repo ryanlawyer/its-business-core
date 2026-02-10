@@ -20,7 +20,7 @@
   },
   "purchaseOrders": {
     "numberPrefix": "PO-",
-    "resetCounterYearly": false
+    "resetCounterYearly": true
   },
   "fiscalYear": {
     "startMonth": 1
@@ -29,17 +29,32 @@
     "retentionMonths": 0
   },
   "ai": {
-    "provider": "anthropic",
+    "provider": "none",
     "anthropic": {
-      "apiKey": "enc:fe197aa47ffbda9c761c52adcd4dacf2:b8b90f47eedd0c0c9cf634cd3cb5e40a:172d7f25eae5aac030412199812d069166412b0cc5162349c89d8e63858418c30a184d72bef9cf825eb1e5593db0756d786b097635c7a980e81d98e30d61fe30ec8cdb2e4d332198cbdf679c15a7459e3fcbda3692a216522e6a219f594e6c0c5368116e3c2dbae53f88d6fc",
-      "model": "claude-haiku-4-5-20251001"
+      "apiKey": "",
+      "model": "claude-sonnet-4-5-20250929"
     },
     "openai": {
       "apiKey": "",
       "model": "gpt-4o"
     },
+    "openrouter": {
+      "apiKey": "",
+      "model": "anthropic/claude-sonnet-4-5"
+    },
+    "ollama": {
+      "baseUrl": "http://localhost:11434",
+      "model": "llama3.2-vision"
+    },
+    "custom": {
+      "apiKey": "",
+      "baseUrl": "",
+      "model": ""
+    },
     "features": {
-      "aiCategorizationEnabled": true
+      "ocrEnabled": true,
+      "aiCategorizationEnabled": false,
+      "aiSummariesEnabled": false
     }
   },
   "email": {
