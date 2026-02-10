@@ -5,15 +5,20 @@ import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
 import { createAuditLog, getRequestContext } from '@/lib/audit';
 import {
   validateUploadedFile,
-  generateUniqueFilename,
   isImageFile,
+  isPdfFile,
 } from '@/lib/file-validation';
+import { optimizeReceiptImage } from '@/lib/image-processing';
+import { optimizeReceiptPdf } from '@/lib/pdf-optimization';
 import { writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 
 // Upload directory configuration
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads/receipts';
+const THUMBNAIL_DIR = process.env.UPLOAD_DIR
+  ? path.join(path.dirname(process.env.UPLOAD_DIR), 'thumbnails')
+  : './uploads/thumbnails';
 
 /**
  * POST /api/receipts/upload
@@ -68,13 +73,56 @@ export async function POST(req: NextRequest) {
       await mkdir(uploadDir, { recursive: true });
     }
 
-    // Generate unique filename
-    const ext = path.extname(validation.sanitizedFilename || file.name);
-    const uniqueFilename = `receipt_${crypto.randomUUID()}${ext}`;
+    const mimeType = validation.mimeType!;
+    const uuid = crypto.randomUUID();
+    let fileBuffer: Buffer = buffer;
+    let thumbnailBuffer: Buffer | null = null;
+    let optimizationMeta: Record<string, unknown> = {};
+
+    // Optimize based on file type
+    if (isImageFile(mimeType)) {
+      const result = await optimizeReceiptImage(buffer);
+      fileBuffer = result.buffer;
+      thumbnailBuffer = result.thumbnailBuffer;
+      optimizationMeta = {
+        originalSize: result.originalSize,
+        optimizedSize: result.optimizedSize,
+        savedBytes: result.originalSize - result.optimizedSize,
+        dimensions: `${result.width}x${result.height}`,
+        steps: result.steps,
+      };
+    } else if (isPdfFile(mimeType)) {
+      const result = await optimizeReceiptPdf(buffer);
+      fileBuffer = result.buffer;
+      optimizationMeta = {
+        originalSize: result.originalSize,
+        optimizedSize: result.newSize,
+        savedBytes: result.originalSize - result.newSize,
+        method: result.method,
+        optimized: result.optimized,
+      };
+    }
+
+    // Use .jpg extension for all optimized images, preserve .pdf for PDFs
+    const ext = isImageFile(mimeType) ? '.jpg' : '.pdf';
+    const uniqueFilename = `receipt_${uuid}${ext}`;
     const filePath = path.join(uploadDir, uniqueFilename);
 
-    // Write file to disk
-    await writeFile(filePath, buffer);
+    // Write optimized file to disk
+    await writeFile(filePath, fileBuffer);
+
+    // Write thumbnail if generated
+    let thumbnailUrl: string | null = null;
+    if (thumbnailBuffer) {
+      const thumbDir = path.resolve(THUMBNAIL_DIR);
+      if (!existsSync(thumbDir)) {
+        await mkdir(thumbDir, { recursive: true });
+      }
+      const thumbFilename = `thumb_${uuid}.jpg`;
+      const thumbPath = path.join(thumbDir, thumbFilename);
+      await writeFile(thumbPath, thumbnailBuffer);
+      thumbnailUrl = `thumbnails/${thumbFilename}`;
+    }
 
     // Create receipt record with pending status
     const receipt = await prisma.receipt.create({
@@ -83,8 +131,7 @@ export async function POST(req: NextRequest) {
         status: 'PENDING',
         source: 'UPLOAD',
         imageUrl: `receipts/${uniqueFilename}`,
-        // Generate thumbnail URL for images (placeholder - will be implemented in OCR phase)
-        thumbnailUrl: isImageFile(validation.mimeType!) ? `receipts/${uniqueFilename}` : null,
+        thumbnailUrl: thumbnailUrl || (isImageFile(mimeType) ? `receipts/${uniqueFilename}` : null),
       },
       include: {
         user: { select: { id: true, name: true, email: true } },
@@ -102,7 +149,8 @@ export async function POST(req: NextRequest) {
         after: {
           filename: uniqueFilename,
           mimeType: validation.mimeType,
-          size: buffer.length,
+          size: fileBuffer.length,
+          ...optimizationMeta,
         },
       },
       ipAddress,

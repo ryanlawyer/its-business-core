@@ -13,4 +13,3 @@ export type {
 } from './provider';
 
 export { trackAICall } from './usage-tracker';
-export { estimateCostCents } from './cost-estimator';

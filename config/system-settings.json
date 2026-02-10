@@ -20,7 +20,7 @@
   },
   "purchaseOrders": {
     "numberPrefix": "PO-",
-    "resetCounterYearly": true
+    "resetCounterYearly": false
   },
   "fiscalYear": {
     "startMonth": 1
@@ -31,7 +31,7 @@
   "ai": {
     "provider": "anthropic",
     "anthropic": {
-      "apiKey": "enc:94423901db3bfe35eefece3df2008b05:73a4cd71aff1e33248a9a0ec95ed6fde:55d6f59256af47afb6c7a25f59ed3bc891652ad1e7528724349a15b207a33ca33d2b41e5dcf41033af66e0b31574e98f5f23d37103e95da17c776868c77c9f9cb8d9ff92b2dd675d4b4af4d127921ba0c7291f74d2434de3371d146bee0c0644c18c5c0e2b484ea1ed072f53",
+      "apiKey": "enc:fe197aa47ffbda9c761c52adcd4dacf2:b8b90f47eedd0c0c9cf634cd3cb5e40a:172d7f25eae5aac030412199812d069166412b0cc5162349c89d8e63858418c30a184d72bef9cf825eb1e5593db0756d786b097635c7a980e81d98e30d61fe30ec8cdb2e4d332198cbdf679c15a7459e3fcbda3692a216522e6a219f594e6c0c5368116e3c2dbae53f88d6fc",
       "model": "claude-haiku-4-5-20251001"
     },
     "openai": {

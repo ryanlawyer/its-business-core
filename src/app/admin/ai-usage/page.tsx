@@ -8,7 +8,6 @@ interface UsageOverview {
   successCount: number;
   failureCount: number;
   totalTokens: number;
-  totalCostCents: number;
   avgDurationMs: number;
 }
 
@@ -16,20 +15,17 @@ interface TaskBreakdown {
   taskType: string;
   count: number;
   tokens: number;
-  costCents: number;
 }
 
 interface ProviderBreakdown {
   provider: string;
   count: number;
-  costCents: number;
 }
 
 interface DayBreakdown {
   date: string;
   requests: number;
   tokens: number;
-  costCents: number;
 }
 
 interface RecentLog {
@@ -39,7 +35,6 @@ interface RecentLog {
   model: string;
   inputTokens: number;
   outputTokens: number;
-  estimatedCostCents: number;
   durationMs: number;
   success: boolean;
   errorCode: string | null;
@@ -68,10 +63,6 @@ const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
-
-function formatCostCents(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}
 
 function formatTokens(tokens: number): string {
   if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(1)}M`;
@@ -130,13 +121,12 @@ export default function AIUsagePage() {
       log.model,
       log.inputTokens,
       log.outputTokens,
-      (log.estimatedCostCents / 100).toFixed(4),
       log.durationMs,
       log.success ? 'Yes' : 'No',
       log.errorCode || '',
     ]);
 
-    const header = ['Date', 'Task', 'Provider', 'Model', 'Input Tokens', 'Output Tokens', 'Cost ($)', 'Duration (ms)', 'Success', 'Error'];
+    const header = ['Date', 'Task', 'Provider', 'Model', 'Input Tokens', 'Output Tokens', 'Duration (ms)', 'Success', 'Error'];
     const csv = [header, ...rows].map((r) => r.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -154,8 +144,8 @@ export default function AIUsagePage() {
           <div className="animate-pulse space-y-4">
             <div className="h-8 bg-[var(--bg-hover)] rounded w-48"></div>
             <div className="h-4 bg-[var(--bg-hover)] rounded w-80"></div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-              {[1, 2, 3, 4].map((i) => (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+              {[1, 2, 3].map((i) => (
                 <div key={i} className="h-24 bg-[var(--bg-hover)] rounded"></div>
               ))}
             </div>
@@ -174,7 +164,7 @@ export default function AIUsagePage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
             <h1 className="page-title mb-1">AI Usage</h1>
-            <p className="text-[var(--text-secondary)] text-sm">Monitor AI provider usage, costs, and performance</p>
+            <p className="text-[var(--text-secondary)] text-sm">Monitor AI provider usage and performance</p>
           </div>
           <div className="flex items-center gap-2">
             <select
@@ -202,7 +192,7 @@ export default function AIUsagePage() {
         </div>
 
         {/* Stat Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="card p-4">
             <div className="text-sm text-[var(--text-muted)] mb-1">Requests</div>
             <div className="text-2xl font-bold text-[var(--text-primary)]">{overview.totalRequests}</div>
@@ -213,10 +203,6 @@ export default function AIUsagePage() {
           <div className="card p-4">
             <div className="text-sm text-[var(--text-muted)] mb-1">Tokens Used</div>
             <div className="text-2xl font-bold text-[var(--text-primary)]">{formatTokens(overview.totalTokens)}</div>
-          </div>
-          <div className="card p-4">
-            <div className="text-sm text-[var(--text-muted)] mb-1">Estimated Cost</div>
-            <div className="text-2xl font-bold text-[var(--text-primary)]">{formatCostCents(overview.totalCostCents)}</div>
           </div>
           <div className="card p-4">
             <div className="text-sm text-[var(--text-muted)] mb-1">Avg Response Time</div>
@@ -260,7 +246,6 @@ export default function AIUsagePage() {
                           <tr>
                             <th className="data-table-header">Provider</th>
                             <th className="data-table-header text-right">Requests</th>
-                            <th className="data-table-header text-right">Cost</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -268,7 +253,6 @@ export default function AIUsagePage() {
                             <tr key={p.provider} className="data-table-row">
                               <td className="data-table-cell font-medium capitalize">{p.provider}</td>
                               <td className="data-table-cell text-right">{p.count}</td>
-                              <td className="data-table-cell text-right">{formatCostCents(p.costCents)}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -290,7 +274,6 @@ export default function AIUsagePage() {
                             <th className="data-table-header">Task</th>
                             <th className="data-table-header text-right">Requests</th>
                             <th className="data-table-header text-right">Tokens</th>
-                            <th className="data-table-header text-right">Cost</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -299,7 +282,6 @@ export default function AIUsagePage() {
                               <td className="data-table-cell font-medium">{taskTypeLabel(t.taskType)}</td>
                               <td className="data-table-cell text-right">{t.count}</td>
                               <td className="data-table-cell text-right">{formatTokens(t.tokens)}</td>
-                              <td className="data-table-cell text-right">{formatCostCents(t.costCents)}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -323,7 +305,6 @@ export default function AIUsagePage() {
                           <th className="data-table-header">Task Type</th>
                           <th className="data-table-header text-right">Requests</th>
                           <th className="data-table-header text-right">Tokens</th>
-                          <th className="data-table-header text-right">Cost</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -332,7 +313,6 @@ export default function AIUsagePage() {
                             <td className="data-table-cell font-medium">{taskTypeLabel(t.taskType)}</td>
                             <td className="data-table-cell text-right">{t.count}</td>
                             <td className="data-table-cell text-right">{formatTokens(t.tokens)}</td>
-                            <td className="data-table-cell text-right">{formatCostCents(t.costCents)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -355,7 +335,6 @@ export default function AIUsagePage() {
                           <th className="data-table-header">Date</th>
                           <th className="data-table-header text-right">Requests</th>
                           <th className="data-table-header text-right">Tokens</th>
-                          <th className="data-table-header text-right">Cost</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -364,7 +343,6 @@ export default function AIUsagePage() {
                             <td className="data-table-cell font-medium">{d.date}</td>
                             <td className="data-table-cell text-right">{d.requests}</td>
                             <td className="data-table-cell text-right">{formatTokens(d.tokens)}</td>
-                            <td className="data-table-cell text-right">{formatCostCents(d.costCents)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -389,7 +367,6 @@ export default function AIUsagePage() {
                           <th className="data-table-header">Provider</th>
                           <th className="data-table-header">Model</th>
                           <th className="data-table-header text-right">Tokens</th>
-                          <th className="data-table-header text-right">Cost</th>
                           <th className="data-table-header text-right">Duration</th>
                           <th className="data-table-header">Status</th>
                         </tr>
@@ -406,7 +383,6 @@ export default function AIUsagePage() {
                             <td className="data-table-cell text-right">
                               {formatTokens(log.inputTokens + log.outputTokens)}
                             </td>
-                            <td className="data-table-cell text-right">{formatCostCents(log.estimatedCostCents)}</td>
                             <td className="data-table-cell text-right">{formatDuration(log.durationMs)}</td>
                             <td className="data-table-cell">
                               {log.success ? (

@@ -36,7 +36,6 @@ export async function GET(req: NextRequest) {
       _sum: {
         inputTokens: true,
         outputTokens: true,
-        estimatedCostCents: true,
         durationMs: true,
       },
     });
@@ -50,7 +49,6 @@ export async function GET(req: NextRequest) {
 
     const totalRequests = monthlyStats._count.id;
     const totalTokens = (monthlyStats._sum.inputTokens || 0) + (monthlyStats._sum.outputTokens || 0);
-    const totalCostCents = monthlyStats._sum.estimatedCostCents || 0;
     const totalDurationMs = monthlyStats._sum.durationMs || 0;
     const avgDurationMs = totalRequests > 0 ? Math.round(totalDurationMs / totalRequests) : 0;
 
@@ -64,7 +62,6 @@ export async function GET(req: NextRequest) {
       _sum: {
         inputTokens: true,
         outputTokens: true,
-        estimatedCostCents: true,
       },
     });
 
@@ -75,9 +72,6 @@ export async function GET(req: NextRequest) {
         createdAt: { gte: startDate, lte: endDate },
       },
       _count: { id: true },
-      _sum: {
-        estimatedCostCents: true,
-      },
     });
 
     // Daily breakdown
@@ -89,21 +83,19 @@ export async function GET(req: NextRequest) {
         createdAt: true,
         inputTokens: true,
         outputTokens: true,
-        estimatedCostCents: true,
       },
       orderBy: { createdAt: 'asc' },
     });
 
     // Group by day
-    const byDay: Record<string, { requests: number; tokens: number; costCents: number }> = {};
+    const byDay: Record<string, { requests: number; tokens: number }> = {};
     for (const log of dailyLogs) {
       const day = log.createdAt.toISOString().split('T')[0];
       if (!byDay[day]) {
-        byDay[day] = { requests: 0, tokens: 0, costCents: 0 };
+        byDay[day] = { requests: 0, tokens: 0 };
       }
       byDay[day].requests++;
       byDay[day].tokens += log.inputTokens + log.outputTokens;
-      byDay[day].costCents += log.estimatedCostCents;
     }
 
     // Recent history
@@ -120,7 +112,6 @@ export async function GET(req: NextRequest) {
         model: true,
         inputTokens: true,
         outputTokens: true,
-        estimatedCostCents: true,
         durationMs: true,
         success: true,
         errorCode: true,
@@ -135,19 +126,16 @@ export async function GET(req: NextRequest) {
         successCount,
         failureCount: totalRequests - successCount,
         totalTokens,
-        totalCostCents,
         avgDurationMs,
       },
       byTask: byTask.map((t) => ({
         taskType: t.taskType,
         count: t._count.id,
         tokens: (t._sum.inputTokens || 0) + (t._sum.outputTokens || 0),
-        costCents: t._sum.estimatedCostCents || 0,
       })),
       byProvider: byProvider.map((p) => ({
         provider: p.provider,
         count: p._count.id,
-        costCents: p._sum.estimatedCostCents || 0,
       })),
       byDay: Object.entries(byDay).map(([date, stats]) => ({
         date,

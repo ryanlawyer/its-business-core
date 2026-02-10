@@ -527,33 +527,33 @@ export default function ReceiptDetailPage({ params }: { params: Promise<{ id: st
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Image Section */}
-          <div className="card overflow-hidden">
-            <div className="p-4 border-b border-[var(--border-default)]">
+          {/* Image/PDF Section */}
+          <div className="card overflow-hidden lg:sticky lg:top-4 lg:self-start">
+            <div className="p-4 border-b border-[var(--border-default)] flex items-center justify-between">
               <h2 className="section-title">Receipt {isPdf(receipt.imageUrl) ? 'Document' : 'Image'}</h2>
+              {receipt.imageUrl && isPdf(receipt.imageUrl) && (
+                <a
+                  href={`/api/receipts/${receipt.id}/image`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-primary btn-sm inline-flex items-center"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                  </svg>
+                  Open in new tab
+                </a>
+              )}
             </div>
             <div className="p-4">
               {receipt.imageUrl ? (
                 isPdf(receipt.imageUrl) ? (
-                  <div>
-                    <iframe
-                      src={`/api/receipts/${receipt.id}/image?t=${Date.now()}`}
-                      className="w-full rounded-lg border border-[var(--border-default)]"
-                      style={{ height: '600px' }}
-                      title="Receipt PDF"
-                    />
-                    <a
-                      href={`/api/receipts/${receipt.id}/image`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 btn btn-secondary btn-sm inline-flex items-center"
-                    >
-                      <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                      </svg>
-                      Open PDF in new tab
-                    </a>
-                  </div>
+                  <iframe
+                    src={`/api/receipts/${receipt.id}/image?t=${Date.now()}#navpanes=0&view=FitH`}
+                    className="w-full rounded-lg border border-[var(--border-default)]"
+                    style={{ height: 'calc(100vh - 12rem)' }}
+                    title="Receipt PDF"
+                  />
                 ) : (
                   <div
                     className="cursor-pointer"

@@ -1,5 +1,4 @@
 import { prisma } from '@/lib/prisma';
-import { estimateCostCents } from './cost-estimator';
 import type { AIResponse } from './provider';
 
 interface TrackAICallOptions {
@@ -75,12 +74,7 @@ function logUsage(
         model: data.model,
         inputTokens: data.inputTokens,
         outputTokens: data.outputTokens,
-        estimatedCostCents: estimateCostCents(
-          data.provider,
-          data.model,
-          data.inputTokens,
-          data.outputTokens,
-        ),
+        estimatedCostCents: 0,
         entityType: options.entityType,
         entityId: options.entityId,
         durationMs: data.durationMs,

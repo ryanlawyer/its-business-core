@@ -297,3 +297,134 @@ export async function getImageMetadata(buffer: Buffer): Promise<sharp.Metadata> 
     throw new Error('Failed to read image metadata');
   }
 }
+
+/**
+ * Receipt-specific optimization settings
+ */
+const RECEIPT_MAX_DIMENSION = 1800;
+const RECEIPT_QUALITY = 80;
+const RECEIPT_THUMBNAIL_WIDTH = 400;
+const RECEIPT_THUMBNAIL_QUALITY = 70;
+
+export interface ReceiptOptimizationResult {
+  buffer: Buffer;
+  thumbnailBuffer: Buffer;
+  originalSize: number;
+  optimizedSize: number;
+  format: 'jpeg';
+  width: number;
+  height: number;
+  steps: string[];
+}
+
+/**
+ * Optimize a receipt image for storage and OCR.
+ * - Resizes to max 1800px
+ * - 80% mozjpeg quality
+ * - Strips EXIF metadata (privacy: GPS, device info)
+ * - Auto-rotates from EXIF orientation
+ * - Converts HEIC/HEIF/PNG → JPEG
+ * - Generates a 400px thumbnail
+ *
+ * On failure, returns original buffer as passthrough so uploads never break.
+ */
+export async function optimizeReceiptImage(
+  buffer: Buffer,
+): Promise<ReceiptOptimizationResult> {
+  const originalSize = buffer.length;
+  const steps: string[] = [];
+
+  try {
+    const metadata = await sharp(buffer).metadata();
+
+    // Determine if we need to convert format
+    const format = metadata.format as string | undefined;
+    if (format === 'heif' || format === 'heic') {
+      steps.push('converted HEIC/HEIF → JPEG');
+    } else if (format === 'png') {
+      // Check for alpha channel — if present, flatten onto white background
+      if (metadata.hasAlpha) {
+        steps.push('flattened PNG alpha → JPEG');
+      } else {
+        steps.push('converted PNG → JPEG');
+      }
+    }
+
+    // Build the optimized image pipeline
+    let pipeline = sharp(buffer)
+      .rotate() // auto-rotate from EXIF orientation
+      .removeAlpha() // strip alpha for JPEG output (flatten onto white if present)
+      .resize(RECEIPT_MAX_DIMENSION, RECEIPT_MAX_DIMENSION, {
+        fit: 'inside',
+        withoutEnlargement: true,
+      });
+
+    // Flatten alpha onto white if the source has it
+    if (metadata.hasAlpha) {
+      pipeline = sharp(buffer)
+        .rotate()
+        .flatten({ background: { r: 255, g: 255, b: 255 } })
+        .resize(RECEIPT_MAX_DIMENSION, RECEIPT_MAX_DIMENSION, {
+          fit: 'inside',
+          withoutEnlargement: true,
+        });
+    }
+
+    steps.push('auto-rotated');
+    steps.push('EXIF stripped');
+
+    if (
+      metadata.width &&
+      metadata.height &&
+      (metadata.width > RECEIPT_MAX_DIMENSION || metadata.height > RECEIPT_MAX_DIMENSION)
+    ) {
+      steps.push(`resized from ${metadata.width}x${metadata.height}`);
+    }
+
+    const optimizedBuffer = await pipeline
+      .jpeg({ quality: RECEIPT_QUALITY, mozjpeg: true })
+      .toBuffer();
+
+    steps.push(`compressed to ${RECEIPT_QUALITY}% mozjpeg`);
+
+    // Get final dimensions
+    const optimizedMeta = await sharp(optimizedBuffer).metadata();
+
+    // Generate thumbnail
+    const thumbnailBuffer = await sharp(optimizedBuffer)
+      .resize(RECEIPT_THUMBNAIL_WIDTH, undefined, {
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .jpeg({ quality: RECEIPT_THUMBNAIL_QUALITY, mozjpeg: true })
+      .toBuffer();
+
+    steps.push(`thumbnail generated (${RECEIPT_THUMBNAIL_WIDTH}px)`);
+
+    return {
+      buffer: optimizedBuffer,
+      thumbnailBuffer,
+      originalSize,
+      optimizedSize: optimizedBuffer.length,
+      format: 'jpeg',
+      width: optimizedMeta.width || 0,
+      height: optimizedMeta.height || 0,
+      steps,
+    };
+  } catch (error) {
+    console.error('Receipt image optimization failed, using original:', error);
+
+    // Passthrough: return original buffer so uploads never fail
+    const fallbackThumbnail = buffer;
+    return {
+      buffer,
+      thumbnailBuffer: fallbackThumbnail,
+      originalSize,
+      optimizedSize: originalSize,
+      format: 'jpeg',
+      width: 0,
+      height: 0,
+      steps: ['optimization failed — passthrough'],
+    };
+  }
+}

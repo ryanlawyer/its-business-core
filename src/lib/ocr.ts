@@ -228,7 +228,7 @@ function normalizeDate(date: string | null | undefined): string | null {
 export function isOCRConfigured(): boolean {
   const settings = getSettings();
   if (!settings.ai) return false;
-  if (settings.ai.features && !settings.ai.features.ocrEnabled) return false;
+  if (settings.ai.features?.ocrEnabled === false) return false;
 
   const effectiveProvider = detectEffectiveProvider(settings.ai);
   if (effectiveProvider === 'none') return false;
