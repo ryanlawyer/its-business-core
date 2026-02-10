@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
-const allowedOrigins: string[] = [];
+const allowedOrigins: string[] = [
+  'http://127.0.0.1:5000',
+  'http://localhost:5000',
+  'http://0.0.0.0:5000',
+];
 if (process.env.REPLIT_DEV_DOMAIN) {
   allowedOrigins.push(`https://${process.env.REPLIT_DEV_DOMAIN}`);
 }
@@ -17,7 +21,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  allowedDevOrigins: allowedOrigins.length > 0 ? allowedOrigins : undefined,
+  allowedDevOrigins: allowedOrigins,
   output: 'standalone',
 };
 
