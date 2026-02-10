@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
       const uploadDir = process.env.UPLOAD_DIR || path.join(projectRoot, 'uploads');
 
       // Database path (from DATABASE_URL or default)
-      const dbUrl = process.env.DATABASE_URL || 'file:./dev.db';
+      const dbUrl = process.env.SQLITE_URL || 'file:./dev.db';
       const dbFileName = dbUrl.replace('file:', '').replace('./', '');
       const dbPath = path.isAbsolute(dbFileName)
         ? dbFileName
