@@ -1,7 +1,8 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import { OvertimeAlertBanner } from '@/components/OvertimeAlertBanner';
 
 type PayPeriod = {
@@ -69,11 +70,28 @@ export default function TimeclockPage() {
   const [rulesConfig, setRulesConfig] = useState<RulesConfig>(null);
   const [submittingIds, setSubmittingIds] = useState<Set<string>>(new Set());
   const [submittingAll, setSubmittingAll] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [periodDropdownOpen, setPeriodDropdownOpen] = useState(false);
+  const periodDropdownRef = useRef<HTMLDivElement>(null);
+  const entriesRef = useRef<HTMLDivElement>(null);
 
   // Callback to trigger alert banner refresh
   const refreshAlerts = useCallback(() => {
     setAlertRefreshKey((prev) => prev + 1);
   }, []);
+
+  // Close period dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (periodDropdownRef.current && !periodDropdownRef.current.contains(e.target as Node)) {
+        setPeriodDropdownOpen(false);
+      }
+    };
+    if (periodDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [periodDropdownOpen]);
 
   useEffect(() => {
     setMounted(true);
@@ -131,6 +149,11 @@ export default function TimeclockPage() {
     if (period) {
       fetchEntries(period.startDate, period.endDate);
     }
+  };
+
+  const handleStatusFilter = (status: string) => {
+    setStatusFilter((prev) => (prev === status ? null : status));
+    entriesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const handleDismissRejection = (entryId: string) => {
@@ -269,6 +292,10 @@ export default function TimeclockPage() {
     );
   };
 
+  const filteredEntries = statusFilter
+    ? entries.filter((e) => e.status === statusFilter)
+    : entries;
+
   // Loading state
   if (!mounted || loading) {
     return (
@@ -327,7 +354,7 @@ export default function TimeclockPage() {
 
       {/* Period Selector */}
       {availablePeriods.length > 0 && (
-        <div className="card-highlight mb-6 animate-fade-in-up" style={{ animationDelay: '50ms' }}>
+        <div className="card-highlight mb-6 animate-fade-in-up" style={{ animationDelay: '25ms' }}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="stat-icon stat-icon-info flex-shrink-0" style={{ width: '2.5rem', height: '2.5rem' }}>
@@ -345,25 +372,63 @@ export default function TimeclockPage() {
                 </p>
               </div>
             </div>
-            <select
-              value={selectedPeriodIndex}
-              onChange={(e) => handlePeriodChange(parseInt(e.target.value))}
-              className="input w-full sm:w-auto"
-              style={{ maxWidth: '250px' }}
-            >
-              {availablePeriods.map((period, index) => (
-                <option key={index} value={index}>
-                  {period.label} {index === 0 ? '(Current)' : ''}
-                </option>
-              ))}
-            </select>
+            <div className="relative" ref={periodDropdownRef}>
+              <button
+                onClick={() => setPeriodDropdownOpen(!periodDropdownOpen)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium w-full sm:w-auto"
+                style={{
+                  background: 'var(--bg-surface)',
+                  borderColor: 'var(--border-default)',
+                  color: 'var(--text-primary)',
+                  maxWidth: '280px',
+                }}
+              >
+                <span className="truncate">
+                  {availablePeriods[selectedPeriodIndex]?.label}
+                  {selectedPeriodIndex === 0 ? ' (Current)' : ''}
+                </span>
+                <svg className={`w-4 h-4 flex-shrink-0 transition-transform ${periodDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {periodDropdownOpen && (
+                <div
+                  className="absolute right-0 top-full mt-1 w-64 rounded-lg border shadow-lg z-20 animate-fade-in py-1"
+                  style={{
+                    background: 'var(--bg-card)',
+                    borderColor: 'var(--border-default)',
+                  }}
+                >
+                  {availablePeriods.map((period, index) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        handlePeriodChange(index);
+                        setPeriodDropdownOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-[var(--bg-surface)] transition-colors"
+                      style={{ color: index === selectedPeriodIndex ? 'var(--accent-primary)' : 'var(--text-primary)' }}
+                    >
+                      {index === selectedPeriodIndex && (
+                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                      <span className={index !== selectedPeriodIndex ? 'ml-6' : ''}>
+                        {period.label} {index === 0 ? '(Current)' : ''}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
 
       {/* Department Assignment Widget */}
       {user?.departmentName && (
-        <div className="card-highlight mb-6 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+        <div className="card-highlight mb-6 animate-fade-in-up" style={{ animationDelay: '50ms' }}>
           <div className="flex items-start gap-4">
             <div className="stat-icon stat-icon-accent flex-shrink-0">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -388,9 +453,11 @@ export default function TimeclockPage() {
       {/* Main Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {/* Clock Status Card */}
-        <div
-          className={`stat-card ${activeEntry ? 'stat-card-success' : 'stat-card-accent'} animate-fade-in-up`}
-          style={{ animationDelay: '150ms' }}
+        <button
+          onClick={activeEntry ? handleClockOut : handleClockIn}
+          disabled={isClocking}
+          className={`stat-card ${activeEntry ? 'stat-card-success' : 'stat-card-accent'} animate-fade-in-up cursor-pointer hover:ring-2 hover:ring-[var(--accent-primary)] transition-shadow text-left`}
+          style={{ animationDelay: '75ms' }}
         >
           <div className={`stat-icon ${activeEntry ? 'stat-icon-success' : 'stat-icon-accent'}`}>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -399,11 +466,11 @@ export default function TimeclockPage() {
             </svg>
           </div>
           <div className="stat-value">{activeEntry ? 'Active' : 'Ready'}</div>
-          <div className="stat-label">{activeEntry ? 'Currently Clocked In' : 'Clock In to Start'}</div>
-        </div>
+          <div className="stat-label">{activeEntry ? 'Click to Clock Out' : 'Click to Clock In'}</div>
+        </button>
 
         {/* Today's Total Card */}
-        <div className="stat-card stat-card-info animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+        <Link href="/timeclock/history" className="stat-card stat-card-info animate-fade-in-up hover:ring-2 hover:ring-[var(--accent-primary)] transition-shadow" style={{ animationDelay: '100ms' }}>
           <div className="stat-icon stat-icon-info">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
@@ -412,11 +479,11 @@ export default function TimeclockPage() {
           <div className="stat-value font-mono">
             {formatDuration((todayStats?.totalSeconds || 0) + (activeEntry ? getCurrentDuration() : 0))}
           </div>
-          <div className="stat-label">Today's Total</div>
-        </div>
+          <div className="stat-label">Today&apos;s Total</div>
+        </Link>
 
         {/* Period Regular Hours */}
-        <div className="stat-card stat-card-success animate-fade-in-up" style={{ animationDelay: '250ms' }}>
+        <div className="stat-card stat-card-success animate-fade-in-up" style={{ animationDelay: '125ms' }}>
           <div className="stat-icon stat-icon-success">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
@@ -430,7 +497,7 @@ export default function TimeclockPage() {
         </div>
 
         {/* Period OT Hours */}
-        <div className="stat-card animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+        <div className="stat-card animate-fade-in-up" style={{ animationDelay: '150ms' }}>
           <div
             className="stat-icon"
             style={{
@@ -457,31 +524,31 @@ export default function TimeclockPage() {
 
       {/* Period Summary Row */}
       {periodStats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 animate-fade-in-up" style={{ animationDelay: '350ms' }}>
-          <div className="stat-card">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+          <Link href="/timeclock/history" className="stat-card hover:ring-2 hover:ring-[var(--accent-primary)] transition-shadow">
             <div className="stat-value" style={{ color: 'var(--text-primary)' }}>
               {periodStats.sessionsCompleted}
             </div>
             <div className="stat-label">Sessions</div>
-          </div>
-          <div className="stat-card">
+          </Link>
+          <button onClick={() => handleStatusFilter('pending')} className={`stat-card hover:ring-2 hover:ring-[var(--accent-primary)] transition-shadow text-left ${statusFilter === 'pending' ? 'ring-2 ring-[var(--warning)]' : ''}`}>
             <div className="stat-value" style={{ color: 'var(--warning)' }}>
               {periodStats.pendingCount}
             </div>
             <div className="stat-label">Pending</div>
-          </div>
-          <div className="stat-card">
+          </button>
+          <button onClick={() => handleStatusFilter('approved')} className={`stat-card hover:ring-2 hover:ring-[var(--accent-primary)] transition-shadow text-left ${statusFilter === 'approved' ? 'ring-2 ring-[var(--success)]' : ''}`}>
             <div className="stat-value" style={{ color: 'var(--success)' }}>
               {periodStats.approvedCount}
             </div>
             <div className="stat-label">Approved</div>
-          </div>
-          <div className="stat-card">
+          </button>
+          <button onClick={() => handleStatusFilter('rejected')} className={`stat-card hover:ring-2 hover:ring-[var(--accent-primary)] transition-shadow text-left ${statusFilter === 'rejected' ? 'ring-2 ring-[var(--error)]' : ''}`}>
             <div className="stat-value" style={{ color: 'var(--error)' }}>
               {periodStats.rejectedCount}
             </div>
             <div className="stat-label">Rejected</div>
-          </div>
+          </button>
         </div>
       )}
 
@@ -490,7 +557,7 @@ export default function TimeclockPage() {
         <div
           className="mb-8 p-4 rounded-lg border animate-fade-in-up"
           style={{
-            animationDelay: '375ms',
+            animationDelay: '160ms',
             background: 'var(--error-bg, rgba(239, 68, 68, 0.1))',
             borderColor: 'var(--error)',
           }}
@@ -526,7 +593,7 @@ export default function TimeclockPage() {
         <div
           className="mb-8 p-4 rounded-lg border animate-fade-in-up"
           style={{
-            animationDelay: '390ms',
+            animationDelay: '170ms',
             background: 'var(--info-subtle, rgba(59, 130, 246, 0.1))',
             borderColor: 'var(--info, #3b82f6)',
           }}
@@ -558,7 +625,7 @@ export default function TimeclockPage() {
       {/* Clock In/Out Action */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <div className="lg:col-span-1">
-          <div className="card animate-fade-in-up" style={{ animationDelay: '400ms' }}>
+          <div className="card animate-fade-in-up" style={{ animationDelay: '175ms' }}>
             <h2 className="section-title mb-4">
               {activeEntry ? 'End Your Session' : 'Start Your Day'}
             </h2>
@@ -616,12 +683,28 @@ export default function TimeclockPage() {
         </div>
 
         {/* Time Entries Table */}
-        <div className="lg:col-span-2 animate-fade-in-up" style={{ animationDelay: '450ms' }}>
+        <div ref={entriesRef} className="lg:col-span-2 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
           <div className="table-container">
-            <div className="p-4 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+            <div className="p-4 border-b flex items-center justify-between gap-3" style={{ borderColor: 'var(--border-subtle)' }}>
               <h2 className="section-title">
                 Period Time Entries
               </h2>
+              {statusFilter && (
+                <button
+                  onClick={() => setStatusFilter(null)}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border"
+                  style={{
+                    background: 'var(--bg-surface)',
+                    borderColor: 'var(--border-default)',
+                    color: 'var(--text-secondary)',
+                  }}
+                >
+                  Showing: {statusFilter}
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
             </div>
 
             {entries.length === 0 ? (
@@ -637,16 +720,23 @@ export default function TimeclockPage() {
                   Clock in to start tracking your time for this period.
                 </div>
               </div>
+            ) : filteredEntries.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-state-title">No {statusFilter} entries</div>
+                <div className="empty-state-description">
+                  No entries match the selected filter.
+                </div>
+              </div>
             ) : (
               <>
                 {/* Mobile Card View */}
                 <div className="lg:hidden space-y-4 p-4">
-                  {entries.map((entry, index) => (
+                  {filteredEntries.map((entry, index) => (
                     <div
                       key={entry.id}
                       className={`card animate-fade-in`}
                       style={{
-                        animationDelay: `${500 + index * 50}ms`,
+                        animationDelay: `${250 + index * 30}ms`,
                         background: entry.status === 'rejected' ? 'var(--error-bg, rgba(239, 68, 68, 0.1))' : undefined,
                       }}
                     >
@@ -748,12 +838,12 @@ export default function TimeclockPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {entries.map((entry, index) => (
+                      {filteredEntries.map((entry, index) => (
                         <tr
                           key={entry.id}
                           className={`animate-fade-in ${entry.status === 'rejected' ? 'row-rejected' : ''}`}
                           style={{
-                            animationDelay: `${500 + index * 50}ms`,
+                            animationDelay: `${250 + index * 30}ms`,
                             background: entry.status === 'rejected' ? 'var(--error-bg, rgba(239, 68, 68, 0.1))' : undefined,
                           }}
                         >

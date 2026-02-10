@@ -40,6 +40,13 @@ export default function SignInPage() {
     <div className="min-h-screen flex items-center justify-center">
       <div className="card p-8 w-full max-w-md">
         <div className="text-center mb-8">
+          <div className="mx-auto mb-4 w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'var(--accent-primary)', color: 'white' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
+          </div>
           <h1 className="page-title">ITS Business Core</h1>
           <p className="text-[var(--text-secondary)] mt-2">Sign in to your account</p>
         </div>
@@ -90,14 +97,16 @@ export default function SignInPage() {
           </button>
         </form>
 
-        <div className="mt-6 p-4 rounded-md border border-[var(--border-default)]">
-          <p className="text-xs text-[var(--text-secondary)] font-semibold mb-2">Demo Accounts:</p>
-          <div className="space-y-1 text-xs text-[var(--text-secondary)]">
-            <div>Admin: admin@example.com / admin123</div>
-            <div>Manager: manager@example.com / manager123</div>
-            <div>User: user@example.com / user123</div>
+        {process.env.NEXT_PUBLIC_SHOW_DEMO_CREDENTIALS === 'true' && (
+          <div className="mt-6 p-4 rounded-md border border-[var(--border-default)]">
+            <p className="text-xs text-[var(--text-secondary)] font-semibold mb-2">Demo Accounts:</p>
+            <div className="space-y-1 text-xs text-[var(--text-secondary)]">
+              <div>Admin: admin@example.com / admin123</div>
+              <div>Manager: manager@example.com / manager123</div>
+              <div>User: user@example.com / user123</div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
