@@ -129,11 +129,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate file type
-    const allowedExtensions = ['.csv', '.xlsx', '.xls', '.txt'];
+    const allowedExtensions = ['.csv', '.xlsx', '.xls', '.txt', '.pdf'];
     const extension = path.extname(file.name).toLowerCase();
     if (!allowedExtensions.includes(extension)) {
       return NextResponse.json(
-        { error: 'Invalid file type. Allowed: CSV, Excel, TXT' },
+        { error: 'Invalid file type. Allowed: CSV, Excel, TXT, PDF' },
         { status: 400 }
       );
     }
@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
     // Parse the statement file
     let parseResult: ParseResult;
     try {
-      parseResult = await parseStatementFile(buffer, file.name);
+      parseResult = await parseStatementFile(buffer, file.name, undefined, user.id);
     } catch (parseError) {
       console.error('Error parsing statement file:', parseError);
       return NextResponse.json(

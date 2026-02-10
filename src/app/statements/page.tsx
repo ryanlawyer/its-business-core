@@ -159,7 +159,7 @@ export default function StatementsPage() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".csv,.xlsx,.xls,.txt"
+              accept=".csv,.xlsx,.xls,.txt,.pdf"
               className="hidden"
               onChange={handleFileUpload}
               disabled={uploading}
@@ -216,7 +216,7 @@ export default function StatementsPage() {
               </svg>
               <h3 className="empty-state-title">No statements</h3>
               <p className="empty-state-description">
-                Get started by uploading a bank statement (CSV or Excel).
+                Get started by uploading a bank statement (CSV, Excel, or PDF).
               </p>
             </div>
           </div>

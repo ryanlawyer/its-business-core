@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import { parsePdfStatement } from './statement-pdf-parser';
 
 // Common bank format detection patterns
 interface BankFormat {
@@ -247,10 +248,16 @@ function parseCSV(content: string): string[][] {
 export async function parseStatementFile(
   buffer: Buffer,
   filename: string,
-  customMapping?: ColumnMapping
+  customMapping?: ColumnMapping,
+  userId?: string,
 ): Promise<ParseResult> {
   try {
     const extension = filename.toLowerCase().split('.').pop();
+
+    if (extension === 'pdf') {
+      return await parsePdfStatement(buffer, userId);
+    }
+
     let headers: string[] = [];
     let rows: Record<string, unknown>[] = [];
 
@@ -414,6 +421,10 @@ export async function parseStatementFile(
  */
 export async function getFileHeaders(buffer: Buffer, filename: string): Promise<string[]> {
   const extension = filename.toLowerCase().split('.').pop();
+
+  if (extension === 'pdf') {
+    return [];
+  }
 
   if (extension === 'csv' || extension === 'txt') {
     const content = buffer.toString('utf-8');
