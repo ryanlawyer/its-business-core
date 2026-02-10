@@ -1,5 +1,5 @@
 import { getSettings } from '@/lib/settings';
-import { getAIProvider, AINotConfiguredError, trackAICall } from '@/lib/ai';
+import { getAIProvider, AINotConfiguredError, trackAICall, detectEffectiveProvider } from '@/lib/ai';
 
 export interface LineItem {
   description: string;
@@ -227,10 +227,13 @@ function normalizeDate(date: string | null | undefined): string | null {
  */
 export function isOCRConfigured(): boolean {
   const settings = getSettings();
-  if (!settings.ai || settings.ai.provider === 'none') return false;
+  if (!settings.ai) return false;
   if (settings.ai.features && !settings.ai.features.ocrEnabled) return false;
 
-  switch (settings.ai.provider) {
+  const effectiveProvider = detectEffectiveProvider(settings.ai);
+  if (effectiveProvider === 'none') return false;
+
+  switch (effectiveProvider) {
     case 'anthropic':
       return !!(settings.ai.anthropic?.apiKey || process.env.ANTHROPIC_API_KEY);
     case 'openai':

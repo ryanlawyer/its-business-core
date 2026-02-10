@@ -60,25 +60,44 @@ function getProviderCacheKey(ai: SystemSettings['ai']): string {
   }
 }
 
+/**
+ * Detect effective provider when settings.ai.provider is 'none'.
+ * Provides backward compatibility for deployments that had an API key
+ * configured before the multi-provider expansion.
+ */
+export function detectEffectiveProvider(ai: SystemSettings['ai']): SystemSettings['ai']['provider'] {
+  if (ai?.provider && ai.provider !== 'none') return ai.provider;
+
+  // Check for Anthropic API key (env var or saved in settings)
+  if (ai?.anthropic?.apiKey || process.env.ANTHROPIC_API_KEY) return 'anthropic';
+
+  return 'none';
+}
+
 export async function getAIProvider(): Promise<AIProvider> {
   const settings = getSettings();
   const ai = settings.ai;
 
-  if (!ai || ai.provider === 'none') {
+  const effectiveProvider = detectEffectiveProvider(ai);
+  if (!ai || effectiveProvider === 'none') {
     throw new AINotConfiguredError();
   }
 
-  const cacheKey = getProviderCacheKey(ai);
+  // Use effective provider for cache key and adapter selection
+  const aiForCache = { ...ai, provider: effectiveProvider };
+  const cacheKey = getProviderCacheKey(aiForCache);
   if (_cachedProvider && _cachedProviderKey === cacheKey) {
     return _cachedProvider;
   }
 
   let provider: AIProvider;
 
-  switch (ai.provider) {
+  switch (effectiveProvider) {
     case 'anthropic': {
       const { AnthropicAdapter } = await import('./adapters/anthropic');
-      provider = new AnthropicAdapter(ai.anthropic.apiKey, ai.anthropic.model);
+      const apiKey = ai.anthropic?.apiKey || process.env.ANTHROPIC_API_KEY || '';
+      const model = ai.anthropic?.model || 'claude-sonnet-4-5-20250929';
+      provider = new AnthropicAdapter(apiKey, model);
       break;
     }
     case 'openai': {

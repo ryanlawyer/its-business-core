@@ -2,6 +2,7 @@ export {
   getAIProvider,
   AINotConfiguredError,
   getProviderName,
+  detectEffectiveProvider,
 } from './provider';
 
 export type {
