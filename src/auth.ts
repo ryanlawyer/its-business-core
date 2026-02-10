@@ -117,7 +117,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       // Re-validate permissions every 5 minutes
       const lastValidated = (token.lastValidated as number) || 0;
-      if (Date.now() - lastValidated > JWT_REVALIDATION_INTERVAL_MS) {
+      if (token.id && Date.now() - lastValidated > JWT_REVALIDATION_INTERVAL_MS) {
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: token.id as string },
