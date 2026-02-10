@@ -1,0 +1,18 @@
+{
+  "name": "ITS Time Clock",
+  "short_name": "Clock",
+  "description": "Quick clock in/out for ITS Business Core",
+  "start_url": "/clock",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#08090b",
+  "theme_color": "#08090b",
+  "icons": [
+    {
+      "src": "/icon-clock.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
