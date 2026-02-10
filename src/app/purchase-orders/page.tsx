@@ -93,7 +93,7 @@ export default function PurchaseOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen py-8">
+    <div className="min-h-screen py-8 pb-24">
       <div className="max-w-7xl mx-auto px-4">
         <div className="page-header flex justify-between items-center mb-8">
           <h1 className="page-title">Purchase Orders</h1>

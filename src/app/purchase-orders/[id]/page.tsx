@@ -334,7 +334,7 @@ export default function PurchaseOrderDetailPage({
   const totalAmount = lineItems.reduce((sum, item) => sum + item.amount, 0);
 
   return (
-    <div className="min-h-screen py-8">
+    <div className="min-h-screen py-8 pb-24">
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <div className="mb-8">

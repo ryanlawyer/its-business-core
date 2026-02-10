@@ -430,7 +430,7 @@ export default function ReceiptDetailPage({ params }: { params: Promise<{ id: st
   }
 
   return (
-    <div className="min-h-screen py-8">
+    <div className="min-h-screen py-8 pb-24">
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">

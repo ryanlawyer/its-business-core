@@ -33,5 +33,13 @@ else
   npx prisma db push --accept-data-loss
 fi
 
+# Seed config file if empty or missing (happens when config volume is first mounted)
+CONFIG_FILE="/app/config/system-settings.json"
+DEFAULT_CONFIG="/app/config-defaults/system-settings.json"
+if [ ! -s "$CONFIG_FILE" ] && [ -f "$DEFAULT_CONFIG" ]; then
+  echo "Config file missing or empty. Seeding from defaults..."
+  cp "$DEFAULT_CONFIG" "$CONFIG_FILE"
+fi
+
 echo "Starting application..."
 exec "$@"

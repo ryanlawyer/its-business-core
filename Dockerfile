@@ -50,8 +50,11 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules ./node_modules
 
 # Create directories for SQLite database, uploads, and config
-RUN mkdir -p /app/data /app/uploads /app/config && \
-    chown -R nextjs:nodejs /app/data /app/uploads /app/config
+RUN mkdir -p /app/data /app/uploads /app/config /app/config-defaults && \
+    chown -R nextjs:nodejs /app/data /app/uploads /app/config /app/config-defaults
+
+# Copy default config to a location that won't be overwritten by volume mounts
+COPY --chown=nextjs:nodejs config/system-settings.json /app/config-defaults/system-settings.json
 
 # Create startup script
 COPY --chown=nextjs:nodejs docker-entrypoint.sh /app/

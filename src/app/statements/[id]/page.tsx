@@ -322,7 +322,7 @@ export default function StatementDetailPage({ params }: { params: Promise<{ id: 
     : 0;
 
   return (
-    <div className="min-h-screen py-8">
+    <div className="min-h-screen py-8 pb-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
