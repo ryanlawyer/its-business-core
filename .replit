@@ -9,7 +9,7 @@ channel = "stable-25_05"
 
 [userenv.shared]
 NEXTAUTH_SECRET = "LWR9GPDVqbLsMdqgyxzMhUN9WX5o2yI7J3aHH8Zrzno="
-NEXTAUTH_URL = "http://0.0.0.0:5000"
+NEXTAUTH_URL = "https://22314e35-cc6d-45b7-96a0-b8f33f42a2ee-00-3hkwwnqmxob5m.riker.replit.dev"
 NEXT_PUBLIC_SHOW_DEMO_CREDENTIALS = "true"
 UPLOAD_DIR = "./uploads/receipts"
 SQLITE_URL = "file:./dev.db"

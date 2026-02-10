@@ -39,5 +39,8 @@ ITS Business System - Lightweight SMB Core application for small-to-medium busin
 
 ## Important Notes
 - The Prisma schema uses `SQLITE_URL` instead of `DATABASE_URL` to avoid conflicts with Replit's managed PostgreSQL env var.
-- Next.js config includes `allowedDevOrigins` for Replit proxy compatibility.
+- Next.js config does NOT use `allowedDevOrigins` — it was removed to prevent Next.js 15.5 from blocking Replit proxy requests (stays in "warn" mode instead of "block" mode).
+- `NEXTAUTH_URL` must be set to the full Replit domain URL (not `0.0.0.0`) for auth to work correctly in the Replit iframe preview.
+- The `setup_complete` flag in `SystemConfig` table must be set to `"true"` for the app to bypass the setup wizard and show the sign-in page.
+- Database is pre-seeded with demo data (3 users, 3 roles, 4 departments, vendors, purchase orders).
 - Deployment uses standalone output mode.
