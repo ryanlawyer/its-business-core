@@ -124,7 +124,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="nav-bar">
+      <nav className="nav-bar" aria-label="Main navigation">
         <div className="nav-container">
           {/* Logo and Brand */}
           <Link href="/" className="nav-brand group">
@@ -144,7 +144,7 @@ export default function Navbar() {
           <div className="nav-menu">
             {/* Timeclock Dropdown */}
             <div className="nav-item">
-              <button className="nav-link">
+              <button className="nav-link" aria-haspopup="true">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10" />
                   <polyline points="12 6 12 12 16 14" />
@@ -211,7 +211,7 @@ export default function Navbar() {
 
             {/* Purchasing Dropdown */}
             <div className="nav-item">
-              <button className="nav-link">
+              <button className="nav-link" aria-haspopup="true">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
                   <line x1="3" y1="6" x2="21" y2="6" />
@@ -258,7 +258,7 @@ export default function Navbar() {
 
             {/* Budget Dropdown */}
             <div className="nav-item">
-              <button className="nav-link">
+              <button className="nav-link" aria-haspopup="true">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="1" x2="12" y2="23" />
                   <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
@@ -280,6 +280,12 @@ export default function Navbar() {
                   className={`nav-dropdown-link ${isActive('/admin/budget-dashboard') ? 'nav-dropdown-link-active' : ''}`}
                 >
                   Dashboard
+                </Link>
+                <Link
+                  href="/reports/budget-variance"
+                  className={`nav-dropdown-link ${isActive('/reports/budget-variance') ? 'nav-dropdown-link-active' : ''}`}
+                >
+                  Budget Variance
                 </Link>
                 {canCreateAmendments && (
                   <Link
@@ -311,7 +317,7 @@ export default function Navbar() {
             {/* Administration Dropdown */}
             {showAdminMenu && (
               <div className="nav-item">
-                <button className="nav-link">
+                <button className="nav-link" aria-haspopup="true">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="3" />
                     <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
@@ -399,6 +405,14 @@ export default function Navbar() {
                       Settings
                     </Link>
                   )}
+                  {canManageSettings && (
+                    <Link
+                      href="/admin/import"
+                      className={`nav-dropdown-link ${isActive('/admin/import') ? 'nav-dropdown-link-active' : ''}`}
+                    >
+                      Import Data
+                    </Link>
+                  )}
                 </div>
               </div>
             )}
@@ -419,6 +433,16 @@ export default function Navbar() {
               </div>
             </div>
 
+            <Link
+              href="/profile"
+              className="btn btn-secondary btn-sm hidden lg:flex"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              <span className="hidden sm:inline">Profile</span>
+            </Link>
             <button
               onClick={() => signOut({ callbackUrl: '/auth/signin' })}
               className="btn btn-secondary btn-sm hidden lg:flex"
@@ -436,6 +460,7 @@ export default function Navbar() {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="nav-mobile-toggle"
               aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? (
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -568,6 +593,13 @@ export default function Navbar() {
             >
               Dashboard
             </Link>
+            <Link
+              href="/reports/budget-variance"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`nav-mobile-link ${isActive('/reports/budget-variance') ? 'nav-mobile-link-active' : ''}`}
+            >
+              Budget Variance
+            </Link>
             {canCreateAmendments && (
               <Link
                 href="/admin/budget-amendments"
@@ -677,10 +709,30 @@ export default function Navbar() {
                   Settings
                 </Link>
               )}
+              {canManageSettings && (
+                <Link
+                  href="/admin/import"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`nav-mobile-link ${isActive('/admin/import') ? 'nav-mobile-link-active' : ''}`}
+                >
+                  Import Data
+                </Link>
+              )}
             </div>
           )}
 
           <div className="nav-mobile-section">
+            <Link
+              href="/profile"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`nav-mobile-link ${isActive('/profile') ? 'nav-mobile-link-active' : ''}`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              My Profile
+            </Link>
             <button
               onClick={() => signOut({ callbackUrl: '/auth/signin' })}
               className="nav-mobile-link text-[var(--error)] w-full text-left"
