@@ -1,236 +1,291 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-02-04
+**Analysis Date:** 2026-02-11
 
 ## Tech Debt
 
-**Monolithic Settings Page (1213 lines):**
-- Issue: `src/app/admin/settings/page.tsx` contains all system configuration UI (organization, security, fiscal, audit, AI, email, etc.) in a single client component
-- Files: `src/app/admin/settings/page.tsx`
-- Impact: Difficult to maintain; complex state management; slow to render; changes to one section risk breaking others; testing individual sections is challenging
-- Fix approach: Split into separate tab components (`SettingsOrganization.tsx`, `SettingsSecurity.tsx`, etc.) exported from `src/components/admin/settings/` and composed in main page
+**Large Component Files:**
+- Issue: Several React components exceed 1000 lines, indicating high complexity and multiple concerns mixed together
+- Files: `src/app/admin/timeclock/page.tsx` (1431 lines), `src/app/admin/settings/page.tsx` (1398 lines), `src/app/receipts/[id]/page.tsx` (1191 lines), `src/app/page.tsx` (936 lines), `src/app/purchase-orders/[id]/page.tsx` (818 lines)
+- Impact: Difficult to maintain, test, and reason about. High risk of bugs when making changes. Slower build times.
+- Fix approach: Extract tab panels into separate components. Move business logic to custom hooks or server actions. Split multi-responsibility components into smaller, focused components.
 
-**Large Page Components (1000+ lines):**
-- Issue: `src/app/receipts/[id]/page.tsx` (1134 lines), `src/app/purchase-orders/[id]/page.tsx` (770 lines), `src/app/statements/[id]/page.tsx` (669 lines), and `src/app/timeclock/team/[userId]/page.tsx` (608 lines) contain both logic and UI
-- Files: Multiple files in `src/app/*/[id]/page.tsx`
-- Impact: Difficult to test; high cognitive load; state management fragility; difficult to isolate features
-- Fix approach: Extract form logic into custom hooks (e.g., `useReceiptForm`), extract sub-components for reuse, use container/presentational pattern
+**Hardcoded TODO Comment:**
+- Issue: Fiscal year start date is hardcoded instead of reading from system settings
+- Files: `src/app/api/budget-items/route.ts:21-22`
+- Impact: Budget accrual calculations use incorrect dates if fiscal year doesn't start in January. Inconsistent with fiscal year configuration in database.
+- Fix approach: Read fiscal year settings from SystemSettings or FiscalYear table. Use actual fiscal year start/end dates for accrual calculations.
 
-**Credential Storage in Settings UI:**
-- Issue: API keys and credentials (Anthropic, OpenAI, Gmail OAuth, Office365 OAuth, SMTP) are stored in filesystem JSON (`config/system-settings.json`) without encryption
-- Files: `src/lib/settings.ts`, `src/app/admin/settings/page.tsx` (lines 599-957)
-- Impact: High security risk; credentials readable in plaintext; vulnerable to file system access attacks; audit logs expose credentials if not redacted
-- Fix approach: Move sensitive values to environment variables only; implement encrypted vault for per-tenant secrets; mask secrets in audit logs; use secure storage pattern
+**Inconsistent Type Safety:**
+- Issue: Widespread use of `any` type and `@typescript-eslint/no-explicit-any` suppressions
+- Files: `src/lib/settings.ts:67,71`, `src/lib/audit.ts:144,192-195,215`, `src/lib/ocr.ts:112`, `src/lib/timeclock-rules.ts:146`, `src/components/BudgetItemSelector.tsx:101-102`, and many API routes
+- Impact: Loses TypeScript's type safety benefits. Runtime errors that could be caught at compile time. Harder to refactor safely.
+- Fix approach: Define proper interfaces for complex objects. Use `unknown` with type guards instead of `any`. Add Zod schemas for runtime validation where needed.
 
-**Settings Validation Gaps:**
-- Issue: Settings PUT endpoint (`src/app/api/settings/route.ts` lines 71-77) only checks top-level structure, doesn't validate individual field values, ranges, formats
-- Files: `src/app/api/settings/route.ts`, `src/lib/settings.ts`
-- Impact: Invalid data (negative retention months, invalid email addresses, invalid fiscal months) can be saved; no type coercion
-- Fix approach: Implement Zod/Yup schema validation with field-level rules; validate numeric ranges; validate email formats; validate provider-specific requirements
+**Empty Catch Blocks:**
+- Issue: Numerous empty catch blocks and catch-with-console-log-only patterns
+- Files: `src/lib/client-permissions.ts:10`, `src/lib/pdf-optimization.ts:145-146`, `src/auth.ts:141-143`, and 50+ instances throughout codebase
+- Impact: Errors swallowed silently. Difficult to diagnose issues in production. No way to know when operations fail.
+- Fix approach: At minimum, log errors with context. Consider error boundaries for UI. Add error tracking service integration.
 
-**Non-Atomic File Operations:**
-- Issue: Receipt upload (`src/app/api/receipts/upload/route.ts` lines 79-95) writes file to disk then creates DB record; if DB write fails, orphaned file exists
-- Files: `src/app/api/receipts/upload/route.ts`
-- Impact: Disk space waste; inconsistent state; orphaned files accumulate; cleanup necessary
-- Fix approach: Write to temporary location first; create DB record; on success, move to permanent location; on failure, clean up temp file
+**In-Memory Rate Limiter:**
+- Issue: Login rate limiting uses in-memory Map, doesn't persist across restarts or scale horizontally
+- Files: `src/auth.ts:15-38`
+- Impact: Rate limits reset on app restart. Won't work with multiple instances (horizontal scaling). Attackers can bypass by restarting service.
+- Fix approach: Move rate limiting to database table or Redis. Consider using NextAuth.js adapter with built-in rate limiting.
+
+**Password Storage Without History:**
+- Issue: Settings allow password reuse prevention (`preventReuse`), but no PasswordHistory table exists in schema
+- Files: `src/lib/settings.ts:128,404-406`, `prisma/schema.prisma`
+- Impact: Password policy feature is incomplete. Users can reuse old passwords despite policy setting.
+- Fix approach: Add PasswordHistory table to schema. Hash and store previous passwords during password changes. Enforce in validation.
 
 ## Known Bugs
 
-**innerHTML XSS Vulnerability (Not actual XSS due to controlled content):**
-- Symptoms: Image load error handling uses `innerHTML` with user-controlled SVG markup
-- Files: `src/components/receipts/ReceiptCard.tsx` (lines 69-75)
-- Trigger: Receipt thumbnail fails to load; user hovers to see broken image
-- Issue: Uses `innerHTML` to inject SVG fallback; while SVG here is hardcoded and safe, pattern is dangerous and will fail linting
-- Workaround: Currently safe because SVG is static, but should refactor
-- Fix: Create React component for fallback or use `textContent` for static text; never use `innerHTML` with any dynamic content
+**Unused Router/Session Variables:**
+- Symptoms: ESLint warnings for unused variables across many page components
+- Files: `src/app/admin/settings/page.tsx:34-35`, `src/app/admin/timeclock/page.tsx:109-111`, `src/app/admin/roles/manage/page.tsx`, and 15+ other pages
+- Trigger: Components destructure `session` and `router` from hooks but never use them
+- Workaround: Prefix with underscore (`_router`) or remove destructuring
+- Fix: Clean up unused imports and variables. May indicate incomplete features or refactoring artifacts.
 
-**Non-null Assertions (!) Without Validation:**
-- Symptoms: Several places use `!.` to bypass TypeScript safety without runtime checks
-- Files:
-  - `src/app/receipts/[id]/page.tsx` (line ~823 - `categorySuggestion.category!.id`)
-  - `src/app/api/budget-amendments/route.ts` (lines ~95-120 - `toBudgetItem!.fiscalYear`, etc.)
-  - `src/app/api/timeclock/export/route.ts` (entriesByEmployee.get assertion)
-  - `src/components/receipts/ReceiptCard.tsx` (line 69 - `target.parentElement!.innerHTML`)
-- Impact: Runtime crashes if assertions fail; no graceful error handling
-- Fix: Add proper null checks and handle null cases; use optional chaining `?.` instead
+**React Hooks Rules Violation:**
+- Symptoms: Conditional hook usage causing potential runtime errors
+- Files: `src/app/admin/roles/manage/page.tsx:111`
+- Trigger: `useEffect` called after conditional return
+- Workaround: None - this is a serious bug
+- Fix: Move all hooks before conditional returns. Restructure component logic to avoid conditional rendering at top level.
 
-**Settings API Missing Redaction:**
-- Symptoms: Audit logs store full settings including API keys in plaintext
-- Files: `src/app/api/settings/route.ts` (line 92-93 - audit log creation)
-- Trigger: Admin changes settings; audit log captures credentials
-- Impact: Credentials exposed in audit logs; security vulnerability
-- Fix approach: Implement redaction function that masks keys in audit payload before logging
+**Missing Dependency Arrays:**
+- Symptoms: useEffect hooks with incomplete dependency arrays
+- Files: `src/app/admin/audit-log/page.tsx:67`, `src/app/admin/budget-dashboard/page.tsx:54`, and 10+ other pages
+- Trigger: Functions used in useEffect but not included in dependency array
+- Workaround: Functions re-create on every render, causing potential infinite loops or stale closures
+- Fix: Include all dependencies in array, or wrap functions with useCallback, or move functions inside useEffect.
+
+**HTML Link Instead of Next Link:**
+- Symptoms: SEO and navigation issues from using `<a>` instead of `<Link>`
+- Files: `src/app/(standalone)/clock/page.tsx:219`
+- Trigger: Direct `<a href="/">` usage for navigation
+- Impact: Full page reload instead of client-side navigation. Breaks Next.js routing optimizations.
+- Fix: Replace with `<Link href="/">` from `next/link`.
 
 ## Security Considerations
 
-**Unencrypted Sensitive Configuration:**
-- Risk: API keys, OAuth tokens, and credentials stored in `config/system-settings.json` as plaintext
-- Files: `src/lib/settings.ts`, configuration files
-- Current mitigation: File system permissions (if configured), no console logging of values
-- Recommendations:
-  1. Move all secrets to environment variables (ANTHROPIC_API_KEY, OPENAI_API_KEY, etc.)
-  2. For multi-tenant support, implement encrypted vault (e.g., Vault, AWS Secrets Manager)
-  3. Never serialize credentials in audit logs
-  4. Implement secret rotation mechanism
+**Weak NEXTAUTH_SECRET Validation:**
+- Risk: Production systems could run with default/weak secrets
+- Files: `src/auth.ts:6-12`
+- Current mitigation: Validation at startup, but only rejects exact placeholder string
+- Recommendations: Enforce minimum entropy/length requirements. Add secret rotation mechanism. Document secret generation in deployment guide.
 
-**Settings Endpoint Permission Check:**
-- Risk: Settings endpoint checks `permissions.settings?.canManage` but permission format is inconsistent
-- Files: `src/app/api/settings/route.ts` (lines 27-29, 63-65)
-- Current mitigation: Role-based check exists
-- Recommendations:
-  1. Validate permission structure matches `src/lib/check-permissions.ts` patterns
-  2. Use centralized `hasPermission()` utility instead of direct object access
-  3. Add admin-only annotation to route
+**Sensitive Data in Audit Logs:**
+- Risk: Passwords and secrets could be logged in audit trail
+- Files: `src/lib/audit.ts:215-230`
+- Current mitigation: Basic sanitization of password fields in `sanitizeData()`
+- Recommendations: Expand sensitive field list (apiKey, token, secret, refreshToken, etc.). Add automated testing for sanitization. Consider hashing sensitive values instead of redacting.
 
-**File Upload Security Gaps:**
-- Risk: Receipt uploads accept user-supplied file names and store in predictable path structure
-- Files: `src/app/api/receipts/upload/route.ts` (lines 72-76)
-- Current mitigation: File validation exists (`validateUploadedFile`), filename is randomized
-- Recommendations:
-  1. Verify `validateUploadedFile` checks file magic bytes, not just extension
-  2. Store uploads outside web root (not accessible via `/uploads/` direct URL)
-  3. Implement access control - verify user owns receipt before serving image
-  4. Add file size limits to environment config
+**Encrypted Settings Key Rotation:**
+- Risk: Changing NEXTAUTH_SECRET invalidates all encrypted settings, returns empty strings
+- Files: `src/lib/settings.ts:48-51`
+- Current mitigation: Graceful fallback to empty string on decryption failure
+- Recommendations: Add key rotation support with versioned encryption. Provide migration tool for re-encrypting with new key. Log key change events.
 
-**Input Validation Inconsistency:**
-- Risk: Different API endpoints have varying validation rigor
-- Files: Multiple routes in `src/app/api/*/route.ts`
-- Current mitigation: Some routes use validation helpers
-- Recommendations:
-  1. Create middleware or decorator for common validation patterns
-  2. Validate numeric ranges (e.g., fiscal year month 1-12)
-  3. Validate string lengths and character sets
-  4. Centralize validation logic in `lib/validation.ts`
+**CSRF Protection Allows Missing Headers:**
+- Risk: CSRF validation passes when Origin and Referer headers are both absent
+- Files: `src/middleware.ts:100-102`
+- Current mitigation: Relies on session cookies as fallback defense
+- Recommendations: Consider requiring at least one header for state-changing requests. Add CSP headers. Document browser compatibility considerations.
+
+**File Upload Without Virus Scanning:**
+- Risk: Uploaded receipts and statements could contain malware
+- Files: `src/app/api/receipts/upload/route.ts`, `src/app/api/statements/route.ts`
+- Current mitigation: File type validation only (magic byte checking)
+- Recommendations: Integrate ClamAV or similar scanner. Sandbox file processing. Implement Content Security Policy for uploaded files.
+
+**No Session Timeout Enforcement:**
+- Risk: Sessions configured with timeout settings but not enforced server-side
+- Files: `src/lib/settings.ts:130-133`, `src/auth.ts:172-173`
+- Current mitigation: JWT maxAge set to 8 hours, but inactivity timeout not implemented
+- Recommendations: Track last activity timestamp in JWT. Validate inactivity timeout in middleware. Add client-side timeout warning.
 
 ## Performance Bottlenecks
 
-**Large Component Render Without Memoization:**
-- Problem: Settings page (1213 lines) re-renders entire UI on any state change; nested tabs with no memoization
-- Files: `src/app/admin/settings/page.tsx`
-- Cause: No `React.memo` on nested components; full tree updates on form input
-- Improvement path: Memoize tab content; use `useCallback` for handlers; consider splitting into separate routes
+**Uncached Settings File Reads:**
+- Problem: System settings read from disk on every call to `getSettings()`
+- Files: `src/lib/settings.ts:205-214`
+- Cause: No caching mechanism for settings file
+- Improvement path: Add in-memory cache with TTL. Invalidate on write. Consider moving frequently-accessed settings to database with Prisma caching.
 
-**N+1 Query Risk in Suggest API:**
-- Problem: Receipt suggestion endpoints may query all categories/POs without pagination or limits
-- Files: `src/app/api/receipts/[id]/suggest-category/route.ts`, `src/app/api/receipts/[id]/suggest-po/route.ts`
-- Cause: `findMany()` without `take()` limit
-- Improvement path: Implement pagination (limit 10-20 results), add sort by relevance, add indexes on join tables
+**N+1 Queries in Audit Log:**
+- Problem: Fetching audit logs without proper includes causes N+1 query pattern
+- Files: `src/app/api/audit-log/route.ts`, `src/app/api/audit-log/export/route.ts`
+- Cause: User data fetched separately after initial query
+- Improvement path: Use Prisma `include` for user relation. Add database indexes on `createdAt`, `userId`, `action`. Consider pagination cursor instead of offset.
 
-**Unbounded In-Memory Cache:**
-- Problem: `src/lib/cache.ts` uses simple Map with cleanup, but no maximum size limit; cache can grow unbounded
-- Files: `src/lib/cache.ts`
-- Cause: No LRU eviction or size limit
-- Improvement path: Implement max size with LRU eviction, add metrics for cache hit rate
+**Large Image Processing:**
+- Problem: Receipt image optimization happens synchronously during upload
+- Files: `src/lib/image-processing.ts`, `src/app/api/receipts/upload/route.ts`
+- Cause: Sharp image processing blocks API response
+- Improvement path: Move image processing to background job queue. Return immediately after upload. Process asynchronously. Consider edge/CDN image optimization.
 
-**Alert Status Checking on Every Request:**
-- Problem: Timeclock endpoints likely check alert status (overtime) for all entries on every API call
-- Files: `src/lib/overtime.ts` used by timeclock routes
-- Cause: Calculation complexity scales with entries in period
-- Improvement path: Cache overtime calculation results with TTL; invalidate on entry modification
+**Unindexed Queries:**
+- Problem: Several findMany queries without proper indexes
+- Files: `src/lib/transaction-matcher.ts:74,174`, `src/lib/budget-tracking.ts:124,132`, query patterns across 20+ API routes
+- Cause: SQLite has limited auto-indexing compared to PostgreSQL
+- Improvement path: Add composite indexes for common query patterns (date + status, userId + date). Use `EXPLAIN QUERY PLAN` to identify missing indexes. Monitor slow query log.
+
+**Statement Parser Memory Usage:**
+- Problem: Large CSV/Excel files loaded entirely into memory for parsing
+- Files: `src/lib/statement-parser.ts:262,437`
+- Cause: XLSX library loads full workbook into memory
+- Improvement path: Stream large files with csv-parser. Set file size limits. Process in chunks. Add memory monitoring and limits.
 
 ## Fragile Areas
 
-**Budget Amendment Transfer Logic:**
-- Files: `src/app/api/budget-amendments/route.ts` (lines 85-125)
-- Why fragile: Complex state transition with from/to budget items; uses `!.` assertions; batch queries without transaction wrapping
-- Safe modification: Add explicit transaction boundaries; validate both items exist before attempting transfer; add comprehensive test cases
-- Test coverage: Needs tests for: successful transfer, insufficient funds, missing items, concurrent transfers
+**Timeclock Configuration Pages:**
+- Files: `src/app/admin/timeclock/page.tsx`, `src/app/admin/timeclock/managers/page.tsx`
+- Why fragile: State management across multiple tabs with 30+ form fields. Easy to desync UI state from server state. Complex overtime/rounding calculations spread throughout component.
+- Safe modification: Extract each tab into separate component with isolated state. Add integration tests for workflow scenarios. Use form library (react-hook-form) for validation.
+- Test coverage: Manual testing only - no automated tests for timeclock workflows
 
-**Permission System Complexity:**
-- Files: `src/lib/check-permissions.ts`, `src/lib/permissions.ts`, multiple routes checking `.role.permissions`
-- Why fragile: Permissions stored as JSON string in database; no schema validation; format inconsistency across routes
-- Safe modification: Use centralized `hasPermission()` utility everywhere; document permission structure; add validation on role creation
-- Test coverage: Needs comprehensive permission matrix testing
+**Receipt OCR Pipeline:**
+- Files: `src/lib/ocr.ts`, `src/app/api/receipts/upload/route.ts`
+- Why fragile: Depends on external AI provider. JSON parsing with string manipulation. No retry logic for transient failures. Assumes specific JSON structure.
+- Safe modification: Add comprehensive error handling with fallbacks. Validate AI response before parsing. Add retry with exponential backoff. Log failures for debugging.
+- Test coverage: No unit tests for OCR parsing logic
 
-**Timeclock Entry Locking:**
-- Files: Timeclock approval endpoints in `src/app/api/timeclock/`
-- Why fragile: Entries must be locked after approval to prevent editing; concurrent modification risks
-- Safe modification: Add explicit version field; implement optimistic locking; validate status before modification
-- Test coverage: Needs concurrent modification test cases
+**Budget Tracking Calculations:**
+- Files: `src/lib/budget-tracking.ts`
+- Why fragile: Stored values (`encumbered`, `actualSpent`) can drift from source data. No transaction guarantees. Manual recalculation required.
+- Safe modification: Wrap recalculation in database transaction. Add validation queries to detect drift. Consider using database views instead of stored values.
+- Test coverage: No tests for budget recalculation logic
+
+**AI Provider Auto-Detection:**
+- Files: `src/lib/ai/provider.ts:39-55`
+- Why fragile: Fallback logic based on environment variable existence. Silent failures if multiple providers configured incorrectly. No validation of provider configuration.
+- Safe modification: Require explicit provider selection in settings. Validate configuration on save. Add health check endpoint for AI provider connectivity.
+- Test coverage: No tests for provider selection logic
+
+**Settings Encryption/Decryption:**
+- Files: `src/lib/settings.ts:78-98,221-234`
+- Why fragile: Nested object traversal with `any` types. Silent failures on decryption errors. Redacted value preservation logic complex and error-prone.
+- Safe modification: Add TypeScript strict mode. Use type-safe path traversal (lodash.get/set). Add extensive logging. Test all edge cases.
+- Test coverage: No tests for encryption/redaction logic
 
 ## Scaling Limits
 
 **SQLite Database:**
-- Current capacity: Single-file SQLite suitable for ~1000 concurrent users with moderate data load; write locks become bottleneck at scale
-- Limit: Write concurrency; complex JOINs over large tables; transaction management
-- Scaling path: Migrate to PostgreSQL for multi-tenant deployments; implement connection pooling; add read replicas for reporting
+- Current capacity: Single file database, suitable for 1-250 employees
+- Limit: Concurrent writes limited. No built-in replication. Single point of failure. File size limits (~280TB theoretical, ~100GB practical).
+- Scaling path: Migrate to PostgreSQL for >250 employees. Add connection pooling. Implement read replicas. Consider Prisma Accelerate for caching.
 
-**In-Memory Cache:**
-- Current capacity: Unlimited until memory exhaustion
-- Limit: No size limit; unbounded growth with many users
-- Scaling path: Implement LRU cache with size limit; add cache metrics; consider Redis for distributed cache if needed
+**File Upload Storage:**
+- Current capacity: Local filesystem in `uploads/` directory
+- Limit: Limited by disk space. No redundancy. Difficult to scale horizontally.
+- Scaling path: Move to object storage (S3, MinIO). Add CDN for receipt images. Implement lifecycle policies for archival.
 
-**File Storage (Receipt Images):**
-- Current capacity: Local filesystem; no limit enforced; grows unbounded
-- Limit: Disk space exhaustion; no retention policy
-- Scaling path: Implement S3-compatible storage; add file cleanup job; implement soft deletion with retention period
+**In-Memory Caching:**
+- Current capacity: Simple LRU cache in application memory (`src/lib/cache.ts`)
+- Limit: Lost on restart. Not shared across instances. Limited by Node.js heap size.
+- Scaling path: Use Redis for distributed cache. Add cache warming on startup. Implement cache versioning for safe invalidation.
+
+**Session Storage:**
+- Current capacity: JWT-based sessions stored in cookies
+- Limit: 4KB cookie size limit. No server-side revocation. Can't force logout.
+- Scaling path: Use database or Redis session store. Implement token revocation list. Add session management UI for admins.
 
 ## Dependencies at Risk
 
-**NextAuth.js 5 Credentials Provider:**
-- Risk: Using basic credentials provider without multi-factor authentication support; no IP whitelisting
-- Impact: Account takeover via credential stuffing
-- Migration plan: Implement optional 2FA using TOTP (library: `speakeasy`); add failed login rate limiting; consider future Passkey support
+**Next.js 15.5.4:**
+- Risk: Beta/canary features in use (App Router still evolving)
+- Impact: Breaking changes in minor versions. Middleware API changes. Cache behavior changes.
+- Migration plan: Pin to specific version. Test thoroughly before upgrading. Follow Next.js upgrade guides. Consider staying one version behind stable.
 
-**Prisma ORM with SQLite:**
-- Risk: SQLite not recommended for production multi-user systems; limited concurrent write support
-- Impact: Scaling bottleneck; potential data corruption under load
-- Migration plan: Evaluate PostgreSQL compatibility; test migration scripts; plan staging environment tests
+**NextAuth.js 5.0.0-beta.29:**
+- Risk: Still in beta, API unstable
+- Impact: Breaking changes expected before v5 stable. Limited community support for beta issues.
+- Migration plan: Monitor v5 stable release. Prepare for migration to Auth.js rebrand. Test authentication flows thoroughly after upgrades.
 
-**Direct File System Operations:**
-- Risk: File upload/storage uses local filesystem without abstraction; NAS deployment may have path issues
-- Impact: Deployment friction; difficult to scale horizontally
-- Migration plan: Abstract file operations behind interface; implement S3 adapter; support both local and cloud storage
+**Sharp Image Processing:**
+- Risk: Native binaries required, platform-specific
+- Impact: Deployment issues on different architectures. Build failures. Missing dependencies.
+- Migration plan: Consider serverless-compatible alternatives (jimp). Use Docker for consistent build environment. Document system dependencies.
+
+**XLSX Library:**
+- Risk: Large bundle size (1MB+), security vulnerabilities in older versions
+- Impact: Slower page loads. Memory usage spikes. Known CVEs in dependency chain.
+- Migration plan: Evaluate alternatives (exceljs, xlsx-populate). Lazy load only when needed. Keep updated for security patches.
 
 ## Missing Critical Features
 
-**Audit Log Redaction:**
-- Problem: Credentials and sensitive data stored in plaintext audit logs
-- Blocks: Compliance with security standards; data protection regulations
-- Approach: Implement field-level redaction rules; mask credentials in audit payloads; add audit log viewer with permission checks
+**Database Backups:**
+- Problem: Backup/restore exists but no automated scheduling
+- Blocks: Disaster recovery, compliance requirements
+- Priority: High - data loss risk
 
-**Settings Validation Framework:**
-- Problem: No systematic validation of settings; individual fields not validated
-- Blocks: Preventing invalid configurations; data consistency
-- Approach: Implement Zod schemas for all settings sections; add client-side validation; add server-side validation
+**Audit Log Retention:**
+- Problem: Retention policy exists in settings but not enforced
+- Blocks: Compliance (GDPR, SOX), database bloat
+- Priority: Medium - compliance risk
 
-**File Storage Abstraction:**
-- Problem: Tight coupling to local filesystem for receipt images
-- Blocks: Scaling to cloud deployments; S3 integration; NAS deployment simplicity
-- Approach: Create abstract `FileStorage` interface; implement `LocalFileStorage` and `S3FileStorage` adapters; inject via DI
+**Error Monitoring:**
+- Problem: No centralized error tracking (Sentry, Rollbar)
+- Blocks: Production debugging, performance monitoring
+- Priority: Medium - operational risk
+
+**Email Notifications:**
+- Problem: Email infrastructure configured but not used for alerts
+- Blocks: Overtime alerts, approval notifications, password resets
+- Priority: Medium - user experience
+
+**Multi-Factor Authentication:**
+- Problem: Only username/password authentication supported
+- Blocks: Security compliance, enterprise adoption
+- Priority: Low - security enhancement
+
+**API Rate Limiting:**
+- Problem: No rate limiting on API routes (except login)
+- Blocks: DoS protection, abuse prevention
+- Priority: Medium - security risk
 
 ## Test Coverage Gaps
 
-**Settings API Validation:**
-- What's not tested: Invalid settings structure (missing required fields); numeric range validation; permission checks
-- Files: `src/app/api/settings/route.ts` and integration tests
-- Risk: Invalid data can be saved; permission bypasses undetected
+**Component Integration Tests:**
+- What's not tested: Multi-step workflows (PO creation → approval → completion), timeclock entry submission and approval flow, receipt upload and OCR processing
+- Files: All page components in `src/app/`
+- Risk: UI regressions go unnoticed until production. State management bugs. Race conditions.
 - Priority: High
 
-**Receipt Upload Error Handling:**
-- What's not tested: File validation edge cases (corrupted files, wrong magic bytes); disk write failures; race conditions
-- Files: `src/app/api/receipts/upload/route.ts`
-- Risk: Orphaned files; invalid receipts saved; inconsistent state
+**API Endpoint Tests:**
+- What's not tested: Most API routes lack unit tests, error handling paths, permission checks
+- Files: `src/app/api/**/route.ts` (only 3 test files exist for 100+ routes)
+- Risk: Business logic bugs. Security vulnerabilities. Breaking changes undetected.
 - Priority: High
 
-**Budget Amendment Transfers:**
-- What's not tested: Concurrent transfer attempts; insufficient funds scenario; circular transfers
-- Files: `src/app/api/budget-amendments/route.ts`
-- Risk: Data corruption; state inconsistency; audit trail accuracy
+**Database Layer Tests:**
+- What's not tested: Prisma queries, transaction handling, constraint violations
+- Files: `src/lib/budget-tracking.ts`, `src/lib/transaction-matcher.ts`, `src/lib/overtime.ts`
+- Risk: Data corruption. Calculation errors. Race conditions in concurrent updates.
 - Priority: High
 
-**Permission System:**
-- What's not tested: Permission matrix combinations; role inheritance; edge cases (deleted roles, orphaned permissions)
-- Files: `src/lib/check-permissions.ts`, permission-related routes
-- Risk: Permission bypass; security vulnerabilities; inconsistent access control
-- Priority: Critical
+**Settings and Configuration:**
+- What's not tested: Encryption/decryption, nested value access, redaction logic
+- Files: `src/lib/settings.ts` (0 tests)
+- Risk: Config data loss. Security breaches from improper redaction. Silent failures.
+- Priority: High
 
-**Overtime Calculations (Partially Covered):**
-- What IS tested: `src/lib/__tests__/overtime.test.ts` (514 lines) covers calculation logic well
-- What's not tested: API integration; database persistence; alert notification triggers
-- Risk: Calculation bugs in production; alert spam; calculation performance issues
+**AI Provider Abstraction:**
+- What's not tested: Provider switching, error handling, response parsing
+- Files: `src/lib/ai/provider.ts`, `src/lib/ai/adapters/*.ts`, `src/lib/ocr.ts`
+- Risk: AI failures break critical features. Vendor lock-in. Silent data quality issues.
+- Priority: Medium
+
+**Edge Cases:**
+- What's not tested: Concurrent edits, network failures, timeout scenarios, malformed inputs
+- Files: Throughout codebase
+- Risk: Undefined behavior in production. Data inconsistency. User frustration.
 - Priority: Medium
 
 ---
 
-*Concerns audit: 2026-02-04*
+*Concerns audit: 2026-02-11*

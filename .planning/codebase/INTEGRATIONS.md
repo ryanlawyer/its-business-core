@@ -1,183 +1,168 @@
 # External Integrations
 
-**Analysis Date:** 2026-02-04
+**Analysis Date:** 2026-02-11
 
 ## APIs & External Services
 
-**Claude Vision (Receipt OCR):**
-- Service: Anthropic Claude Vision API
-- What it's used for: Optical character recognition (OCR) on receipt images and PDFs
-- SDK/Client: `@anthropic-ai/sdk 0.72.1`
-- Implementation: `src/lib/ocr.ts`
-  - `extractReceiptData()` - Process image/PDF with Claude Sonnet 4
-  - `extractReceiptDataFromFile()` - Read file from disk and process
-  - `processReceiptWithRetry()` - Retry logic with exponential backoff (3 retries)
-  - Model: `claude-sonnet-4-20250514`
-  - Max tokens: 1024
-  - Supported formats: JPEG, PNG, GIF, WebP, PDF
-- Auth: Environment variable `ANTHROPIC_API_KEY`
-- Optional: System works without OCR (receipts can be manually entered)
-- Error handling: Graceful fallback if API unavailable
-  - `OCRServiceError` custom error class
-  - Non-retriable errors: UNSUPPORTED_TYPE, FILE_READ_ERROR, PARSE_ERROR
-  - API errors: Retried with exponential backoff (2s, 4s, 8s delays)
-- Configuration check: `isOCRConfigured()` function
+**AI Providers (Multi-provider architecture):**
+- Anthropic Claude - OCR, receipt categorization, text summarization
+  - SDK/Client: `@anthropic-ai/sdk` 0.72.1
+  - Adapter: `src/lib/ai/adapters/anthropic.ts`
+  - Auth: `config/system-settings.json` (ai.anthropic.apiKey, encrypted) or `ANTHROPIC_API_KEY` env var
+  - Models: claude-haiku-4-5-20251001, claude-sonnet-4-5-20250929
+- OpenAI - Alternative AI provider
+  - SDK/Client: `openai` 6.19.0
+  - Adapter: `src/lib/ai/adapters/openai-compatible.ts`
+  - Auth: `config/system-settings.json` (ai.openai.apiKey)
+  - Endpoint: https://api.openai.com/v1
+  - Models: gpt-4o (configurable)
+- OpenRouter - AI model aggregator
+  - SDK/Client: `openai` 6.19.0 (OpenAI-compatible)
+  - Adapter: `src/lib/ai/adapters/openai-compatible.ts`
+  - Auth: `config/system-settings.json` (ai.openrouter.apiKey)
+  - Endpoint: https://openrouter.ai/api/v1
+- Ollama - Local AI models
+  - SDK/Client: `openai` 6.19.0 (OpenAI-compatible)
+  - Adapter: `src/lib/ai/adapters/openai-compatible.ts`
+  - Auth: Not required (local deployment)
+  - Endpoint: Configurable base URL (ai.ollama.baseUrl)
+- Custom OpenAI-compatible - Generic provider support
+  - SDK/Client: `openai` 6.19.0
+  - Adapter: `src/lib/ai/adapters/openai-compatible.ts`
+  - Auth: Configurable API key (ai.custom.apiKey)
+  - Endpoint: Configurable base URL (ai.custom.baseUrl)
+
+**AI Provider Selection:**
+- Factory pattern in `src/lib/ai/provider.ts`
+- Lazy-loaded adapters with caching
+- Auto-detection for backward compatibility (ANTHROPIC_API_KEY → anthropic provider)
+- Usage tracking in `AIUsageLog` table via `src/lib/ai/usage-tracker.ts`
 
 ## Data Storage
 
 **Databases:**
-- SQLite (file-based)
-  - Provider: sqlite
-  - Connection URL: `file:./dev.db` (or `${UPLOAD_DIR}/dev.db`)
-  - Client: `@prisma/client 6.16.3` (Prisma ORM)
-  - Schema location: `prisma/schema.prisma`
-  - Environment variable: `DATABASE_URL`
-  - Can be deployed on NAS for shared access
-  - Suitable for 1-250 employees (SMB size)
+- SQLite 3
+  - Connection: `DATABASE_URL` env var (file:./dev.db)
+  - Client: Prisma ORM 6.16.3
+  - Location: `/app/data/` in Docker, `prisma/dev.db` in development
+  - Schema: `prisma/schema.prisma` (30+ models)
 
 **File Storage:**
-- Local filesystem only
-  - Receipt images: `./uploads/receipts/` (configurable via `UPLOAD_DIR`)
-  - Bank statements: Same directory
-  - Purchase order attachments: Same directory
-  - File naming: UUID + random suffix + original extension
-  - Validation: File type detection with `file-type` library
-  - Cleanup: No automatic cleanup implemented
+- Local filesystem
+  - Receipts: `./uploads/receipts/` (configurable via `UPLOAD_DIR` env var)
+  - Bank statements: `./uploads/statements/`
+  - Documents: `./uploads/documents/`
+  - Image optimization: Sharp library for thumbnails
+  - PDF support: pdf-lib for manipulation, image-to-pdf conversion
 
 **Caching:**
-- None explicit - Next.js ISR (Incremental Static Regeneration) not used
-- Prisma client caching handled internally
+- In-memory caching for AI provider instances (lazy-loaded singletons)
+- No external cache service (Redis, Memcached)
 
 ## Authentication & Identity
 
 **Auth Provider:**
-- Custom (Credentials-based) via NextAuth.js
-- Implementation: `src/auth.ts`
-  - Provider type: CredentialsProvider (username/password only)
-  - Flow: Email + password → bcrypt verification → JWT session
-  - Password hashing: `bcryptjs 3.0.2`
-  - Session strategy: JWT (stateless)
-  - Token expiry: Default NextAuth.js (30 days)
-  - Sign-in page: `/auth/signin`
+- NextAuth.js 5 (Credentials provider)
+  - Implementation: JWT session strategy in `src/auth.ts`
+  - Password hashing: bcryptjs
+  - Session duration: 8 hours
+  - JWT revalidation: Every 5 minutes
+  - Rate limiting: In-memory (5 attempts per 15 minutes)
+  - Secret: `NEXTAUTH_SECRET` env var
 
-**User Model:**
-- Email-based login (unique constraint on email)
-- Future support: EntraID/Azure AD (fields present but not implemented)
-  - `entraIdObjectId` field (optional)
-  - `authProvider` field (default: "local")
-- Password hashing: bcryptjs with salt rounds (default 10)
-- Session includes:
-  - User ID, email, name
-  - Role ID, role code, role name
-  - Department ID, department name
-  - JSON permissions string from role
-  - Legacy field: `role` (same as roleCode)
+**Future Support:**
+- Entra ID (Microsoft Azure AD) - Schema fields present (`entraIdObjectId`, `authProvider`)
 
 ## Monitoring & Observability
 
 **Error Tracking:**
-- None integrated
-- Manual error logging via audit logs
+- None (console.error only)
 
 **Logs:**
-- Prisma logging:
-  - Development: error and warn levels
-  - Production: error only
-  - Output: Console only (no file persistence)
-- Audit trail: `AuditLog` model
-  - Tracks: User actions, entity changes, IP address, user agent
-  - Tables: `audit_logs` in `prisma/schema.prisma`
-  - Implementation: `src/lib/audit.ts`
+- Application logs: stdout/stderr (Docker container logs)
+- Audit logs: Database table (`AuditLog`) for user actions
+- AI usage logs: Database table (`AIUsageLog`) with token counts and cost estimates
 
 ## CI/CD & Deployment
 
 **Hosting:**
-- Docker-ready (standalone output mode)
-- Typical deployment:
-  - Node.js process + SQLite on shared storage
-  - Environment-based configuration via `.env` file
-  - No platform-specific requirements
+- Self-hosted Docker containers
+  - Multi-stage build: `Dockerfile`
+  - Orchestration: `docker-compose.yml`, `docker-compose.local.yml`
+  - Entry point: `docker-entrypoint.sh` (DB migration, config initialization)
 
 **CI Pipeline:**
-- Not configured in this codebase
-- Build commands available:
-  ```bash
-  npm run lint    # ESLint validation
-  npm run build   # Next.js production build
-  npm run test    # Vitest unit tests
-  ```
+- GitHub Actions configurations present (`.github/` directory)
+
+**Container Registry:**
+- Not detected (likely private or manual build)
 
 ## Environment Configuration
 
 **Required env vars:**
-- `DATABASE_URL` - SQLite database path (critical)
-- `NEXTAUTH_SECRET` - JWT signing secret (critical)
-- `NEXTAUTH_URL` - Auth callback URL (critical for production)
+- `DATABASE_URL` - SQLite database path
+- `NEXTAUTH_SECRET` - JWT signing secret
+- `NEXTAUTH_URL` - Application base URL
 
 **Optional env vars:**
-- `ANTHROPIC_API_KEY` - Claude Vision API key (optional, required for receipt OCR)
-- `UPLOAD_DIR` - Receipt upload directory (default: `./uploads/receipts`)
-- `NODE_ENV` - Set to "production" for production deployments
+- `ANTHROPIC_API_KEY` - Anthropic API key (alternative to settings file)
+- `UPLOAD_DIR` - Receipt upload directory
+- `NEXT_PUBLIC_SHOW_DEMO_CREDENTIALS` - Show demo login on sign-in page
 
 **Secrets location:**
-- `.env` file (git-ignored)
-- Typically managed by deployment platform (Docker secrets, environment variables, vault, etc.)
-- Never committed to repository
+- Environment variables (`.env` file)
+- `config/system-settings.json` (encrypted sensitive fields via `SENSITIVE_PATHS` array in `src/lib/settings.ts`)
 
 ## Webhooks & Callbacks
 
 **Incoming:**
-- None - No webhook integrations
+- None currently implemented
+- Email receipt forwarding planned (configuration exists in settings)
 
 **Outgoing:**
-- None - No outbound webhook integrations
+- None
 
-## File Upload Handling
+## Email Integration
 
-**Storage:**
-- Files saved to local filesystem
-- Default directory: `./uploads/receipts/`
-- File naming: `[uuid]-[random]-[original-extension]`
-- Supported formats:
-  - Images: JPEG, PNG, GIF, WebP
-  - Documents: PDF
-  - Spreadsheets: XLSX (for bank statements)
+**Providers (Configurable):**
+- SMTP - Direct mail server connection
+  - Config: `email.smtp` in system-settings.json (host, port, secure, username, password, fromAddress)
+- Gmail - OAuth2 authentication
+  - Config: `email.gmail` (clientId, clientSecret, refreshToken)
+  - Transport: nodemailer with OAuth2
+- Office 365 - OAuth2 authentication
+  - Config: `email.office365` (clientId, clientSecret, tenantId, refreshToken)
+  - Transport: nodemailer with Outlook365 service
+- None - Email disabled
 
-**Processing Pipeline:**
-1. File upload → `src/app/api/receipts/upload/route.ts`
-2. Validation via `file-type` library (buffer-based MIME detection)
-3. Storage to filesystem
-4. Database record creation in `receipts` table
-5. Async OCR processing → `src/app/api/receipts/[id]/process/route.ts`
-6. OCR result stored in `rawOcrData` JSON field
+**Use Cases:**
+- Time entry rejection notifications (`sendRejectionNotification`)
+- Missed punch alerts (`sendMissedPunchNotification`)
+- Pending approval reminders (`sendPendingEntriesReminder`)
+- Fire-and-forget pattern (errors logged but do not block operations)
 
-**Image Processing:**
-- Library: `sharp 0.34.4`
-- Used for: Thumbnail generation, format conversion
-- Implementation: `src/lib/image-processing.ts`
+## Backup & Restore
 
-## Data Export
+**Backup:**
+- Custom scripts in `scripts/` directory
+- Archive format: tar.gz via `archiver` library
+- Includes: SQLite database, uploads, config files
 
-**Excel Export:**
-- Library: `xlsx 0.18.5`
-- Usage:
-  - Timeclock exports: `src/app/api/timeclock/export/route.ts`
-  - Expense reports: `src/app/api/reports/expense/excel/route.ts`
-  - Format: XLSX (Excel 2007+)
+**Restore:**
+- Shell scripts in `scripts/` (executable permissions set in Dockerfile)
 
-**PDF Export:**
-- Library: `pdf-lib 1.17.1`
-- Usage:
-  - Timeclock PDF export: `src/app/api/timeclock/export/route.ts`
-  - Image-to-PDF conversion: `src/lib/image-to-pdf.ts`
-  - Fonts: Standard PDF fonts (Helvetica, Times, Courier)
+## Third-Party Integrations
 
-**Bank Statement Parsing:**
-- Library: `xlsx 0.18.5`
-- Usage: `src/lib/statement-parser.ts`
-- Supports: XLSX bank statement imports
-- Output: Transactions stored in `bank_transactions` table
+**Planned (Future):**
+- QuickBooks/Xero - GL account mapping fields present (`glAccountCode` in schema)
+- Entra ID - Schema fields present, not implemented
+
+**Not Used:**
+- Payment processors
+- Analytics services (Google Analytics, Mixpanel)
+- CDN services
+- External auth providers (OAuth, SAML) beyond future Entra ID
 
 ---
 
-*Integration audit: 2026-02-04*
+*Integration audit: 2026-02-11*

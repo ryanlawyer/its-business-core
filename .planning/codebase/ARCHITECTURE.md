@@ -1,187 +1,192 @@
 # Architecture
 
-**Analysis Date:** 2026-02-04
+**Analysis Date:** 2026-02-11
 
 ## Pattern Overview
 
-**Overall:** Server-driven Full-Stack Next.js with Role-Based Access Control
+**Overall:** Next.js 15 App Router with API Routes (Backend-For-Frontend)
 
 **Key Characteristics:**
-- Next.js 15 App Router (client and server components)
-- RESTful API routes with permission-based access control
-- Prisma ORM for data persistence (SQLite)
-- NextAuth.js for session-based authentication
-- Role-based permission system stored as JSON in database
+- Server-first architecture with React Server Components as default
+- API Routes serve as backend layer, colocated with frontend pages
+- JWT-based authentication with NextAuth.js 5
+- Prisma ORM as data access layer over SQLite database
+- Permission-based RBAC system with granular controls
+- File-based system settings with encryption at rest
 
 ## Layers
 
 **Presentation Layer:**
-- Purpose: User interface and client-side interactivity
-- Location: `src/app/` and `src/components/`
-- Contains: Server components (pages), client components (interactive UI), shared components
-- Depends on: NextAuth session, API routes, custom hooks
-- Used by: Browser clients, external users
+- Purpose: User interface rendering and client-side interactions
+- Location: `src/app/**/page.tsx`, `src/components/*.tsx`
+- Contains: React Server Components (default), Client Components (marked with 'use client')
+- Depends on: API Routes, NextAuth session, client-side utilities
+- Used by: End users via browser
 
 **API Layer:**
-- Purpose: Handle HTTP requests, validate permissions, interact with database
-- Location: `src/app/api/`
-- Contains: Route handlers (GET, POST, PUT, DELETE), middleware
-- Depends on: Prisma client, authentication, permissions library
-- Used by: Frontend pages, external integrations
+- Purpose: HTTP endpoints for data operations, authentication, and business logic
+- Location: `src/app/api/**/route.ts`
+- Contains: Next.js Route Handlers (GET, POST, PUT, DELETE)
+- Depends on: Business logic layer, Prisma, NextAuth
+- Used by: Presentation layer (client-side fetches), external integrations
 
 **Business Logic Layer:**
-- Purpose: Core domain logic separate from HTTP concerns
-- Location: `src/lib/` (utilities like `overtime.ts`, `pay-period.ts`, `budget-tracking.ts`)
-- Contains: Calculation functions, format utilities, data transformations
-- Depends on: Prisma models, configuration
-- Used by: API routes, frontend components
+- Purpose: Domain logic, calculations, and cross-cutting concerns
+- Location: `src/lib/*.ts`, `src/lib/ai/*.ts`
+- Contains: Utilities, validation, calculations (overtime, budget tracking), AI provider abstraction
+- Depends on: Prisma client, external SDKs (Anthropic, OpenAI)
+- Used by: API routes, server components
 
 **Data Access Layer:**
-- Purpose: Database operations and data models
-- Location: `prisma/schema.prisma`, `src/lib/prisma.ts`
-- Contains: Prisma schema definitions, ORM client
-- Depends on: SQLite database
-- Used by: All application layers
+- Purpose: Database queries and schema management
+- Location: `src/lib/prisma.ts`, `prisma/schema.prisma`
+- Contains: Prisma client singleton, database schema definitions
+- Depends on: SQLite database file
+- Used by: Business logic layer, API routes
 
-**Authentication & Authorization Layer:**
-- Purpose: Session management and permission checks
-- Location: `src/lib/auth.ts`, `src/lib/check-permissions.ts`, `src/lib/client-permissions.ts`
-- Contains: NextAuth configuration, permission utility functions
-- Depends on: Prisma, bcryptjs for password hashing
-- Used by: API routes and client components
+**Authentication Layer:**
+- Purpose: User authentication, session management, permission validation
+- Location: `src/auth.ts`, `src/lib/check-permissions.ts`
+- Contains: NextAuth configuration, JWT callbacks, permission checks
+- Depends on: Prisma (user/role lookups), bcrypt (password hashing)
+- Used by: All authenticated API routes and server components
 
 ## Data Flow
 
 **User Authentication Flow:**
 
-1. User visits `/auth/signin` (server component)
-2. Credentials submitted to NextAuth credentials provider (`src/lib/auth.ts`)
-3. Provider queries user from Prisma, validates password with bcryptjs
-4. JWT token created with user data + permissions JSON
-5. Session callback enriches session object with permissions, roleCode, departmentId
-6. Client components access session via `useSession()` hook
-
-**API Request Flow (Protected Resource):**
-
-1. Client component calls API endpoint (e.g., `fetch('/api/receipts/upload')`)
-2. API route handler receives request
-3. Route calls `auth()` to get session from JWT
-4. Route calls `getUserWithPermissions()` or uses `getPermissionsFromSession()`
-5. Route calls `hasPermission()` to check access
-6. If allowed, route executes business logic, queries Prisma, logs to audit
-7. Route returns NextResponse with data or error status
-
-**Timeclock Entry Creation Flow:**
-
-1. User clicks "Clock In" on `/` (client page)
-2. Frontend calls `POST /api/timeclock/clock-in`
-3. Route validates session, checks `canClockInOut` permission
-4. Creates TimeclockEntry record in database
-5. Calculates current PayPeriod based on PayPeriodConfig
-6. Frontend calls `GET /api/timeclock` with period dates
-7. Route calculates overtime using `calculateOvertime()` utility
-8. Route returns entries + stats (regular/OT hours, pending/approved counts)
-9. Frontend renders timeclock page with period selector and entry table
-
-**Data Transformation Example (Receipts):**
-
-1. File uploaded to `POST /api/receipts/upload`
-2. File validated with `validateUploadedFile()`
-3. File written to filesystem at `./uploads/receipts/`
-4. Receipt record created in Prisma with `PENDING` status
-5. Audit log created with file metadata and user IP
-6. Future: Receipts queued for OCR processing, category suggestion
+1. User submits credentials to `/api/auth/signin` (NextAuth endpoint)
+2. `src/auth.ts` Credentials provider validates email/password against database
+3. JWT token created with user ID, role, department, permissions embedded
+4. Token stored in HTTP-only cookie (8-hour expiration)
+5. JWT re-validated every 5 minutes to refresh permissions from database
+6. Invalidated tokens (deactivated users) return null session
 
 **State Management:**
+- Server state: Database via Prisma (single source of truth)
+- Client state: React hooks (useState, useEffect) for UI state
+- Session state: NextAuth JWT tokens, accessed via `auth()` on server, `useSession()` on client
+- Settings state: File-based JSON at `config/system-settings.json`, cached in memory
 
-- **Authentication State:** NextAuth session (JWT token stored in httpOnly cookie)
-- **UI State:** React useState for client components (modal open/close, loading states)
-- **Server State:** Rendered in initial page load (server components), fetched via API (client components)
-- **Permissions State:** Embedded in session.user.permissions (JSON string), parsed client-side with `parsePermissions()`
+**Typical API Request Flow:**
+
+1. Client-side fetch to `/api/[resource]`
+2. API route calls `auth()` to validate session
+3. API route calls `getUserWithPermissions()` or `getPermissionsFromSession()`
+4. API route calls `hasPermission()` to authorize specific action
+5. Business logic in `src/lib/*` performs operation
+6. Prisma executes database queries
+7. `createAuditLog()` records action (fire-and-forget, never blocks)
+8. JSON response returned to client
 
 ## Key Abstractions
 
-**Permission Model:**
-- Purpose: Centralized role-based access control
-- Examples: `src/lib/check-permissions.ts`, `src/lib/client-permissions.ts`
-- Pattern: Permission checks return boolean, admin always has access override
-- Usage: `hasPermission(permissions, 'section', 'action')` returns true if allowed
+**Permission System:**
+- Purpose: Granular role-based access control
+- Examples: `src/lib/check-permissions.ts`, `src/lib/permissions.ts`, `src/lib/client-permissions.ts`
+- Pattern: JSON-based permission trees stored in Role.permissions, parsed per request
+- Admin override: `_isAdmin: true` grants all permissions
+- Helper functions: `hasPermission(permissions, section, permission)` returns boolean
 
-**Pay Period Calculation:**
-- Purpose: Determine business-logic boundaries for timeclock/payroll
-- Examples: `src/lib/pay-period.ts`
-- Pattern: Utilities return PayPeriod objects with startDate, endDate, label
-- Supports: Weekly, biweekly, semimonthly, monthly periods
-
-**Overtime Calculation:**
-- Purpose: Compute regular vs. overtime hours based on company thresholds
-- Examples: `src/lib/overtime.ts`
-- Pattern: Takes array of TimeclockEntry and OvertimeConfig, returns aggregated stats
-- Uses: Daily threshold (e.g., 8 hrs) and weekly threshold (e.g., 40 hrs)
+**AI Provider Abstraction:**
+- Purpose: Unified interface for multiple AI providers (Anthropic, OpenAI, OpenRouter, Ollama, custom)
+- Examples: `src/lib/ai/provider.ts`, `src/lib/ai/adapters/*.ts`
+- Pattern: Factory pattern with lazy caching, adapter pattern for provider implementations
+- Interface: `AIProvider` with `complete()`, `vision()`, `testConnection()` methods
+- Usage tracking: `trackAICall()` wrapper logs token usage to database (fire-and-forget)
 
 **Audit Logging:**
-- Purpose: Track all data mutations for compliance and debugging
+- Purpose: Compliance and change tracking for all sensitive operations
 - Examples: `src/lib/audit.ts`
-- Pattern: `createAuditLog()` called after every create/update/delete
-- Records: User ID, action, entity type, before/after changes, IP, user agent
+- Pattern: Fire-and-forget async logging that never blocks operations
+- Captures: userId, action, entityType, entityId, changes (before/after), IP, user agent
+- Error handling: Audit failures logged to console but don't throw errors
 
-**File Validation:**
-- Purpose: Ensure uploaded files are safe and match expected types
-- Examples: `src/lib/file-validation.ts`
-- Pattern: Validates MIME type, size limits, checks file signatures
-- Used by: Receipt upload, purchase order receipts, bank statement imports
+**Budget Tracking:**
+- Purpose: Real-time budget calculations with cached stored values
+- Examples: `src/lib/budget-tracking.ts`
+- Pattern: Denormalized counters (encumbered, actualSpent) updated on PO status changes
+- Recalculation: Background job via API endpoint `/api/budget-items/recalculate`
+
+**Overtime Calculation:**
+- Purpose: CA labor law-compliant overtime tracking (daily + weekly)
+- Examples: `src/lib/overtime.ts`
+- Pattern: Pure functions that take entries and config, return categorized minutes
+- Rules: >8 hours/day = daily OT, >40 hours/week = weekly OT (non-overlapping)
 
 ## Entry Points
 
-**Web Application Root:**
+**Main Application:**
 - Location: `src/app/layout.tsx`
-- Triggers: Browser navigation to `/`
-- Responsibilities: Root layout with SessionProvider, fonts, metadata, background effects
+- Triggers: All page requests
+- Responsibilities: HTML shell, font loading, SessionProvider wrapper, Navbar rendering
 
-**Authentication Entry:**
-- Location: `src/app/auth/signin/page.tsx`
-- Triggers: Unauthenticated user access, manual signout
-- Responsibilities: Credential form, login logic, error handling
-
-**Dashboard/Timeclock:**
+**Home Page:**
 - Location: `src/app/page.tsx`
-- Triggers: Authenticated user access to `/`
-- Responsibilities: Display timeclock stats, manage clock in/out, show period entries
+- Triggers: Root path `/`
+- Responsibilities: Dashboard/landing page for authenticated users
 
-**Admin Panel:**
-- Location: `src/app/admin/` (multiple sub-routes)
-- Triggers: User with admin/manager role
-- Responsibilities: System configuration, user management, report generation
+**Authentication:**
+- Location: `src/auth.ts` (NextAuth config), `/api/auth/[...nextauth]/route.ts`
+- Triggers: Login attempts, session validation
+- Responsibilities: Credentials validation, JWT generation, rate limiting (5 attempts per 15 min)
 
-**API Gateway:**
-- Location: `src/app/api/[resource]/route.ts`
-- Triggers: Client HTTP requests
-- Responsibilities: Auth check, permission validation, data operation, audit logging
+**Standalone Clock Interface:**
+- Location: `src/app/(standalone)/clock/page.tsx`
+- Triggers: `/clock` route (route group excludes Navbar)
+- Responsibilities: Kiosk-mode timeclock for shared devices
+
+**Initial Setup Wizard:**
+- Location: `src/app/setup/page.tsx`, `src/app/setup/layout.tsx`
+- Triggers: First-run detection via `src/lib/setup-status.ts`
+- Responsibilities: Organization setup, admin account creation, integration configuration
 
 ## Error Handling
 
-**Strategy:** Consistent HTTP status codes with JSON error responses
+**Strategy:** Defensive error handling with graceful degradation
 
 **Patterns:**
+- API routes: try/catch with appropriate HTTP status codes (400, 401, 403, 404, 500)
+- Database operations: Prisma errors caught and logged, generic error messages returned to client
+- Audit logging: All errors caught internally, never propagate to caller
+- AI operations: `AINotConfiguredError` thrown when provider not configured
+- File operations: Existence checks before reading settings files
+- Permission checks: Default-deny (missing permissions = false)
 
-- **401 Unauthorized:** No session present → `return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })`
-- **403 Forbidden:** Permission check fails → `return NextResponse.json({ error: 'Forbidden' }, { status: 403 })`
-- **400 Bad Request:** Invalid input (missing file, invalid data) → includes details in error field
-- **500 Internal Server Error:** Uncaught exceptions → logged to console, generic error to client
-- **Client-side:** Try/catch blocks around fetch calls, console.error logging, UI state for loading/error
+**Client-side:**
+- Fetch errors: Caught in component, display user-friendly message
+- Loading states: Skeleton UI while async data loads
+- Empty states: Dedicated empty state components when no data exists
 
 ## Cross-Cutting Concerns
 
-**Logging:** `console.error()` for errors, `console.log()` for debug (dev mode only). Audit logs use `createAuditLog()`.
+**Logging:** Console logging in development, error-only in production (Prisma log config)
 
-**Validation:** File validation in `src/lib/file-validation.ts`. Permission validation in `check-permissions.ts`. Input validation inline in API routes.
+**Validation:**
+- API input: Manual validation in route handlers (no schema library currently)
+- Form validation: `react-hook-form` in client components
+- File validation: `src/lib/file-validation.ts` for uploads (type, size, magic byte checks)
 
-**Authentication:** NextAuth session required for all API routes (except public endpoints like `/api/settings/public`). Client components guard with `useSession()` and conditional rendering.
+**Authentication:**
+- NextAuth.js session-based with JWT strategy
+- `auth()` helper used in all protected API routes and server components
+- Session cookie: HTTP-only, secure, 8-hour expiration, automatic renewal
+- Permission re-validation: Every 5 minutes via JWT callback
 
-**Authorization:** Two-layer system: API routes check permissions server-side, client components use permission flags to hide UI elements and prevent premature requests.
+**Encryption:**
+- Passwords: bcrypt hashing (10 rounds) at user creation/update
+- Secrets: AES-256-GCM encryption for sensitive settings fields (API keys, tokens)
+- Encryption key: Derived from NEXTAUTH_SECRET via scrypt
 
-**Data Consistency:** Prisma handles ACID transactions implicitly. Manual transaction management in critical flows (e.g., budget amendments).
+**Rate Limiting:**
+- Login attempts: In-memory Map tracking (5 attempts per 15 minutes per email)
+- No global rate limiting on API routes (appliance deployment model)
+
+**Caching:**
+- AI provider: Singleton cached by configuration hash in `src/lib/ai/provider.ts`
+- System settings: In-memory cache, invalidated on write in `src/lib/settings.ts`
+- Prisma client: Global singleton to prevent connection exhaustion
 
 ---
 
-*Architecture analysis: 2026-02-04*
+*Architecture analysis: 2026-02-11*

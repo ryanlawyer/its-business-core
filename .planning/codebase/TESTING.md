@@ -1,88 +1,129 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-02-04
+**Analysis Date:** 2026-02-11
 
 ## Test Framework
 
 **Runner:**
 - Vitest 4.0.18
 - Config: `vitest.config.ts`
-- Globals enabled (`globals: true`)
-- Node environment (`environment: 'node'`)
 
 **Assertion Library:**
-- Vitest built-in expect (Vitest provides expect globally via globals)
+- Vitest built-in assertions (Jest-compatible API)
+- Imports: `import { describe, it, expect, vi, beforeEach } from 'vitest'`
 
 **Run Commands:**
 ```bash
-npm run test              # Run all tests once
-npm run test:watch       # Watch mode for development
-npm run test -- --coverage  # With coverage report (if configured)
+npm run test              # Run all tests
+npm run test:watch        # Watch mode
 ```
 
 ## Test File Organization
 
 **Location:**
-- Co-located in `__tests__` directories next to source code
-- Pattern: `src/lib/__tests__/overtime.test.ts`
+- Co-located in `__tests__` directories within source tree
+- Pattern: `src/lib/__tests__/*.test.ts`
 
 **Naming:**
-- `[module].test.ts` suffix for test files
-- Matches the module being tested (e.g., `overtime.ts` → `overtime.test.ts`)
+- `*.test.ts` for all test files
+- No `.spec.ts` files found in src (only in node_modules)
+- File names match tested module: `overtime.test.ts` tests `overtime.ts`
 
 **Structure:**
 ```
 src/
-  lib/
-    overtime.ts
-    __tests__/
-      overtime.test.ts  # Tests for overtime module
+├── lib/
+│   ├── __tests__/
+│   │   ├── overtime.test.ts
+│   │   ├── setup-status.test.ts
+│   │   └── setup-api.test.ts
+│   ├── overtime.ts
+│   └── setup-status.ts
 ```
 
 ## Test Structure
 
 **Suite Organization:**
 ```typescript
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-describe('calculateOvertime', () => {
-  describe('when config is null', () => {
-    it('returns all time as regular', () => {
-      // Arrange
-      const entries = [createEntry('user1', '2024-01-15T08:00:00', 600)];
-
-      // Act
-      const result = calculateOvertime(entries, null);
-
-      // Assert
-      expect(result.employees['user1'].regularMinutes).toBe(600);
-    });
+describe('module-name', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  describe('daily overtime', () => {
-    it('calculates daily OT when exceeding daily threshold', () => {
-      // Arrange, Act, Assert...
+  describe('functionName', () => {
+    it('describes expected behavior in plain English', () => {
+      // Arrange
+      const input = createTestData();
+
+      // Act
+      const result = functionUnderTest(input);
+
+      // Assert
+      expect(result).toBe(expected);
+    });
+
+    it('handles edge case', () => {
+      // Test implementation
     });
   });
 });
 ```
 
 **Patterns:**
-- Top-level `describe` for function being tested
-- Nested `describe` for scenarios/contexts
-- `it` for individual test cases
-- Arrange-Act-Assert (AAA) pattern within each test
-- Descriptive test names starting with action verb: "calculates", "handles", "returns", "skips"
+- Nested `describe` blocks for grouping related tests
+- One top-level describe per module
+- Inner describe blocks per function or feature area
+- `beforeEach` hooks for test isolation (clearing mocks)
+- Explicit test names describing behavior, not implementation
 
 ## Mocking
 
-**Framework:** Vitest built-in mocking (no external mock library required for this codebase)
+**Framework:** Vitest mocking (`vi`)
 
-**Patterns (from src/lib/__tests__/overtime.test.ts):**
-
-**Helper Functions (not true mocks, but test doubles):**
+**Patterns:**
 ```typescript
-// Helper to create mock entries
+// Mock external modules at top of file
+vi.mock('@/lib/prisma', () => ({
+  prisma: {
+    systemConfig: {
+      findUnique: vi.fn(),
+      upsert: vi.fn(),
+    },
+  },
+}));
+
+// Import after mock definition
+import { prisma } from '@/lib/prisma';
+
+// Type-safe mock manipulation
+vi.mocked(prisma.systemConfig.findUnique).mockResolvedValue({
+  id: '1',
+  key: 'setup_complete',
+  value: 'true',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+});
+```
+
+**What to Mock:**
+- Prisma client (database access)
+- External service calls (AI providers, email)
+- File system operations
+- Date/time when testing time-sensitive logic
+
+**What NOT to Mock:**
+- Pure business logic functions
+- Type definitions
+- Constants and enums
+- Helper functions under test
+
+## Fixtures and Factories
+
+**Test Data:**
+```typescript
+// Helper functions for creating test data
 function createEntry(
   userId: string,
   clockIn: string,
@@ -100,7 +141,6 @@ function createEntry(
   };
 }
 
-// Helper to create mock config
 function createConfig(
   dailyThreshold: number | null,
   weeklyThreshold: number | null
@@ -117,104 +157,69 @@ function createConfig(
     updatedAt: new Date(),
   };
 }
-
-// Helper with optional fields
-function createConfigWithAlerts(
-  dailyThreshold: number | null,
-  weeklyThreshold: number | null,
-  alertBeforeDaily: number | null,
-  alertBeforeWeekly: number | null
-): OvertimeConfig {
-  return { ...createConfig(...), alertBeforeDaily, alertBeforeWeekly };
-}
-```
-
-**What to Mock:**
-- External service calls (not done in current test suite)
-- Database operations (not done in current test suite - overtime.ts is pure)
-- Time/dates (not done - tests use fixed dates directly)
-
-**What NOT to Mock:**
-- Pure functions (calculate, transform, validate logic)
-- Type/interface implementations
-- Simple utility functions
-
-## Fixtures and Factories
-
-**Test Data:**
-
-Current approach uses helper functions defined at module level:
-
-```typescript
-function createEntry(
-  userId: string,
-  clockIn: string,
-  durationMinutes: number
-): TimeclockEntryForCalculation {
-  // Creates realistic test data with all required fields
-}
-
-function createConfig(
-  dailyThreshold: number | null,
-  weeklyThreshold: number | null
-): OvertimeConfig {
-  // Creates config with sensible defaults
-}
 ```
 
 **Location:**
-- Defined at top level of test file
-- Reused across multiple test suites within same file
-- Not extracted to separate fixtures file (current project scale doesn't require it)
-
-**Pattern:**
-- Factory functions that accept key parameters
-- Fill in realistic defaults for other fields
-- Generate unique IDs where needed (e.g., `Math.random().toString(36)`)
+- Defined inline at top of test file
+- Scoped to individual test files (no shared fixture directory)
 
 ## Coverage
 
-**Requirements:** Not enforced (no coverage threshold in vitest.config.ts)
+**Requirements:** None enforced
 
 **View Coverage:**
 ```bash
-npm run test -- --coverage    # If coverage plugin is installed
+# No explicit coverage command configured
+# Vitest supports coverage via --coverage flag
+npm run test -- --coverage
 ```
-
-**Current Status:** One test file exists (`src/lib/__tests__/overtime.test.ts`), coverage for overtime calculations only. Most of the codebase (API routes, components, pages) has no tests.
 
 ## Test Types
 
 **Unit Tests:**
-- Scope: Individual functions and their outputs
-- Approach: Test each function in isolation with various inputs
-- Location: `src/lib/__tests__/overtime.test.ts` (515 lines)
-- Example: `calculateOvertime` tested with various entry combinations and configurations
+- Pure function testing with mocked dependencies
+- Focus on business logic (overtime calculation, validation)
+- Example: `src/lib/__tests__/overtime.test.ts` (515 lines, comprehensive)
 
 **Integration Tests:**
-- Not currently implemented
-- Would be needed for: API routes, database operations, multi-module flows
+- Not currently used for API routes
+- No E2E tests detected
 
 **E2E Tests:**
-- Not currently implemented
-- Framework: Could use Playwright or Cypress (not configured)
+- Not used
+- Playwright installed as dev dependency but no test files found
 
 ## Common Patterns
 
 **Async Testing:**
-Currently not present in test suite (overtime calculations are synchronous).
-
-When needed, pattern would be:
 ```typescript
-it('async operation', async () => {
-  const result = await asyncFunction();
-  expect(result).toBe(expectedValue);
+it('returns false when setup_complete record does not exist', async () => {
+  vi.mocked(prisma.systemConfig.findUnique).mockResolvedValue(null);
+
+  const result = await isSetupComplete();
+
+  expect(result).toBe(false);
+  expect(prisma.systemConfig.findUnique).toHaveBeenCalledWith({
+    where: { key: 'setup_complete' },
+  });
 });
 ```
 
 **Error Testing:**
-Negative cases tested within normal test suites:
+```typescript
+// Not demonstrated in current test files
+// Typical pattern would be:
+it('throws error when validation fails', () => {
+  expect(() => validate(invalidData)).toThrow('Validation failed');
+});
 
+// For async errors:
+it('rejects when API call fails', async () => {
+  await expect(fetchData()).rejects.toThrow('Network error');
+});
+```
+
+**Edge Cases Tested:**
 ```typescript
 describe('edge cases', () => {
   it('handles empty entries array', () => {
@@ -226,109 +231,83 @@ describe('edge cases', () => {
   });
 
   it('skips entries without clockOut', () => {
-    const config = createConfig(480, null);
     const activeEntry: TimeclockEntryForCalculation = {
       id: 'entry-1',
       userId: 'user1',
       clockIn: new Date('2024-01-15T08:00:00'),
-      clockOut: null,  // <-- Edge case
+      clockOut: null,
       duration: null,
       status: 'pending',
     };
 
     const result = calculateOvertime([activeEntry], config);
+
     expect(Object.keys(result.employees)).toHaveLength(0);
   });
 });
 ```
 
-## Test Comprehensiveness
+## Test Quality Characteristics
 
-**Overtime Module Coverage (src/lib/__tests__/overtime.test.ts):**
+**Comprehensive Coverage:**
+- `overtime.test.ts` covers 13 test suites with 30+ test cases
+- Tests cover happy path, edge cases, boundary conditions, and multi-user scenarios
 
-Total: 63 test cases across 5 describe blocks
+**Descriptive Test Names:**
+- Names describe expected behavior: `'returns false when setup_complete record does not exist'`
+- Not implementation-focused: avoid names like `'calls findUnique with correct params'`
 
-**Test Breakdown:**
+**Arrange-Act-Assert Pattern:**
+- Setup test data (arrange)
+- Execute function under test (act)
+- Verify expectations (assert)
 
-1. **calculateOvertime - null config (2 tests)**
-   - Null config returns all time as regular
-   - Both thresholds null returns all time as regular
+**Test Isolation:**
+- `beforeEach` clears all mocks
+- Each test creates its own test data
+- No shared mutable state between tests
 
-2. **calculateOvertime - daily overtime (4 tests)**
-   - Exceeds daily threshold
-   - Multiple entries same day
-   - Entries under threshold
-   - Multiple days correctly aggregated
+## Configuration
 
-3. **calculateOvertime - weekly overtime (2 tests)**
-   - Exceeds weekly threshold
-   - Weekly under threshold
-
-4. **calculateOvertime - combined daily+weekly (2 tests)**
-   - Both types calculated correctly
-   - Weekly OT added on top of daily OT
-
-5. **calculateOvertime - multiple employees (1 test)**
-   - Separate calculations per employee
-   - Correct aggregation
-
-6. **calculateOvertime - edge cases (3 tests)**
-   - Empty entries array
-   - Entries without clockOut (active entries)
-   - Entries without duration
-
-7. **calculateDailyMinutes (2 tests)**
-   - Calculates minutes for specific day
-   - Returns 0 for day with no entries
-
-8. **calculateWeeklyMinutes (2 tests)**
-   - Calculates minutes for week
-   - Excludes other weeks
-
-9. **checkAlertStatus - null/disabled (2 tests)**
-   - Null config returns null
-   - Both thresholds disabled returns null
-
-10. **checkAlertStatus - daily alerts (4 tests)**
-    - Not exceeded/approaching
-    - Approaching threshold
-    - Exceeded threshold
-    - Includes active minutes
-
-11. **checkAlertStatus - weekly alerts (3 tests)**
-    - Not exceeded/approaching
-    - Approaching threshold
-    - Exceeded threshold
-
-12. **checkAlertStatus - combined alerts (1 test)**
-    - Both thresholds with alert windows
-
-13. **checkAlertStatus - edge cases (3 tests)**
-    - No alert threshold set
-    - Empty entries
-    - Active minutes with empty entries
-
-**Assertion Patterns Used:**
-- `.toBe()`: Exact value matching
-- `.toHaveLength()`: Array/object length checking
-- Direct property assertion chains
-
-## Quick Testing Commands
-
-```bash
-# Run tests once
-npm run test
-
-# Watch mode (recommended for development)
-npm run test:watch
-
-# Run specific file
-npm run test -- overtime.test.ts
-
-# Run with verbose output
-npm run test -- --reporter=verbose
+**Vitest Config (`vitest.config.ts`):**
+```typescript
+export default defineConfig({
+  test: {
+    globals: true,        // Makes expect, describe, it available globally
+    environment: 'node',  // Node environment (not jsdom)
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),  // Match tsconfig paths
+    },
+  },
+});
 ```
+
+**Key Settings:**
+- `globals: true` - No need to import `describe`, `it`, `expect` (though tests still import them explicitly)
+- `environment: 'node'` - Server-side code testing (not DOM testing)
+- Path alias `@` configured to match TypeScript config
+
+## Current Test Coverage
+
+**Files with Tests:**
+- `src/lib/__tests__/overtime.test.ts` - Comprehensive overtime calculation logic (515 lines)
+- `src/lib/__tests__/setup-status.test.ts` - Setup state management (81 lines)
+- `src/lib/__tests__/setup-api.test.ts` - Existence noted in find results
+
+**Files Without Tests:**
+- API routes (no route tests detected)
+- React components (no component tests detected)
+- Most utility functions in `src/lib/`
+- Client-side hooks
+
+**Testing Philosophy:**
+- Focus on complex business logic (overtime, budget tracking)
+- Mock external dependencies (database, APIs)
+- Test edge cases and boundary conditions
+- Prefer isolated unit tests over integration tests
 
 ---
 
-*Testing analysis: 2026-02-04*
+*Testing analysis: 2026-02-11*

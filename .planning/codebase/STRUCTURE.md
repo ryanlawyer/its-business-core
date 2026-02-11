@@ -1,243 +1,252 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-02-04
+**Analysis Date:** 2026-02-11
 
 ## Directory Layout
 
 ```
 its-business-core/
+├── prisma/                     # Database schema and migrations
+├── public/                     # Static assets
 ├── src/
-│   ├── app/                          # Next.js App Router (pages + API routes)
-│   │   ├── layout.tsx                # Root layout with SessionProvider, fonts
-│   │   ├── page.tsx                  # Timeclock dashboard (authenticated users)
-│   │   ├── auth/
-│   │   │   └── signin/page.tsx       # Login page
-│   │   ├── admin/                    # Admin-only pages
-│   │   │   ├── users/
-│   │   │   ├── roles/
-│   │   │   ├── departments/
-│   │   │   ├── timeclock/            # Timeclock admin config
-│   │   │   │   ├── managers/         # Manager assignment
-│   │   │   │   └── templates/        # Export templates
-│   │   │   ├── budget-*              # Budget management pages
-│   │   │   ├── audit-log/
-│   │   │   ├── fiscal-years/
-│   │   │   └── settings/
-│   │   ├── receipts/                 # Receipt management pages
-│   │   ├── vendors/
-│   │   ├── purchase-orders/
-│   │   ├── statements/
-│   │   ├── reports/
-│   │   ├── budget-items/
-│   │   ├── api/                      # RESTful API routes
-│   │   │   ├── auth/[...nextauth]/   # NextAuth configuration
-│   │   │   ├── users/
-│   │   │   ├── roles/
-│   │   │   ├── timeclock/            # Timeclock endpoints
-│   │   │   │   ├── clock-in/
-│   │   │   │   ├── clock-out/
-│   │   │   │   ├── [id]/approve
-│   │   │   │   ├── [id]/reject
-│   │   │   │   ├── export/
-│   │   │   │   ├── config/
-│   │   │   │   ├── templates/
-│   │   │   │   ├── pending/
-│   │   │   │   ├── alerts/
-│   │   │   │   └── team/
-│   │   │   ├── receipts/
-│   │   │   ├── budget-*/
-│   │   │   ├── vendors/
-│   │   │   ├── departments/
-│   │   │   ├── statements/
-│   │   │   └── settings/
-│   │   └── globals.css               # Global Tailwind styles
-│   ├── lib/                          # Shared utilities and business logic
-│   │   ├── prisma.ts                 # Prisma client singleton
-│   │   ├── auth.ts                   # NextAuth configuration
-│   │   ├── check-permissions.ts      # Server-side permission utilities
-│   │   ├── client-permissions.ts     # Client-side permission parsing
-│   │   ├── permissions.ts            # Permission definitions and helpers
-│   │   ├── overtime.ts               # Overtime calculation logic
-│   │   ├── pay-period.ts             # Pay period calculation logic
-│   │   ├── audit.ts                  # Audit logging utilities
-│   │   ├── file-validation.ts        # File upload validation
-│   │   ├── budget-tracking.ts        # Budget balance calculations
-│   │   ├── transaction-matcher.ts    # Bank statement matching
-│   │   ├── statement-parser.ts       # CSV/OFX parsing
-│   │   ├── categorizer.ts            # AI receipt categorization
-│   │   ├── ocr.ts                    # Receipt OCR processing
-│   │   ├── image-processing.ts       # Image resize/thumbnail
-│   │   ├── image-to-pdf.ts           # Multi-image PDF generation
-│   │   ├── cache.ts                  # In-memory caching
-│   │   ├── currency.ts               # Currency utilities
-│   │   ├── settings.ts               # System settings
-│   │   └── __tests__/                # Unit tests
-│   │       └── overtime.test.ts      # Overtime calculation tests
-│   ├── components/                   # Reusable React components
-│   │   ├── Navbar.tsx                # Main navigation (client component)
-│   │   ├── SessionProvider.tsx       # NextAuth session wrapper
-│   │   ├── OvertimeAlertBanner.tsx   # Overtime warnings
-│   │   ├── ReceiptUpload.tsx         # Receipt upload widget
-│   │   ├── BudgetItemSelector.tsx    # Budget selection component
-│   │   ├── POLineItemModal.tsx       # PO line item editor
-│   │   ├── OvertimeIndicator.tsx     # Visual OT indicator
-│   │   └── receipts/
-│   │       ├── ReceiptCard.tsx       # Receipt display card
-│   │       └── ReceiptUpload.tsx     # Detailed receipt upload
-│   ├── types/                        # TypeScript type definitions
-│   └── auth.ts                       # NextAuth configuration export
-├── prisma/
-│   ├── schema.prisma                 # Database schema definition
-│   ├── seed.ts                       # Database seeding script
-│   └── migrations/                   # Database migration files
-├── public/                           # Static assets
-│   └── favicon.ico
-├── package.json                      # Dependencies, scripts
-├── tsconfig.json                     # TypeScript configuration
-├── tailwind.config.ts                # Tailwind CSS configuration
-├── next.config.ts                    # Next.js configuration
-└── .env / .env.example               # Environment variables
+│   ├── app/                    # Next.js App Router (pages + API routes)
+│   │   ├── (standalone)/       # Route group (no Navbar)
+│   │   ├── admin/              # Admin-only pages
+│   │   ├── api/                # API Routes (backend)
+│   │   ├── auth/               # Authentication pages
+│   │   ├── setup/              # Initial setup wizard
+│   │   ├── timeclock/          # Timeclock user pages
+│   │   ├── *.tsx               # Feature pages (POs, receipts, etc.)
+│   │   ├── layout.tsx          # Root layout
+│   │   └── page.tsx            # Home/dashboard
+│   ├── components/             # Shared React components
+│   ├── hooks/                  # Custom React hooks
+│   ├── lib/                    # Business logic and utilities
+│   │   ├── ai/                 # AI provider abstraction
+│   │   └── __tests__/          # Unit tests
+│   ├── types/                  # TypeScript type definitions
+│   └── auth.ts                 # NextAuth configuration
+├── config/                     # Runtime configuration (gitignored)
+└── package.json                # Dependencies and scripts
 ```
 
 ## Directory Purposes
 
-**`src/app/`:**
-- Purpose: Next.js App Router - all pages and API routes
-- Contains: Page components (.tsx), API route handlers (route.ts), layouts
-- Key files: `page.tsx` (file-based routes), `layout.tsx` (nested layouts), `globals.css` (styles)
+**`prisma/`:**
+- Purpose: Database schema, migrations, and seed scripts
+- Contains: `schema.prisma` (Prisma schema), migration history
+- Key files: `schema.prisma` (single source of truth for database structure)
 
-**`src/app/admin/`:**
-- Purpose: Admin configuration pages (users, roles, departments, timeclock config)
-- Contains: Admin-only pages with full edit/delete capabilities
-- Key files: `src/app/admin/timeclock/page.tsx` (timeclock admin dashboard), `src/app/admin/roles/manage/page.tsx` (role editor)
+**`src/app/`:**
+- Purpose: Next.js App Router pages and API routes
+- Contains: Page components, layouts, route handlers
+- Key files: `layout.tsx` (root layout), `page.tsx` (home page)
 
 **`src/app/api/`:**
-- Purpose: RESTful API endpoints for all data operations
-- Contains: Route handlers following Next.js conventions (`route.ts`)
-- Key files: `src/app/api/timeclock/route.ts` (GET timeclock data), `src/app/api/receipts/upload/route.ts` (file upload)
+- Purpose: Backend API endpoints (RESTful routes)
+- Contains: Route handlers organized by resource (users, purchase-orders, receipts, etc.)
+- Key files: `*/route.ts` (GET/POST/PUT/DELETE handlers)
 
-**`src/lib/`:**
-- Purpose: Shared business logic, utilities, helpers
-- Contains: Pure functions for calculations, data transformations, validation
-- Key files: `src/lib/overtime.ts` (core OT calculation), `src/lib/pay-period.ts` (period boundaries), `src/lib/check-permissions.ts` (auth)
+**`src/app/admin/`:**
+- Purpose: Admin-only pages requiring elevated permissions
+- Contains: Budget management, departments, roles, audit log, timeclock config
+- Key files: `settings/page.tsx`, `roles/page.tsx`, `audit-log/page.tsx`
+
+**`src/app/(standalone)/`:**
+- Purpose: Pages without standard navigation (route group)
+- Contains: Kiosk-mode timeclock interface
+- Key files: `clock/page.tsx` (standalone clock-in/out interface)
 
 **`src/components/`:**
-- Purpose: Reusable React components (server and client)
-- Contains: UI components, form components, layout components
-- Key files: `src/components/Navbar.tsx` (navigation), `src/components/SessionProvider.tsx` (auth wrapper)
+- Purpose: Reusable React components
+- Contains: UI components, form elements, specialized widgets
+- Key files: `Navbar.tsx`, `SessionProvider.tsx`, `ReceiptUploader.tsx`
 
-**`prisma/`:**
-- Purpose: Database schema and migrations
-- Contains: Prisma schema definitions, migration history
-- Key files: `prisma/schema.prisma` (all data models), `prisma/seed.ts` (initial data)
+**`src/lib/`:**
+- Purpose: Business logic, utilities, and shared functions
+- Contains: Database client, permissions, calculations, file handling, AI integration
+- Key files: `prisma.ts`, `check-permissions.ts`, `audit.ts`, `settings.ts`
+
+**`src/lib/ai/`:**
+- Purpose: AI provider abstraction and task implementations
+- Contains: Provider adapters, task functions (categorize, summarize), usage tracking
+- Key files: `provider.ts`, `adapters/anthropic.ts`, `adapters/openai-compatible.ts`
+
+**`config/`:**
+- Purpose: Runtime configuration (not checked into git)
+- Contains: `system-settings.json` (encrypted sensitive settings)
+- Key files: `system-settings.json` (AI keys, email config, organization settings)
 
 ## Key File Locations
 
 **Entry Points:**
-- `src/app/layout.tsx`: Root HTML structure, global setup
-- `src/app/page.tsx`: Timeclock dashboard (main user-facing page)
-- `src/app/auth/signin/page.tsx`: Login page
-- `src/app/api/auth/[...nextauth]/route.ts`: Authentication handler
+- `src/app/layout.tsx`: Root layout with fonts, SessionProvider, Navbar
+- `src/app/page.tsx`: Home page/dashboard
+- `src/auth.ts`: NextAuth configuration and providers
+- `src/app/api/auth/[...nextauth]/route.ts`: NextAuth API handler
 
 **Configuration:**
-- `src/lib/auth.ts`: NextAuth credential provider, JWT/session callbacks
-- `prisma/schema.prisma`: All database models and relationships
-- `tailwind.config.ts`: Tailwind CSS variables (colors, spacing, fonts)
-- `next.config.ts`: Next.js runtime configuration
-- `.env`: Database URL, upload directory, API keys
+- `prisma/schema.prisma`: Database schema
+- `package.json`: Dependencies and scripts
+- `tsconfig.json`: TypeScript configuration
+- `tailwind.config.ts`: Tailwind CSS configuration
+- `next.config.ts`: Next.js configuration
+- `config/system-settings.json`: Runtime settings (gitignored)
 
 **Core Logic:**
-- `src/lib/overtime.ts`: Overtime calculation algorithm
-- `src/lib/pay-period.ts`: Pay period boundary calculations
-- `src/lib/check-permissions.ts`: Permission validation (server-side)
-- `src/lib/client-permissions.ts`: Permission parsing (client-side)
-- `src/lib/audit.ts`: Audit log creation and context extraction
+- `src/lib/prisma.ts`: Prisma client singleton
+- `src/lib/check-permissions.ts`: Permission validation functions
+- `src/lib/audit.ts`: Audit logging system
+- `src/lib/settings.ts`: System settings management with encryption
+- `src/lib/ai/provider.ts`: AI provider factory
 
 **Testing:**
-- `src/lib/__tests__/overtime.test.ts`: Unit tests for OT calculation
+- `src/lib/__tests__/overtime.test.ts`: Overtime calculation tests
+- `src/lib/__tests__/setup-status.test.ts`: Setup status detection tests
+- `src/lib/__tests__/setup-api.test.ts`: Setup API tests
 
 ## Naming Conventions
 
 **Files:**
-- Page components: `page.tsx` (e.g., `src/app/receipts/page.tsx`)
-- API routes: `route.ts` (e.g., `src/app/api/users/route.ts`)
-- Client components: `.tsx` with `'use client'` directive (e.g., `src/components/Navbar.tsx`)
-- Server utilities: `.ts` (e.g., `src/lib/audit.ts`)
-- Test files: `.test.ts` or `.test.tsx` (e.g., `overtime.test.ts`)
+- Pages: `page.tsx` (Next.js convention)
+- Layouts: `layout.tsx` (Next.js convention)
+- API routes: `route.ts` (Next.js convention)
+- Components: `PascalCase.tsx` (e.g., `Navbar.tsx`, `SessionProvider.tsx`)
+- Utilities: `kebab-case.ts` (e.g., `check-permissions.ts`, `budget-tracking.ts`)
+- Tests: `*.test.ts` (e.g., `overtime.test.ts`)
 
 **Directories:**
-- Pages follow route structure: `app/[feature]/page.tsx`
-- API endpoints follow resource structure: `api/[resource]/route.ts` or `api/[resource]/[id]/[action]/route.ts`
-- Utilities grouped by domain: `lib/overtime.ts`, `lib/budget-tracking.ts`
-- Components in feature folders: `components/receipts/`, `components/admin/`
+- API resources: `kebab-case` (e.g., `purchase-orders/`, `budget-items/`)
+- Pages: `kebab-case` (e.g., `auth/signin/`, `admin/settings/`)
+- Route groups: `(parentheses)` (e.g., `(standalone)/`)
+- Dynamic routes: `[brackets]` (e.g., `receipts/[id]/`)
 
-**Variables & Functions:**
-- camelCase: `getUserWithPermissions()`, `calculateOvertime()`, `fetchEntries()`
-- Constants: `UPPERCASE_WITH_UNDERSCORES` (e.g., `UPLOAD_DIR = './uploads/receipts'`)
-- Type names: PascalCase (e.g., `TimeclockEntry`, `PayPeriod`, `UserPermissions`)
+**Database (Prisma):**
+- Models: `PascalCase` in schema (e.g., `BudgetItem`, `PurchaseOrder`)
+- Table names: `snake_case` via `@@map()` (e.g., `budget_items`, `purchase_orders`)
+- Fields: `camelCase` in schema (e.g., `createdAt`, `budgetAmount`)
+- Enums: `SCREAMING_SNAKE_CASE` values (e.g., `POStatus.PENDING_APPROVAL`)
 
 ## Where to Add New Code
 
-**New Feature Endpoint:**
-- Primary code: `src/app/api/[feature]/route.ts` (GET/POST) or `src/app/api/[feature]/[id]/[action]/route.ts`
-- Pattern: Call `auth()`, check permissions with `hasPermission()`, query Prisma, log to audit
-- Example: `src/app/api/timeclock/clock-in/route.ts`
+**New Feature Page:**
+- Primary code: `src/app/[feature-name]/page.tsx`
+- Layout (if needed): `src/app/[feature-name]/layout.tsx`
+- Tests: `src/lib/__tests__/[feature-name].test.ts`
 
-**New Page/User Interface:**
-- Implementation: `src/app/[feature]/page.tsx`
-- Pattern: Server component by default, use `'use client'` only if interactive (forms, hooks)
-- Styling: Use Tailwind CSS utility classes, reference colors from `--accent-primary` etc. in globals.css
-- Example: `src/app/receipts/[id]/page.tsx` (receipt detail view)
+**New API Endpoint:**
+- Implementation: `src/app/api/[resource]/route.ts`
+- Nested routes: `src/app/api/[resource]/[id]/route.ts`
+- Sub-actions: `src/app/api/[resource]/[id]/[action]/route.ts`
 
-**New Business Logic Function:**
-- Implementation: `src/lib/[domain].ts`
-- Pattern: Pure function taking domain objects, returning calculated results
-- Testing: Add tests to `src/lib/__tests__/[domain].test.ts`
-- Example: `src/lib/budget-tracking.ts` (budget balance calculations)
+**New Component/Module:**
+- Shared components: `src/components/[ComponentName].tsx`
+- Feature-specific components: Colocate in `src/app/[feature]/` directory
+- Business logic: `src/lib/[module-name].ts`
 
-**Utilities and Helpers:**
-- Shared: `src/lib/` (pagination, formatting, validation)
-- Component-specific: Inline or in same file
-- Example: `src/lib/file-validation.ts` (used by multiple upload endpoints)
+**Utilities:**
+- Shared helpers: `src/lib/[utility-name].ts`
+- Type definitions: `src/types/[module].d.ts`
+- Custom hooks: `src/hooks/[hookName].ts`
+
+**Database Changes:**
+- Schema: Edit `prisma/schema.prisma`
+- Migration: Run `npx prisma migrate dev --name [description]`
+- Generate client: Auto-runs after migration, or `npx prisma generate`
+
+**AI Tasks:**
+- New AI task: `src/lib/ai/tasks/[task-name].ts`
+- New provider adapter: `src/lib/ai/adapters/[provider-name].ts`
+- Update factory: Add provider case to `src/lib/ai/provider.ts`
+
+**Admin Pages:**
+- New admin page: `src/app/admin/[feature]/page.tsx`
+- Permission-gated in Navbar via `hasPermission(permissions, section, permission)`
 
 ## Special Directories
 
-**`src/app/api/timeclock/`:**
-- Purpose: All timeclock-related endpoints (core feature)
+**`src/app/(standalone)/`:**
+- Purpose: Pages that render without the standard Navbar/layout
 - Generated: No
 - Committed: Yes
-- Key endpoints: `clock-in`, `clock-out`, `[id]/approve`, `[id]/reject`, `export`, `config`, `pending`
+- Use case: Kiosk-mode interfaces, public pages, print views
 
-**`src/app/admin/timeclock/`:**
-- Purpose: Timeclock administration pages (manager assignment, export templates)
-- Generated: No
-- Committed: Yes
-- Key pages: `managers/page.tsx` (assign managers), `templates/page.tsx` (export configs)
-
-**`prisma/migrations/`:**
-- Purpose: Database migration history
-- Generated: Yes (by `prisma migrate dev --name <name>`)
-- Committed: Yes
-- Pattern: Each file represents a schema change, numbered sequentially
-
-**`uploads/receipts/`:**
-- Purpose: Receipt image/PDF file storage
-- Generated: Yes (created on first file upload)
-- Committed: No (in .gitignore)
-- Path configuration: `UPLOAD_DIR` environment variable (default `./uploads/receipts`)
-
-**`src/types/`:**
-- Purpose: Global TypeScript type definitions
-- Generated: No
-- Committed: Yes
-- Pattern: Types for API responses, database models, utility inputs/outputs
+**`node_modules/`:**
+- Purpose: NPM dependencies
+- Generated: Yes (via `npm install`)
+- Committed: No (gitignored)
 
 **`.next/`:**
 - Purpose: Next.js build output and cache
-- Generated: Yes (by `npm run build`)
-- Committed: No (in .gitignore)
-- Contains: Compiled JavaScript, server functions, static exports
+- Generated: Yes (via `npm run build` or `npm run dev`)
+- Committed: No (gitignored)
+
+**`config/`:**
+- Purpose: Runtime configuration with encrypted secrets
+- Generated: No (created manually or by setup wizard)
+- Committed: No (gitignored - contains secrets)
+- Note: `config/system-settings.json` must exist for app to run
+
+**`prisma/.data/`:**
+- Purpose: SQLite database files
+- Generated: Yes (via `npx prisma db push` or migrations)
+- Committed: No (gitignored)
+- Production: Should be backed up regularly via Admin > Settings > Backup
+
+**`.planning/`:**
+- Purpose: GSD codebase mapping documents
+- Generated: Yes (by GSD commands)
+- Committed: Yes
+- Contains: STACK.md, ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, TESTING.md, CONCERNS.md, INTEGRATIONS.md
+
+## Route Patterns
+
+**Page Routes:**
+- Home: `/` → `src/app/page.tsx`
+- Feature list: `/[feature]` → `src/app/[feature]/page.tsx`
+- Detail view: `/[feature]/[id]` → `src/app/[feature]/[id]/page.tsx`
+- Create: `/[feature]/new` → `src/app/[feature]/new/page.tsx`
+- Admin: `/admin/[feature]` → `src/app/admin/[feature]/page.tsx`
+
+**API Routes:**
+- List/Create: `/api/[resource]` → `src/app/api/[resource]/route.ts` (GET, POST)
+- Read/Update/Delete: `/api/[resource]/[id]` → `src/app/api/[resource]/[id]/route.ts` (GET, PUT, DELETE)
+- Actions: `/api/[resource]/[id]/[action]` → `src/app/api/[resource]/[id]/[action]/route.ts` (POST)
+
+**Authentication Routes:**
+- Sign in page: `/auth/signin` → `src/app/auth/signin/page.tsx`
+- NextAuth API: `/api/auth/*` → handled by NextAuth.js via `src/app/api/auth/[...nextauth]/route.ts`
+
+## Import Patterns
+
+**Path Alias:**
+- `@/` resolves to `src/` (configured in `tsconfig.json`)
+- Example: `import { prisma } from '@/lib/prisma'`
+
+**Typical Imports in API Routes:**
+```typescript
+import { auth } from '@/auth';
+import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server';
+import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
+import { createAuditLog, getRequestContext } from '@/lib/audit';
+```
+
+**Typical Imports in Pages:**
+```typescript
+'use client';  // If client component
+import { useSession } from 'next-auth/react';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+```
+
+**Server Components (default):**
+```typescript
+import { auth } from '@/auth';
+import { prisma } from '@/lib/prisma';
+import { redirect } from 'next/navigation';
+```
 
 ---
 
-*Structure analysis: 2026-02-04*
+*Structure analysis: 2026-02-11*

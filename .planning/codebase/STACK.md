@@ -1,117 +1,115 @@
 # Technology Stack
 
-**Analysis Date:** 2026-02-04
+**Analysis Date:** 2026-02-11
 
 ## Languages
 
 **Primary:**
-- TypeScript 5 - All application code, strict mode enabled
-- JavaScript (React 19.1.0) - JSX rendering and client components
+- TypeScript 5.x - All application code (strict mode enabled)
+- JavaScript ES2017+ - Runtime target and configuration files
+
+**Secondary:**
+- SQL - SQLite database via Prisma ORM
+- Shell - Docker entrypoint and backup scripts
 
 ## Runtime
 
 **Environment:**
-- Node.js v22.22.0 - Application runtime
-- npm 10.9.4 - Package manager
-- Lockfile: `package-lock.json` present
+- Node.js 20 LTS (development and Docker)
+- Development machine: Node.js v22.22.0
+
+**Package Manager:**
+- npm (package-lock.json present)
+- Lockfile version: v3 format
 
 ## Frameworks
 
 **Core:**
-- Next.js 15.5.4 - Framework and server runtime (App Router)
-  - Server components by default
-  - API routes at `src/app/api/**`
-  - Static and dynamic pages at `src/app/**`
-
-**UI & Styling:**
-- React 19.1.0 - UI library
-- Tailwind CSS 4 - Utility-first CSS framework
-- Headless UI 2.2.9 - Unstyled, accessible components
-- Heroicons 2.2.0 - SVG icon library
-
-**Form Management:**
-- React Hook Form 7.63.0 - Form state and validation
-
-**Authentication:**
-- NextAuth.js 5.0.0-beta.29 - Session and credential-based auth
-  - Credentials provider (local login only)
-  - JWT session strategy
-  - Config: `src/auth.ts`
-
-**Database:**
-- Prisma ORM 6.16.3 - Database abstraction
-  - Client: `@prisma/client 6.16.3`
-  - CLI: `prisma 6.16.3`
-  - Schema: `prisma/schema.prisma`
-  - SQLite provider
+- Next.js 15.5.4 - Full-stack React framework with App Router
+- React 19.1.0 - UI framework
+- Prisma 6.16.3 - Database ORM and migrations
 
 **Testing:**
-- Vitest 4.0.18 - Unit test runner
-- Run commands: `npm run test` (single), `npm run test:watch` (watch mode)
+- Vitest 4.0.18 - Unit testing framework
+- Node environment for tests
 
-**Build & Development:**
-- TypeScript 5 - Type checking and compilation
-- ESLint 9 - Code linting (Next.js config)
-- PostCSS with Tailwind CSS 4 - CSS processing
-- tsx 4.20.6 - TypeScript executor for scripts
+**Build/Dev:**
+- TypeScript 5.x - Type checking and compilation
+- ESLint 9.x - Code linting (Next.js config with TypeScript rules)
+- PostCSS - CSS processing for Tailwind
+- Tailwind CSS 4.x - Utility-first CSS framework
+- tsx 4.20.6 - TypeScript execution for scripts
 
 ## Key Dependencies
 
 **Critical:**
-- `@anthropic-ai/sdk 0.72.1` - Claude Vision API for receipt OCR
-- `@prisma/client 6.16.3` - Database client and migrations
-- `bcryptjs 3.0.2` - Password hashing for authentication
-- `next-auth 5.0.0-beta.29` - Authentication system
+- `@prisma/client` 6.16.3 - Database client (SQLite)
+- `next-auth` 5.0.0-beta.29 - Authentication with JWT sessions
+- `bcryptjs` 3.0.2 - Password hashing
+
+**Infrastructure:**
+- `zod` 4.3.6 - Runtime schema validation
+- `react-hook-form` 7.63.0 - Form state management
+- `sharp` 0.34.4 - Image processing and optimization
+
+**UI Components:**
+- `@headlessui/react` 2.2.9 - Unstyled accessible components
+- `@heroicons/react` 2.2.0 - Icon library
+
+**AI/ML:**
+- `@anthropic-ai/sdk` 0.72.1 - Claude AI client for OCR and categorization
+- `openai` 6.19.0 - OpenAI SDK (multi-provider adapter for OpenAI, OpenRouter, Ollama, custom)
 
 **File Processing:**
-- `xlsx 0.18.5` - Excel file parsing and generation
-- `pdf-lib 1.17.1` - PDF creation and manipulation
-- `sharp 0.34.4` - Image processing (resizing, format conversion)
-- `file-type 21.0.0` - Detect MIME types from file buffers
+- `pdf-lib` 1.17.1 - PDF manipulation and generation
+- `file-type` 21.0.0 - MIME type detection
+- `xlsx` 0.18.5 - Excel file generation
+- `archiver` 7.0.1 - Archive creation for backups
+- `tar` 7.5.7 - Tarball compression
+
+**Communication:**
+- `nodemailer` 6.10.1 - Email notifications (SMTP, Gmail OAuth2, Office365 OAuth2)
 
 ## Configuration
 
 **Environment:**
-- `.env` file (local development)
-- `.env.example` (template with defaults)
-- Key variables:
-  - `DATABASE_URL` - SQLite file path (default: `file:./dev.db`)
-  - `NEXTAUTH_URL` - Auth callback URL (default: `http://localhost:3000`)
-  - `NEXTAUTH_SECRET` - JWT signing key (required, must be 32-byte base64)
-  - `ANTHROPIC_API_KEY` - Claude Vision API key (optional, required for OCR)
-  - `UPLOAD_DIR` - Receipt file upload directory (default: `./uploads/receipts`)
+- `.env` file for secrets (DATABASE_URL, NEXTAUTH_SECRET, NEXTAUTH_URL, UPLOAD_DIR)
+- `.env.example` template provided
+- `config/system-settings.json` for runtime settings (organization, security, AI providers, email)
+- Sensitive fields encrypted at rest in system-settings.json
 
 **Build:**
-- `tsconfig.json` - TypeScript strict mode, ES2017 target
-  - Path aliases: `@/*` → `./src/*`
-  - Incremental builds enabled
-  - Isolated modules enabled
-- `next.config.ts`:
-  - ESLint ignored during builds (configured in CLAUDE.md)
-  - TypeScript errors ignored during builds
-  - Standalone output enabled (Docker-compatible)
-- `.eslintrc` or `eslint.config.js` with Next.js rules
-- Tailwind CSS v4 with PostCSS
+- `tsconfig.json` - TypeScript configuration (strict mode, path aliases with `@/*`)
+- `next.config.ts` - Next.js config with standalone output for Docker
+- `tailwind.config.ts` - Custom design system with CSS variables
+- `postcss.config.mjs` - Tailwind CSS processing
+- `eslint.config.mjs` - FlatCompat-based ESLint config
+- `vitest.config.ts` - Test runner configuration
+
+**TypeScript:**
+- Target: ES2017
+- Module: ESNext with bundler resolution
+- Strict mode: enabled
+- Path alias: `@/*` maps to `./src/*`
 
 ## Platform Requirements
 
 **Development:**
-- Node.js v22.x
-- npm v10.x
-- Modern browser (Chrome, Firefox, Safari, Edge)
-- SQLite support (built into all OSes)
+- Node.js 20+ LTS
+- npm 9+
+- SQLite (embedded, no separate installation required)
 
 **Production:**
-- Node.js v22.x runtime
-- SQLite database file must be on shared storage (NAS) for multi-instance deployments
-- Standalone output mode for Docker/container deployment
-- 512MB minimum RAM
-- HTTPS required for secure auth cookies
+- Docker with multi-stage build support
+- Alpine Linux base image (node:20-alpine)
+- OpenSSL, SQLite, Ghostscript (for PDF operations)
+- Persistent volumes for `/app/data`, `/app/uploads`, `/app/config`
 
-**Optional Dependencies:**
-- Anthropic API account for receipt OCR
-- Local filesystem with at least 1GB for uploads directory
+**Deployment:**
+- Next.js standalone output mode
+- Docker Compose for orchestration
+- NAS-compatible (file-based SQLite database)
 
 ---
 
-*Stack analysis: 2026-02-04*
+*Stack analysis: 2026-02-11*
