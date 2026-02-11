@@ -388,14 +388,14 @@ export default function TimeclockHistoryPage() {
 
           {/* Desktop Table View */}
           <div className="hidden lg:block">
-            <table className="table">
+            <table className="table" aria-label="Time clock history">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Clock In</th>
-                  <th>Clock Out</th>
-                  <th>Duration</th>
-                  <th>Status</th>
+                  <th scope="col">Date</th>
+                  <th scope="col">Clock In</th>
+                  <th scope="col">Clock Out</th>
+                  <th scope="col">Duration</th>
+                  <th scope="col">Status</th>
                 </tr>
               </thead>
               <tbody>

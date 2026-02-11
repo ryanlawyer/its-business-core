@@ -316,31 +316,31 @@ export default function BudgetAmendmentsPage() {
 
       {/* Desktop Table View */}
       <div className="hidden lg:block table-container">
-        <table className="table">
+        <table className="table" aria-label="Budget amendments">
           <thead>
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase">
                 Date
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase">
                 Type
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase">
                 Budget Item
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase">
                 Amount
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase">
                 Previous
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase">
                 New
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase">
                 Reason
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase">
                 Created By
               </th>
             </tr>

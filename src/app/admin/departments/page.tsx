@@ -237,15 +237,15 @@ export default function DepartmentsPage() {
 
             {/* Desktop Table View */}
             <div className="hidden lg:block table-container">
-              <table className="table">
+              <table className="table" aria-label="Departments">
                 <thead>
                   <tr>
-                    <th className="text-left py-3 px-4 text-sm font-semibold">Name</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold">Description</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold">Users</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold">Budget Items</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold">Status</th>
-                    <th className="text-right py-3 px-4 text-sm font-semibold">Actions</th>
+                    <th scope="col" className="text-left py-3 px-4 text-sm font-semibold">Name</th>
+                    <th scope="col" className="text-left py-3 px-4 text-sm font-semibold">Description</th>
+                    <th scope="col" className="text-left py-3 px-4 text-sm font-semibold">Users</th>
+                    <th scope="col" className="text-left py-3 px-4 text-sm font-semibold">Budget Items</th>
+                    <th scope="col" className="text-left py-3 px-4 text-sm font-semibold">Status</th>
+                    <th scope="col" className="text-right py-3 px-4 text-sm font-semibold">Actions</th>
                   </tr>
                 </thead>
                 <tbody>

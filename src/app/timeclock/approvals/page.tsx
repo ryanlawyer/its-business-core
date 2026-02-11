@@ -708,10 +708,10 @@ export default function PendingApprovalsPage() {
 
             {/* Desktop Table View */}
             <div className="hidden lg:block">
-              <table className="table">
+              <table className="table" aria-label="Time clock approvals">
                 <thead>
                   <tr>
-                    <th style={{ width: '40px' }}>
+                    <th scope="col" style={{ width: '40px' }}>
                       <input
                         type="checkbox"
                         checked={selectedIds.size === entries.length}
@@ -719,11 +719,11 @@ export default function PendingApprovalsPage() {
                         className="w-4 h-4"
                       />
                     </th>
-                    <th>Employee</th>
-                    <th>Department</th>
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Duration</th>
+                    <th scope="col">Employee</th>
+                    <th scope="col">Department</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Time</th>
+                    <th scope="col">Duration</th>
                   </tr>
                 </thead>
                 <tbody>

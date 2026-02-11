@@ -410,12 +410,13 @@ export default function TemplateEditorPage() {
                   Column Preview
                 </label>
                 <div className="table-container">
-                  <table className="table">
+                  <table className="table" aria-label="Export template column preview">
                     <thead>
                       <tr>
                         {formColumns.map((col, index) => (
                           <th
                             key={index}
+                            scope="col"
                             className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider"
                           >
                             {col.headerName}
@@ -518,22 +519,22 @@ export default function TemplateEditorPage() {
 
             {/* Desktop Table View */}
             <div className="hidden lg:block table-container">
-              <table className="table">
+              <table className="table" aria-label="Export templates">
                 <thead>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                       Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                       Columns
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                       Default
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                       Created By
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>

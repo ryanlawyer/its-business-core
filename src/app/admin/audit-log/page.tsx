@@ -20,6 +20,12 @@ type AuditLog = {
   } | null;
 };
 
+type UserOption = {
+  id: string;
+  name: string;
+  email: string;
+};
+
 type Pagination = {
   page: number;
   limit: number;
@@ -54,17 +60,58 @@ export default function AuditLogPage() {
   });
   const [loading, setLoading] = useState(true);
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  // Users list for dropdown
+  const [users, setUsers] = useState<UserOption[]>([]);
 
   // Filters
   const [filterAction, setFilterAction] = useState('');
   const [filterEntityType, setFilterEntityType] = useState('');
   const [filterEntityId, setFilterEntityId] = useState('');
+  const [filterUserId, setFilterUserId] = useState('');
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
 
+  const hasActiveFilters =
+    filterAction !== '' ||
+    filterEntityType !== '' ||
+    filterEntityId !== '' ||
+    filterUserId !== '' ||
+    filterStartDate !== '' ||
+    filterEndDate !== '';
+
+  const clearAllFilters = () => {
+    setFilterAction('');
+    setFilterEntityType('');
+    setFilterEntityId('');
+    setFilterUserId('');
+    setFilterStartDate('');
+    setFilterEndDate('');
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
+  // Fetch users for the dropdown on mount
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch('/api/users?limit=500');
+        const data = await res.json();
+        if (res.ok && data.users) {
+          setUsers(
+            data.users.map((u: UserOption) => ({ id: u.id, name: u.name, email: u.email }))
+          );
+        }
+      } catch (error) {
+        console.error('Error fetching users for filter:', error);
+      }
+    };
+    fetchUsers();
+  }, []);
+
   useEffect(() => {
     fetchLogs();
-  }, [pagination.page, filterAction, filterEntityType, filterEntityId, filterStartDate, filterEndDate]);
+  }, [pagination.page, filterAction, filterEntityType, filterEntityId, filterUserId, filterStartDate, filterEndDate]);
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -77,6 +124,7 @@ export default function AuditLogPage() {
       if (filterAction) params.append('action', filterAction);
       if (filterEntityType) params.append('entityType', filterEntityType);
       if (filterEntityId) params.append('entityId', filterEntityId);
+      if (filterUserId) params.append('userId', filterUserId);
       if (filterStartDate) params.append('startDate', filterStartDate);
       if (filterEndDate) params.append('endDate', filterEndDate);
 
@@ -97,14 +145,36 @@ export default function AuditLogPage() {
   };
 
   const handleExport = async () => {
-    const params = new URLSearchParams();
-    if (filterAction) params.append('action', filterAction);
-    if (filterEntityType) params.append('entityType', filterEntityType);
-    if (filterEntityId) params.append('entityId', filterEntityId);
-    if (filterStartDate) params.append('startDate', filterStartDate);
-    if (filterEndDate) params.append('endDate', filterEndDate);
+    setExporting(true);
+    try {
+      const params = new URLSearchParams();
+      if (filterAction) params.append('action', filterAction);
+      if (filterEntityType) params.append('entityType', filterEntityType);
+      if (filterEntityId) params.append('entityId', filterEntityId);
+      if (filterUserId) params.append('userId', filterUserId);
+      if (filterStartDate) params.append('startDate', filterStartDate);
+      if (filterEndDate) params.append('endDate', filterEndDate);
 
-    window.location.href = `/api/audit-log/export?${params}`;
+      const res = await fetch(`/api/audit-log/export?${params}`);
+      if (!res.ok) {
+        console.error('Export failed:', res.statusText);
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `audit-log-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting audit logs:', error);
+    } finally {
+      setExporting(false);
+    }
   };
 
   const formatDateTime = (dateString: string) => {
@@ -140,19 +210,52 @@ export default function AuditLogPage() {
           </div>
           <button
             onClick={handleExport}
-            className="btn btn-success flex items-center gap-2"
+            disabled={logs.length === 0 || exporting}
+            className="btn btn-success flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            Export CSV
+            {exporting ? 'Exporting...' : 'Export CSV'}
           </button>
         </div>
 
         {/* Filters */}
         <div className="card p-6 mb-6">
-          <h2 className="section-title mb-4">Filters</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="section-title">Filters</h2>
+            {hasActiveFilters && (
+              <button
+                onClick={clearAllFilters}
+                className="btn btn-secondary text-sm flex items-center gap-1"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Clear All Filters
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div>
+              <label className="form-label">User</label>
+              <select
+                value={filterUserId}
+                onChange={(e) => {
+                  setFilterUserId(e.target.value);
+                  setPagination({ ...pagination, page: 1 });
+                }}
+                className="form-input form-select w-full"
+              >
+                <option value="">All Users</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div>
               <label className="form-label">Action</label>
               <select
@@ -306,15 +409,15 @@ export default function AuditLogPage() {
 
               {/* Desktop Table View */}
               <div className="hidden lg:block table-container">
-                <table className="table">
+                <table className="table" aria-label="Audit log entries">
                   <thead>
                     <tr>
-                      <th className="text-left py-3 px-4 text-sm font-semibold">Timestamp</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold">Action</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold">Entity</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold">User</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold">IP Address</th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold">Details</th>
+                      <th scope="col" className="text-left py-3 px-4 text-sm font-semibold">Timestamp</th>
+                      <th scope="col" className="text-left py-3 px-4 text-sm font-semibold">Action</th>
+                      <th scope="col" className="text-left py-3 px-4 text-sm font-semibold">Entity</th>
+                      <th scope="col" className="text-left py-3 px-4 text-sm font-semibold">User</th>
+                      <th scope="col" className="text-left py-3 px-4 text-sm font-semibold">IP Address</th>
+                      <th scope="col" className="text-right py-3 px-4 text-sm font-semibold">Details</th>
                     </tr>
                   </thead>
                   <tbody>

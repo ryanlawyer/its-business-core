@@ -418,14 +418,14 @@ export default function TeamOverviewPage() {
 
             {/* Desktop Table View */}
             <div className="hidden lg:block">
-              <table className="table">
+              <table className="table" aria-label="Team time clock summary">
                 <thead>
                   <tr>
-                    <th>Employee</th>
-                    <th>Department</th>
-                    <th>Regular Hours</th>
-                    <th>OT Hours</th>
-                    <th>Status</th>
+                    <th scope="col">Employee</th>
+                    <th scope="col">Department</th>
+                    <th scope="col">Regular Hours</th>
+                    <th scope="col">OT Hours</th>
+                    <th scope="col">Status</th>
                   </tr>
                 </thead>
                 <tbody>

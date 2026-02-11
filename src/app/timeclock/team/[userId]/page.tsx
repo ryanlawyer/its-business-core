@@ -561,10 +561,10 @@ export default function EmployeeDetailPage() {
 
             {/* Desktop Table View */}
             <div className="hidden lg:block">
-              <table className="table">
+              <table className="table" aria-label="Employee time clock entries">
                 <thead>
                   <tr>
-                    <th style={{ width: '40px' }}>
+                    <th scope="col" style={{ width: '40px' }}>
                       <input
                         type="checkbox"
                         checked={selectableCount > 0 && selectedIds.size === selectableCount}
@@ -573,12 +573,12 @@ export default function EmployeeDetailPage() {
                         className="w-4 h-4"
                       />
                     </th>
-                    <th>Date</th>
-                    <th>Clock In</th>
-                    <th>Clock Out</th>
-                    <th>Duration</th>
-                    <th>Status</th>
-                    <th></th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Clock In</th>
+                    <th scope="col">Clock Out</th>
+                    <th scope="col">Duration</th>
+                    <th scope="col">Status</th>
+                    <th scope="col"></th>
                   </tr>
                 </thead>
                 <tbody>

@@ -828,13 +828,13 @@ export default function TimeclockPage() {
 
                 {/* Desktop Table View */}
                 <div className="hidden lg:block">
-                  <table className="table">
+                  <table className="table" aria-label="Recent time clock entries">
                     <thead>
                       <tr>
-                        <th>Clock In</th>
-                        <th>Clock Out</th>
-                        <th>Duration</th>
-                        <th>Status</th>
+                        <th scope="col">Clock In</th>
+                        <th scope="col">Clock Out</th>
+                        <th scope="col">Duration</th>
+                        <th scope="col">Status</th>
                       </tr>
                     </thead>
                     <tbody>

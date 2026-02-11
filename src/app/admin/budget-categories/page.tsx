@@ -396,28 +396,28 @@ export default function BudgetCategoriesPage() {
 
         {/* Desktop Table View */}
         <div className="hidden lg:block table-container">
-          <table className="table">
+          <table className="table" aria-label="Budget categories">
             <thead>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase">
                   Code
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase">
                   Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase">
                   Parent
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase">
                   GL Account
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase">
                   Budget Items
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase">
                   Status
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium uppercase">
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase">
                   Actions
                 </th>
               </tr>

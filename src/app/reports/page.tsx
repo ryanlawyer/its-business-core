@@ -432,19 +432,19 @@ export default function ReportsPage() {
                   {/* Desktop Table View */}
                   <div className="hidden lg:block overflow-x-auto">
                     <div className="table-container">
-                      <table className="table">
+                      <table className="table" aria-label="Spending by month">
                         <thead>
                           <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                               Month
                             </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
+                            <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
                               Total Amount
                             </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
+                            <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
                               Receipts
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
 
                             </th>
                           </tr>

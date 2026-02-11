@@ -382,13 +382,13 @@ export default function ManagerAssignmentsPage() {
 
           {/* Desktop Table View */}
           <div className="hidden lg:block table-container">
-            <table className="table">
+            <table className="table" aria-label="Department manager assignments">
               <thead>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                     Department
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                     Assigned Managers
                   </th>
                 </tr>

@@ -398,22 +398,22 @@ export default function FiscalYearsPage() {
 
         {/* Desktop Table View */}
         <div className="hidden lg:block table-container">
-          <table className="table">
+          <table className="table" aria-label="Fiscal years">
             <thead>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Year
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Period
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Closed Info
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Actions
                 </th>
               </tr>

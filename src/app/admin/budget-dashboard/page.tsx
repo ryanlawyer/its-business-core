@@ -273,17 +273,17 @@ export default function BudgetDashboardPage() {
 
           {/* Desktop Table View */}
           <div className="hidden lg:block table-container">
-            <table className="table">
+            <table className="table" aria-label="Budget variance analysis">
               <thead>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Code</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Description</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase">Budget</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase">Encumbered</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase">Actual</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase">Remaining</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase">Variance</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase">Variance %</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase">Code</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase">Description</th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase">Budget</th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase">Encumbered</th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase">Actual</th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase">Remaining</th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase">Variance</th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase">Variance %</th>
                 </tr>
               </thead>
               <tbody>
@@ -362,16 +362,16 @@ export default function BudgetDashboardPage() {
 
           {/* Desktop Table View */}
           <div className="hidden lg:block table-container">
-            <table className="table">
+            <table className="table" aria-label="Department budget breakdown">
               <thead>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Department</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase">Budget</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase">Encumbered</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase">Actual Spent</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase">Remaining</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase">Items</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase">Utilization</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase">Department</th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase">Budget</th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase">Encumbered</th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase">Actual Spent</th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase">Remaining</th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase">Items</th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase">Utilization</th>
                 </tr>
               </thead>
               <tbody>
@@ -456,14 +456,14 @@ export default function BudgetDashboardPage() {
 
           {/* Desktop Table View */}
           <div className="hidden lg:block table-container">
-            <table className="table">
+            <table className="table" aria-label="Year-over-year budget comparison">
               <thead>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Fiscal Year</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase">Total Budget</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase">Total Spent</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase">Utilization %</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase">YoY Change</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase">Fiscal Year</th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase">Total Budget</th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase">Total Spent</th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase">Utilization %</th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase">YoY Change</th>
                 </tr>
               </thead>
               <tbody>

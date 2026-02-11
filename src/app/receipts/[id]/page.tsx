@@ -754,19 +754,19 @@ export default function ReceiptDetailPage({ params }: { params: Promise<{ id: st
 
                 {/* Desktop Table View */}
                 <div className="hidden lg:block table-container">
-                  <table className="table">
+                  <table className="table" aria-label="Receipt line items">
                     <thead>
                       <tr>
-                        <th className="text-left py-3 px-4 text-xs font-semibold">
+                        <th scope="col" className="text-left py-3 px-4 text-xs font-semibold">
                           Description
                         </th>
-                        <th className="text-right py-3 px-4 text-xs font-semibold">
+                        <th scope="col" className="text-right py-3 px-4 text-xs font-semibold">
                           Qty
                         </th>
-                        <th className="text-right py-3 px-4 text-xs font-semibold">
+                        <th scope="col" className="text-right py-3 px-4 text-xs font-semibold">
                           Unit Price
                         </th>
-                        <th className="text-right py-3 px-4 text-xs font-semibold">
+                        <th scope="col" className="text-right py-3 px-4 text-xs font-semibold">
                           Total
                         </th>
                       </tr>

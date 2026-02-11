@@ -430,15 +430,15 @@ export default function ExportPage() {
 
               {/* Desktop Table View */}
               <div className="hidden lg:block table-container">
-                <table className="table">
+                <table className="table" aria-label="Time clock export preview">
                   <thead>
                     <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium uppercase">Name</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium uppercase">Dept</th>
-                      <th className="px-4 py-2 text-right text-xs font-medium uppercase">Regular</th>
-                      <th className="px-4 py-2 text-right text-xs font-medium uppercase">Daily OT</th>
-                      <th className="px-4 py-2 text-right text-xs font-medium uppercase">Weekly OT</th>
-                      <th className="px-4 py-2 text-right text-xs font-medium uppercase">Total</th>
+                      <th scope="col" className="px-4 py-2 text-left text-xs font-medium uppercase">Name</th>
+                      <th scope="col" className="px-4 py-2 text-left text-xs font-medium uppercase">Dept</th>
+                      <th scope="col" className="px-4 py-2 text-right text-xs font-medium uppercase">Regular</th>
+                      <th scope="col" className="px-4 py-2 text-right text-xs font-medium uppercase">Daily OT</th>
+                      <th scope="col" className="px-4 py-2 text-right text-xs font-medium uppercase">Weekly OT</th>
+                      <th scope="col" className="px-4 py-2 text-right text-xs font-medium uppercase">Total</th>
                     </tr>
                   </thead>
                   <tbody>

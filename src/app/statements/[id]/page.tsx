@@ -544,25 +544,25 @@ export default function StatementDetailPage({ params }: { params: Promise<{ id: 
 
         {/* Desktop Table View */}
         <div className="hidden lg:block table-container">
-          <table className="table">
+          <table className="table" aria-label="Statement transactions">
             <thead>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Description
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
                   Amount
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Matched To
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
