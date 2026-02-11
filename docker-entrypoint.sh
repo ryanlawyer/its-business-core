@@ -5,6 +5,7 @@ echo "Starting ITS Business Core..."
 
 # Set database path to persistent volume
 export DATABASE_URL="file:/app/data/database.db"
+export SQLITE_URL="file:/app/data/database.db"
 
 # Generate or load NEXTAUTH_SECRET
 SECRETS_FILE="/app/data/.secrets"
