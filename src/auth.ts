@@ -186,7 +186,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     callbackUrl: {
       name: "authjs.callback-url",
       options: {
-        httpOnly: true,
+        httpOnly: false,
         sameSite: "lax",
         path: "/",
         secure: false,
@@ -195,7 +195,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     csrfToken: {
       name: "authjs.csrf-token",
       options: {
-        httpOnly: true,
+        httpOnly: false,
         sameSite: "lax",
         path: "/",
         secure: false,
