@@ -22,6 +22,11 @@ type Receipt = {
   _count?: { lineItems: number };
 };
 
+type Vendor = {
+  id: string;
+  name: string;
+};
+
 const statusOptions = [
   { value: '', label: 'All Statuses' },
   { value: 'PENDING', label: 'Pending' },
@@ -49,6 +54,32 @@ export default function ReceiptsPage() {
     totalPages: 0,
   });
 
+  // Advanced filter state
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filterVendorId, setFilterVendorId] = useState('');
+  const [filterStartDate, setFilterStartDate] = useState('');
+  const [filterEndDate, setFilterEndDate] = useState('');
+  const [minAmount, setMinAmount] = useState('');
+  const [maxAmount, setMaxAmount] = useState('');
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [exportLoading, setExportLoading] = useState(false);
+
+  // Fetch vendors list on mount
+  useEffect(() => {
+    async function fetchVendors() {
+      try {
+        const res = await fetch('/api/vendors?limit=500');
+        if (res.ok) {
+          const data = await res.json();
+          setVendors(data.vendors || []);
+        }
+      } catch (error) {
+        console.error('Error fetching vendors:', error);
+      }
+    }
+    fetchVendors();
+  }, []);
+
   const fetchReceipts = useCallback(async () => {
     try {
       setLoading(true);
@@ -59,6 +90,11 @@ export default function ReceiptsPage() {
 
       if (statusFilter) params.append('status', statusFilter);
       if (debouncedSearch) params.append('search', debouncedSearch);
+      if (filterVendorId) params.append('vendorId', filterVendorId);
+      if (filterStartDate) params.append('startDate', filterStartDate);
+      if (filterEndDate) params.append('endDate', filterEndDate);
+      if (minAmount) params.append('minAmount', minAmount);
+      if (maxAmount) params.append('maxAmount', maxAmount);
 
       const res = await fetch(`/api/receipts?${params}`);
       const data = await res.json();
@@ -69,7 +105,7 @@ export default function ReceiptsPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, statusFilter, debouncedSearch]);
+  }, [currentPage, statusFilter, debouncedSearch, filterVendorId, filterStartDate, filterEndDate, minAmount, maxAmount]);
 
   useEffect(() => {
     fetchReceipts();
@@ -88,6 +124,54 @@ export default function ReceiptsPage() {
     // Refresh the receipts list
     fetchReceipts();
     // Keep the upload dialog open for more uploads
+  };
+
+  const handleClearFilters = () => {
+    setFilterVendorId('');
+    setFilterStartDate('');
+    setFilterEndDate('');
+    setMinAmount('');
+    setMaxAmount('');
+    setStatusFilter('');
+    setSearchTerm('');
+    setCurrentPage(1);
+  };
+
+  const hasActiveFilters = filterVendorId || filterStartDate || filterEndDate || minAmount || maxAmount;
+
+  const handleExportCSV = async () => {
+    try {
+      setExportLoading(true);
+      const params = new URLSearchParams();
+      params.append('format', 'csv');
+
+      if (statusFilter) params.append('status', statusFilter);
+      if (debouncedSearch) params.append('search', debouncedSearch);
+      if (filterVendorId) params.append('vendorId', filterVendorId);
+      if (filterStartDate) params.append('startDate', filterStartDate);
+      if (filterEndDate) params.append('endDate', filterEndDate);
+      if (minAmount) params.append('minAmount', minAmount);
+      if (maxAmount) params.append('maxAmount', maxAmount);
+
+      const res = await fetch(`/api/receipts/export?${params}`);
+      if (!res.ok) {
+        throw new Error('Export failed');
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `receipts-export-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error exporting receipts:', error);
+    } finally {
+      setExportLoading(false);
+    }
   };
 
   const calculateTotals = () => {
@@ -152,7 +236,7 @@ export default function ReceiptsPage() {
           </div>
         )}
 
-        {/* Filters */}
+        {/* Search and Filter Controls */}
         <div className="card p-4 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -196,6 +280,142 @@ export default function ReceiptsPage() {
               </select>
             </div>
           </div>
+
+          {/* Filter and Export buttons */}
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={() => setFiltersOpen(!filtersOpen)}
+              className={`btn ${filtersOpen || hasActiveFilters ? 'btn-primary' : 'btn-secondary'} flex items-center`}
+            >
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z"
+                />
+              </svg>
+              Filters
+              {hasActiveFilters && (
+                <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-bold rounded-full bg-white/20">
+                  !
+                </span>
+              )}
+            </button>
+            <button
+              onClick={handleExportCSV}
+              disabled={exportLoading}
+              className="btn btn-secondary flex items-center disabled:opacity-50"
+            >
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+                />
+              </svg>
+              {exportLoading ? 'Exporting...' : 'Export CSV'}
+            </button>
+          </div>
+
+          {/* Collapsible Advanced Filters */}
+          {filtersOpen && (
+            <div className="mt-4 pt-4 border-t border-[var(--border)]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                  <label className="form-label">Vendor</label>
+                  <select
+                    value={filterVendorId}
+                    onChange={(e) => {
+                      setFilterVendorId(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="form-input form-select"
+                  >
+                    <option value="">All Vendors</option>
+                    {vendors.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="form-label">Start Date</label>
+                  <input
+                    type="date"
+                    value={filterStartDate}
+                    onChange={(e) => {
+                      setFilterStartDate(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="form-input"
+                  />
+                </div>
+                <div>
+                  <label className="form-label">End Date</label>
+                  <input
+                    type="date"
+                    value={filterEndDate}
+                    onChange={(e) => {
+                      setFilterEndDate(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="form-input"
+                  />
+                </div>
+                <div>
+                  <label className="form-label">Min Amount</label>
+                  <input
+                    type="number"
+                    value={minAmount}
+                    onChange={(e) => {
+                      setMinAmount(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                    className="form-input"
+                  />
+                </div>
+                <div>
+                  <label className="form-label">Max Amount</label>
+                  <input
+                    type="number"
+                    value={maxAmount}
+                    onChange={(e) => {
+                      setMaxAmount(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                    className="form-input"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button
+                    onClick={handleClearFilters}
+                    className="btn btn-secondary w-full"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Receipt Grid */}
@@ -216,7 +436,7 @@ export default function ReceiptsPage() {
                 />
               </svg>
               <p className="empty-state-title">
-                {searchTerm || statusFilter
+                {searchTerm || statusFilter || hasActiveFilters
                   ? 'No receipts match your filters'
                   : 'No receipts yet'}
               </p>

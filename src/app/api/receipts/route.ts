@@ -40,6 +40,8 @@ export async function GET(req: NextRequest) {
     const budgetCategoryId = searchParams.get('budgetCategoryId');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
+    const minAmount = searchParams.get('minAmount');
+    const maxAmount = searchParams.get('maxAmount');
     const sortBy = searchParams.get('sortBy') || 'createdAt';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
 
@@ -79,6 +81,16 @@ export async function GET(req: NextRequest) {
         { merchantName: { contains: search } },
         { notes: { contains: search } },
       ];
+    }
+
+    if (minAmount || maxAmount) {
+      whereClause.totalAmount = {};
+      if (minAmount) {
+        whereClause.totalAmount.gte = parseFloat(minAmount);
+      }
+      if (maxAmount) {
+        whereClause.totalAmount.lte = parseFloat(maxAmount);
+      }
     }
 
     // Get total count
