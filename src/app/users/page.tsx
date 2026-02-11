@@ -46,6 +46,8 @@ export default function UsersPage() {
     totalPages: 0,
   });
 
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
     email: '',
     name: '',
@@ -176,6 +178,28 @@ export default function UsersPage() {
     }
   };
 
+  const handleDelete = async (userId: string) => {
+    if (!window.confirm('Are you sure you want to delete this user? This will anonymize their data and deactivate their account.')) {
+      return;
+    }
+
+    setDeletingUserId(userId);
+    try {
+      const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
+      if (res.ok) {
+        fetchUsers();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Error deleting user');
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert('Error deleting user');
+    } finally {
+      setDeletingUserId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -300,13 +324,25 @@ export default function UsersPage() {
                         <span className="text-[var(--text-primary)]">{user.department?.name || '-'}</span>
                       </div>
                     </div>
-                    <div className="flex justify-end">
+                    <div className="flex justify-end gap-2">
                       <button
                         onClick={() => openModal(user)}
                         className="btn btn-secondary btn-sm"
                       >
                         Edit
                       </button>
+                      {user.id !== session?.user?.id && (
+                        <button
+                          onClick={() => handleDelete(user.id)}
+                          disabled={deletingUserId === user.id}
+                          className="btn btn-sm text-red-600 hover:text-red-800 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Delete user"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -314,25 +350,25 @@ export default function UsersPage() {
 
               {/* Desktop Table View */}
               <div className="hidden lg:block table-container">
-                <table className="table">
+                <table className="table" aria-label="Users">
                   <thead>
                     <tr>
-                      <th className="text-left py-3 px-4 text-sm font-semibold">
+                      <th scope="col" className="text-left py-3 px-4 text-sm font-semibold">
                         Name
                       </th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold">
+                      <th scope="col" className="text-left py-3 px-4 text-sm font-semibold">
                         Email
                       </th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold">
+                      <th scope="col" className="text-left py-3 px-4 text-sm font-semibold">
                         Role
                       </th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold">
+                      <th scope="col" className="text-left py-3 px-4 text-sm font-semibold">
                         Department
                       </th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold">
+                      <th scope="col" className="text-left py-3 px-4 text-sm font-semibold">
                         Status
                       </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold">
+                      <th scope="col" className="text-right py-3 px-4 text-sm font-semibold">
                         Actions
                       </th>
                     </tr>
@@ -370,12 +406,26 @@ export default function UsersPage() {
                           </span>
                         </td>
                         <td className="py-3 px-4 text-sm text-right">
-                          <button
-                            onClick={() => openModal(user)}
-                            className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
-                          >
-                            Edit
-                          </button>
+                          <div className="flex items-center justify-end gap-3">
+                            <button
+                              onClick={() => openModal(user)}
+                              className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
+                            >
+                              Edit
+                            </button>
+                            {user.id !== session?.user?.id && (
+                              <button
+                                onClick={() => handleDelete(user.id)}
+                                disabled={deletingUserId === user.id}
+                                className="text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Delete user"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import SessionProvider from "@/components/SessionProvider";
+import { ToastProvider } from "@/contexts/ToastContext";
 import Navbar from "@/components/Navbar";
 
 // Display font - elegant modern serif for headlines
@@ -50,7 +51,14 @@ export default function RootLayout({
       className={`${instrumentSerif.variable} ${plusJakarta.variable} ${jetbrainsMono.variable}`}
     >
       <body className="font-body antialiased">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-[var(--accent-primary)] focus:text-white focus:rounded-lg focus:outline-none"
+        >
+          Skip to main content
+        </a>
         <SessionProvider>
+          <ToastProvider>
           {/* Ambient background effects */}
           <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
             <div
@@ -70,9 +78,10 @@ export default function RootLayout({
           </div>
 
           <Navbar />
-          <main className="relative pb-20 lg:pb-0">
+          <main id="main-content" className="relative pb-20 lg:pb-0">
             {children}
           </main>
+          </ToastProvider>
         </SessionProvider>
       </body>
     </html>

@@ -133,6 +133,28 @@ export default function BudgetItemsPage() {
     }
   };
 
+  const handleDelete = async (item: BudgetItem) => {
+    if (!window.confirm('Are you sure you want to delete this budget item? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/budget-items/${item.id}`, {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        fetchItems();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Error deleting budget item');
+      }
+    } catch (error) {
+      console.error('Error deleting budget item:', error);
+      alert('Error deleting budget item');
+    }
+  };
+
   const handleSearch = () => {
     setCurrentPage(1);
     fetchItems();
@@ -272,14 +294,27 @@ export default function BudgetItemsPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="text-right ml-4">
-                      <div className="text-sm text-[var(--text-secondary)]">Total Budget</div>
-                      <div className="text-xl font-bold text-[var(--text-primary)]">
-                        ${item.budgetAmount.toFixed(2)}
+                    <div className="flex items-start gap-2 ml-4">
+                      <div className="text-right">
+                        <div className="text-sm text-[var(--text-secondary)]">Total Budget</div>
+                        <div className="text-xl font-bold text-[var(--text-primary)]">
+                          ${item.budgetAmount.toFixed(2)}
+                        </div>
+                        <div className="text-xs text-[var(--text-muted)]">
+                          FY {item.fiscalYear}
+                        </div>
                       </div>
-                      <div className="text-xs text-[var(--text-muted)]">
-                        FY {item.fiscalYear}
-                      </div>
+                      {canManage && (
+                        <button
+                          onClick={() => handleDelete(item)}
+                          className="p-1.5 text-[var(--text-muted)] hover:text-[var(--error)] hover:bg-[var(--error-subtle)] rounded transition-colors"
+                          title="Delete budget item"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
                   </div>
 

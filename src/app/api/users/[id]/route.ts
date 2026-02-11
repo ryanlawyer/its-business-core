@@ -117,3 +117,67 @@ export async function PUT(
     );
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const perms = getPermissionsFromSession(session);
+    if (!perms || !hasPermission(perms.permissions, 'users', 'canManage')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { id } = await params;
+
+    // Prevent self-deletion
+    if (id === session.user.id) {
+      return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 403 });
+    }
+
+    // Check user exists
+    const existingUser = await prisma.user.findUnique({ where: { id } });
+    if (!existingUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Soft-delete: anonymize and deactivate (preserves timeclock entries)
+    await prisma.user.update({
+      where: { id },
+      data: {
+        isActive: false,
+        email: `deleted-${id}@deleted.local`,
+        name: 'Deleted User',
+        password: '',
+      },
+    });
+
+    // Audit log
+    const { ipAddress, userAgent } = getRequestContext(request);
+    await createAuditLog({
+      userId: session.user.id,
+      action: 'USER_DELETED',
+      entityType: 'User',
+      entityId: id,
+      changes: {
+        before: { email: existingUser.email, name: existingUser.name, isActive: existingUser.isActive },
+        after: { email: `deleted-${id}@deleted.local`, name: 'Deleted User', isActive: false },
+      },
+      ipAddress,
+      userAgent,
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
