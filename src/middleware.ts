@@ -110,6 +110,26 @@ export default auth(async (req) => {
     return NextResponse.next();
   }
 
+  // Rate limiting by IP
+  const { apiLimiter, pageLimiter } = await import("@/lib/rate-limit");
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+    req.headers.get("x-real-ip") ||
+    "unknown";
+  const isApiRoute = pathname.startsWith("/api");
+  const limiter = isApiRoute ? apiLimiter : pageLimiter;
+  const { allowed, retryAfterMs } = limiter.check(ip);
+
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(retryAfterMs) },
+      }
+    );
+  }
+
   // CSRF validation for state-changing requests
   if (!validateCsrf(req, pathname)) {
     return NextResponse.json(

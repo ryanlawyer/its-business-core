@@ -89,6 +89,25 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      // Validate all extracted paths stay within extractPath
+      const resolvedExtract = path.resolve(extractPath);
+      function validateExtractedPaths(dir: string): void {
+        const items = fs.readdirSync(dir, { withFileTypes: true });
+        for (const item of items) {
+          const fullPath = path.resolve(dir, item.name);
+          if (!fullPath.startsWith(resolvedExtract)) {
+            throw new Error(`Path traversal detected in extracted archive: ${item.name}`);
+          }
+          if (item.isSymbolicLink()) {
+            throw new Error(`Symbolic link detected in extracted archive: ${item.name}`);
+          }
+          if (item.isDirectory()) {
+            validateExtractedPaths(fullPath);
+          }
+        }
+      }
+      validateExtractedPaths(extractPath);
+
       // Validate manifest
       const manifestPath = path.join(extractPath, 'manifest.json');
       if (!fs.existsSync(manifestPath)) {
@@ -225,14 +244,33 @@ export async function POST(req: NextRequest) {
 }
 
 /**
- * Recursively copy a directory
+ * Recursively copy a directory, skipping symlinks and validating paths
+ * stay within the expected root directories.
  */
 function copyDirectorySync(src: string, dest: string): void {
-  const entries = fs.readdirSync(src, { withFileTypes: true });
+  const resolvedSrc = path.resolve(src);
+  const resolvedDest = path.resolve(dest);
+  const entries = fs.readdirSync(resolvedSrc, { withFileTypes: true });
 
   for (const entry of entries) {
-    const srcPath = path.join(src, entry.name);
-    const destPath = path.join(dest, entry.name);
+    // Skip symbolic links to prevent path traversal
+    if (entry.isSymbolicLink()) {
+      console.warn('Skipping symbolic link during copy:', entry.name);
+      continue;
+    }
+
+    const srcPath = path.resolve(resolvedSrc, entry.name);
+    const destPath = path.resolve(resolvedDest, entry.name);
+
+    // Validate paths stay within their root directories
+    if (!srcPath.startsWith(resolvedSrc + path.sep) && srcPath !== resolvedSrc) {
+      console.warn('Blocked path traversal in source:', srcPath);
+      continue;
+    }
+    if (!destPath.startsWith(resolvedDest + path.sep) && destPath !== resolvedDest) {
+      console.warn('Blocked path traversal in destination:', destPath);
+      continue;
+    }
 
     if (entry.isDirectory()) {
       fs.mkdirSync(destPath, { recursive: true });

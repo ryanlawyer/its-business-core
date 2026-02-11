@@ -5,6 +5,21 @@ export const paginationSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 
+/**
+ * Parse pagination params from URLSearchParams with safe bounds.
+ * page: min 1, limit: min 1/max 100. Defaults: page=1, limit=defaultLimit.
+ */
+export function parsePagination(
+  searchParams: URLSearchParams,
+  defaultLimit = 50
+): { page: number; limit: number } {
+  const rawPage = parseInt(searchParams.get('page') || '1', 10);
+  const rawLimit = parseInt(searchParams.get('limit') || String(defaultLimit), 10);
+  const page = Math.max(1, isNaN(rawPage) ? 1 : rawPage);
+  const limit = Math.min(100, Math.max(1, isNaN(rawLimit) ? defaultLimit : rawLimit));
+  return { page, limit };
+}
+
 export const userCreateSchema = z.object({
   email: z.string().email().max(255),
   name: z.string().min(1).max(200),

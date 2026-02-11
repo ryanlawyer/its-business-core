@@ -144,10 +144,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     }
 
     // Check pay period lock for this entry's date
-    const { getPayPeriodLockStatus } = await import('@/lib/pay-period-lock');
-    // We need the pay period boundaries for this entry's clockIn
-    // Simple approach: check if any lock covers this entry's clockIn date
-    const locks = await (await import('@/lib/prisma')).prisma.payPeriodLock.findMany({
+    const locks = await prisma.payPeriodLock.findMany({
       where: {
         isActive: true,
         periodStart: { lte: entry.clockIn },
