@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
 import { createAuditLog, getRequestContext, type AuditAction } from '@/lib/audit';
+import { parsePagination } from '@/lib/validation';
 
 /**
  * GET /api/budget-amendments
@@ -33,8 +34,7 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const { page, limit } = parsePagination(searchParams);
     const budgetItemId = searchParams.get('budgetItemId');
     const fiscalYear = searchParams.get('fiscalYear');
     const type = searchParams.get('type');

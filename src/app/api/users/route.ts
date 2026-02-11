@@ -5,6 +5,7 @@ import { getPermissionsFromSession, hasPermission } from '@/lib/check-permission
 import bcrypt from 'bcryptjs';
 import { createAuditLog, getRequestContext, sanitizeData } from '@/lib/audit';
 import { validatePassword } from '@/lib/settings';
+import { parsePagination } from '@/lib/validation';
 
 
 export async function GET(req: NextRequest) {
@@ -21,8 +22,7 @@ export async function GET(req: NextRequest) {
 
     // Parse pagination parameters
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const { page, limit } = parsePagination(searchParams);
     const search = searchParams.get('search');
     const roleId = searchParams.get('roleId');
     const departmentId = searchParams.get('departmentId');

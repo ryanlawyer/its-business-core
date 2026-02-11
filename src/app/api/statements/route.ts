@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
 import { createAuditLog, getRequestContext } from '@/lib/audit';
 import { parseStatementFile, ParseResult } from '@/lib/statement-parser';
+import { parsePagination } from '@/lib/validation';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { existsSync } from 'fs';
@@ -27,16 +28,15 @@ export async function GET(req: NextRequest) {
     const { user, permissions } = userWithPerms;
 
     // Check permissions
-    const canViewAll = hasPermission(permissions, 'reports', 'canViewAll');
-    const canViewOwn = hasPermission(permissions, 'reports', 'canViewOwn');
+    const canViewAll = hasPermission(permissions, 'bankStatements', 'canViewAll');
+    const canViewOwn = hasPermission(permissions, 'bankStatements', 'canViewOwn');
 
     if (!canViewAll && !canViewOwn) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const searchParams = req.nextUrl.searchParams;
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const { page, limit } = parsePagination(searchParams, 20);
     const status = searchParams.get('status');
 
     const skip = (page - 1) * limit;
@@ -103,8 +103,8 @@ export async function POST(req: NextRequest) {
 
     const { user, permissions } = userWithPerms;
 
-    // Check if user can create reports (repurposing reports permission for statements)
-    if (!hasPermission(permissions, 'reports', 'canCreate')) {
+    // Check if user can upload bank statements
+    if (!hasPermission(permissions, 'bankStatements', 'canUpload')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

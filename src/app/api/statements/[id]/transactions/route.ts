@@ -2,6 +2,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
+import { parsePagination } from '@/lib/validation';
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -53,8 +54,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
     }
 
     const searchParams = req.nextUrl.searchParams;
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const { page, limit } = parsePagination(searchParams);
     const status = searchParams.get('status'); // matched, unmatched, no-receipt
     const type = searchParams.get('type'); // DEBIT, CREDIT
     const search = searchParams.get('search');

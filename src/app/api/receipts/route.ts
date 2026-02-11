@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
 import { createAuditLog, getRequestContext } from '@/lib/audit';
+import { parsePagination } from '@/lib/validation';
 
 /**
  * GET /api/receipts
@@ -32,8 +33,7 @@ export async function GET(req: NextRequest) {
 
     // Parse query parameters
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const { page, limit } = parsePagination(searchParams, 20);
     const status = searchParams.get('status');
     const search = searchParams.get('search');
     const vendorId = searchParams.get('vendorId');

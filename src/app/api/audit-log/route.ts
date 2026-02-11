@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { parsePagination } from '@/lib/validation';
 
 // GET /api/audit-log - Get audit logs with filtering
 export async function GET(req: NextRequest) {
@@ -29,8 +30,7 @@ export async function GET(req: NextRequest) {
 
     // Parse query parameters
     const searchParams = req.nextUrl.searchParams;
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const { page, limit } = parsePagination(searchParams);
     const action = searchParams.get('action') || undefined;
     const entityType = searchParams.get('entityType') || undefined;
     const entityId = searchParams.get('entityId') || undefined;

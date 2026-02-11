@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
+import { parsePagination } from '@/lib/validation';
 
 /**
  * GET /api/timeclock/history
@@ -37,8 +38,7 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
 
     // Parse query params
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const { page, limit } = parsePagination(searchParams, 20);
     const status = searchParams.get('status'); // all, pending, approved, rejected
     const dateFrom = searchParams.get('dateFrom');
     const dateTo = searchParams.get('dateTo');

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
 import { cache, CacheKeys } from '@/lib/cache';
+import { parsePagination } from '@/lib/validation';
 
 /**
  * Calculate accrued budget amount based on fiscal year progress
@@ -76,8 +77,7 @@ export async function GET(req: NextRequest) {
 
     // Parse pagination parameters
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '100');
+    const { page, limit } = parsePagination(searchParams, 100);
     const search = searchParams.get('search');
     const departmentId = searchParams.get('departmentId');
     const fiscalYear = searchParams.get('fiscalYear');

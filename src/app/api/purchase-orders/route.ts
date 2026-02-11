@@ -2,6 +2,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserWithPermissions, canViewAllData, canViewDepartmentData } from '@/lib/check-permissions';
+import { parsePagination } from '@/lib/validation';
 
 
 export async function GET(req: NextRequest) {
@@ -20,8 +21,7 @@ export async function GET(req: NextRequest) {
 
     // Parse pagination parameters
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const { page, limit } = parsePagination(searchParams);
     const status = searchParams.get('status');
     const search = searchParams.get('search');
 
