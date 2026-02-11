@@ -105,6 +105,8 @@ export type AuditAction =
   | 'AI_CONNECTION_TESTED'
   | 'AI_CATEGORIZATION_REQUESTED'
   | 'AI_SUMMARY_GENERATED'
+  // Import actions
+  | 'DATA_IMPORTED'
   // System actions
   | 'BACKUP_DOWNLOADED'
   | 'BACKUP_RESTORED';
