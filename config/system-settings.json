@@ -1,7 +1,11 @@
 {
   "organization": {
     "name": "Integrated Tech Solutions",
-    "logo": null
+    "logo": null,
+    "favicon": null
+  },
+  "appearance": {
+    "theme": "midnight-precision"
   },
   "security": {
     "passwordPolicy": {

@@ -1,7 +1,7 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function SignInPage() {
@@ -10,6 +10,20 @@ export default function SignInPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [orgName, setOrgName] = useState('ITS Business Core');
+  const [orgLogo, setOrgLogo] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/settings/public')
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data) {
+          setOrgName(data.organization.name);
+          setOrgLogo(data.organization.logo);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,14 +54,21 @@ export default function SignInPage() {
     <div className="min-h-screen flex items-center justify-center">
       <div className="card p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="mx-auto mb-4 w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'var(--accent-primary)', color: 'white' }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2L2 7l10 5 10-5-10-5z" />
-              <path d="M2 17l10 5 10-5" />
-              <path d="M2 12l10 5 10-5" />
-            </svg>
-          </div>
-          <h1 className="page-title">ITS Business Core</h1>
+          {orgLogo ? (
+            <div className="mx-auto mb-4 w-16 h-16 rounded-xl flex items-center justify-center overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/api/branding/logo" alt="" className="max-w-full max-h-full object-contain" />
+            </div>
+          ) : (
+            <div className="mx-auto mb-4 w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'var(--accent-primary)', color: 'var(--accent-primary-contrast)' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                <path d="M2 17l10 5 10-5" />
+                <path d="M2 12l10 5 10-5" />
+              </svg>
+            </div>
+          )}
+          <h1 className="page-title">{orgName}</h1>
           <p className="text-[var(--text-secondary)] mt-2">Sign in to your account</p>
         </div>
 

@@ -13,24 +13,26 @@ export default function Navbar() {
   const user = session?.user;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [organizationName, setOrganizationName] = useState('ITS Business Core');
+  const [organizationLogo, setOrganizationLogo] = useState<string | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
 
-  // Fetch organization name on mount
+  // Fetch organization info on mount
   useEffect(() => {
-    const fetchOrganizationName = async () => {
+    const fetchOrganizationInfo = async () => {
       try {
         const res = await fetch('/api/settings/public');
         if (res.ok) {
           const data = await res.json();
           setOrganizationName(data.organization.name);
+          setOrganizationLogo(data.organization.logo);
         }
       } catch (error) {
-        console.error('Error fetching organization name:', error);
+        console.error('Error fetching organization info:', error);
       }
     };
 
     if (user) {
-      fetchOrganizationName();
+      fetchOrganizationInfo();
     }
   }, [user]);
 
@@ -128,13 +130,20 @@ export default function Navbar() {
         <div className="nav-container">
           {/* Logo and Brand */}
           <Link href="/" className="nav-brand group">
-            <div className="nav-brand-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                <path d="M2 17l10 5 10-5" />
-                <path d="M2 12l10 5 10-5" />
-              </svg>
-            </div>
+            {organizationLogo ? (
+              <div className="w-9 h-9 rounded-[var(--radius-md)] overflow-hidden flex items-center justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/api/branding/logo" alt="" className="max-w-full max-h-full object-contain" />
+              </div>
+            ) : (
+              <div className="nav-brand-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                  <path d="M2 17l10 5 10-5" />
+                  <path d="M2 12l10 5 10-5" />
+                </svg>
+              </div>
+            )}
             <span className="nav-brand-text hidden sm:block">
               {organizationName}
             </span>

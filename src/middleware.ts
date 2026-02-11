@@ -165,6 +165,15 @@ export default auth(async (req) => {
     return NextResponse.redirect(new URL("/", req.url));
   }
 
+  // Allow public branding assets and public settings (needed by login page)
+  if (
+    pathname === '/api/branding/logo' ||
+    pathname === '/api/branding/favicon' ||
+    pathname === '/api/settings/public'
+  ) {
+    return NextResponse.next();
+  }
+
   // Normal auth flow for configured system
   const isLoggedIn = !!req.auth;
   const isAuthPage = pathname.startsWith("/auth");

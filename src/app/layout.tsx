@@ -4,6 +4,8 @@ import "./globals.css";
 import SessionProvider from "@/components/SessionProvider";
 import { ToastProvider } from "@/contexts/ToastContext";
 import Navbar from "@/components/Navbar";
+import { getSettings } from "@/lib/settings";
+import { getThemeById, DEFAULT_THEME_ID } from "@/lib/themes";
 
 // Display font - elegant modern serif for headlines
 const instrumentSerif = Instrument_Serif({
@@ -27,27 +29,50 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
-export const viewport: Viewport = {
-  themeColor: "#0c0d10",
-  colorScheme: "dark",
-};
+function getThemeSettings() {
+  try {
+    const settings = getSettings();
+    const themeId = settings.appearance?.theme || DEFAULT_THEME_ID;
+    const theme = getThemeById(themeId);
+    const favicon = settings.organization?.favicon;
+    return { themeId, theme, favicon };
+  } catch {
+    return { themeId: DEFAULT_THEME_ID, theme: getThemeById(DEFAULT_THEME_ID), favicon: null };
+  }
+}
 
-export const metadata: Metadata = {
-  title: "ITS Business Core",
-  description: "Precision business management for modern organizations",
-  icons: {
-    icon: "/favicon.ico",
-  },
-};
+export async function generateViewport(): Promise<Viewport> {
+  const { theme } = getThemeSettings();
+  const bgBase = theme?.variables['--bg-base'] || '#0c0d10';
+  const colorScheme = theme?.mode === 'light' ? 'light' : 'dark';
+  return {
+    themeColor: bgBase,
+    colorScheme,
+  };
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { favicon } = getThemeSettings();
+  return {
+    title: "ITS Business Core",
+    description: "Precision business management for modern organizations",
+    icons: {
+      icon: favicon ? "/api/branding/favicon" : "/favicon.ico",
+    },
+  };
+}
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { themeId } = getThemeSettings();
+
   return (
     <html
       lang="en"
+      data-theme={themeId}
       className={`${instrumentSerif.variable} ${plusJakarta.variable} ${jetbrainsMono.variable}`}
     >
       <body className="font-body antialiased">

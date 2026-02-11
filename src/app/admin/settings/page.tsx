@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { SystemSettings } from '@/lib/settings';
 import {
   BuildingOffice2Icon,
+  PaintBrushIcon,
   ShieldCheckIcon,
   DocumentTextIcon,
   CalendarIcon,
@@ -16,12 +17,16 @@ import {
   XCircleIcon,
   EyeIcon,
   EyeSlashIcon,
+  ArrowUpTrayIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
+import { themes, type ThemeDefinition } from '@/lib/themes';
 
-type TabKey = 'organization' | 'security' | 'purchaseOrders' | 'fiscal' | 'audit' | 'ai' | 'email';
+type TabKey = 'organization' | 'appearance' | 'security' | 'purchaseOrders' | 'fiscal' | 'audit' | 'ai' | 'email';
 
 const TABS: { key: TabKey; label: string; icon: typeof BuildingOffice2Icon }[] = [
   { key: 'organization', label: 'Organization', icon: BuildingOffice2Icon },
+  { key: 'appearance', label: 'Appearance', icon: PaintBrushIcon },
   { key: 'security', label: 'Security', icon: ShieldCheckIcon },
   { key: 'purchaseOrders', label: 'Purchase Orders', icon: DocumentTextIcon },
   { key: 'fiscal', label: 'Fiscal Year', icon: CalendarIcon },
@@ -42,6 +47,10 @@ export default function SettingsPage() {
   const [testingAI, setTestingAI] = useState(false);
   const [testingEmail, setTestingEmail] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [selectedTheme, setSelectedTheme] = useState<string>('');
+  const [originalTheme, setOriginalTheme] = useState<string>('');
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingFavicon, setUploadingFavicon] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -61,6 +70,9 @@ export default function SettingsPage() {
       const data = await res.json();
       if (res.ok) {
         setSettings(data.settings);
+        const themeId = data.settings?.appearance?.theme || 'midnight-precision';
+        setSelectedTheme(themeId);
+        setOriginalTheme(themeId);
       } else {
         console.error('Failed to fetch settings:', data.error);
       }
@@ -85,6 +97,7 @@ export default function SettingsPage() {
 
       if (res.ok) {
         setFeedback({ type: 'success', message: 'Settings saved successfully.' });
+        setOriginalTheme(selectedTheme);
       } else {
         const data = await res.json();
         setFeedback({ type: 'error', message: data.error || 'Failed to save settings.' });
@@ -94,6 +107,75 @@ export default function SettingsPage() {
       setFeedback({ type: 'error', message: 'Failed to save settings.' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleThemeSelect = (themeId: string) => {
+    setSelectedTheme(themeId);
+    // Live preview
+    document.documentElement.setAttribute('data-theme', themeId);
+    if (settings) {
+      setSettings({
+        ...settings,
+        appearance: { ...settings.appearance, theme: themeId },
+      });
+    }
+  };
+
+  // Revert theme on tab change if unsaved
+  const handleTabChange = (tab: TabKey) => {
+    if (activeTab === 'appearance' && selectedTheme !== originalTheme) {
+      // Revert live preview
+      document.documentElement.setAttribute('data-theme', originalTheme);
+      setSelectedTheme(originalTheme);
+      if (settings) {
+        setSettings({
+          ...settings,
+          appearance: { ...settings.appearance, theme: originalTheme },
+        });
+      }
+    }
+    setActiveTab(tab);
+  };
+
+  const handleBrandingUpload = async (type: 'logo' | 'favicon', file: File) => {
+    const setter = type === 'logo' ? setUploadingLogo : setUploadingFavicon;
+    setter(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', type);
+      const res = await fetch('/api/branding/upload', { method: 'POST', body: formData });
+      if (res.ok) {
+        setFeedback({ type: 'success', message: `${type === 'logo' ? 'Logo' : 'Favicon'} uploaded successfully.` });
+        fetchSettings();
+      } else {
+        const data = await res.json();
+        setFeedback({ type: 'error', message: data.error || `Failed to upload ${type}.` });
+      }
+    } catch {
+      setFeedback({ type: 'error', message: `Failed to upload ${type}.` });
+    } finally {
+      setter(false);
+    }
+  };
+
+  const handleBrandingRemove = async (type: 'logo' | 'favicon') => {
+    try {
+      const res = await fetch('/api/branding/upload', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type }),
+      });
+      if (res.ok) {
+        setFeedback({ type: 'success', message: `${type === 'logo' ? 'Logo' : 'Favicon'} removed.` });
+        fetchSettings();
+      } else {
+        const data = await res.json();
+        setFeedback({ type: 'error', message: data.error || `Failed to remove ${type}.` });
+      }
+    } catch {
+      setFeedback({ type: 'error', message: `Failed to remove ${type}.` });
     }
   };
 
@@ -161,7 +243,7 @@ export default function SettingsPage() {
               {TABS.map(({ key, label, icon: Icon }) => (
                 <button
                   key={key}
-                  onClick={() => setActiveTab(key)}
+                  onClick={() => handleTabChange(key)}
                   className={`flex items-center gap-2 px-3 sm:px-4 py-3 border-b-2 text-sm font-medium whitespace-nowrap transition-colors ${
                     activeTab === key
                       ? 'border-[var(--accent-primary)] text-[var(--accent-primary)]'
@@ -202,23 +284,161 @@ export default function SettingsPage() {
 
                 <div>
                   <label className="form-label mb-2">
-                    Organization Logo
+                    Branding (Logo & Favicon)
                   </label>
-                  <p className="text-sm text-[var(--text-muted)] mb-2">
-                    Logo upload functionality coming soon. Currently using default ITS logo.
+                  <p className="text-sm text-[var(--text-muted)]">
+                    Upload your organization logo and favicon in the{' '}
+                    <button
+                      type="button"
+                      onClick={() => handleTabChange('appearance')}
+                      className="text-[var(--accent-primary)] hover:underline font-medium"
+                    >
+                      Appearance
+                    </button>{' '}
+                    tab.
                   </p>
-                  <input
-                    type="text"
-                    value={settings.organization.logo || ''}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        organization: { ...settings.organization, logo: e.target.value || null },
-                      })
-                    }
-                    placeholder="Logo URL or path"
-                    className="form-input w-full max-w-md"
-                  />
+                </div>
+              </div>
+            )}
+
+            {/* Appearance Tab */}
+            {activeTab === 'appearance' && (
+              <div className="space-y-8">
+                {/* Theme Selection */}
+                <div>
+                  <h3 className="section-title mb-2">Color Theme</h3>
+                  <p className="text-sm text-[var(--text-secondary)] mb-4">
+                    Select a color theme for the entire application. Changes preview instantly.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {themes.map((theme: ThemeDefinition) => (
+                      <button
+                        key={theme.id}
+                        type="button"
+                        onClick={() => handleThemeSelect(theme.id)}
+                        className={`text-left rounded-[var(--radius-xl)] border-2 p-4 transition-all ${
+                          selectedTheme === theme.id
+                            ? 'border-[var(--accent-primary)] ring-2 ring-[var(--accent-primary-glow)]'
+                            : 'border-[var(--border-default)] hover:border-[var(--border-strong)]'
+                        }`}
+                        style={{ background: 'var(--bg-surface)' }}
+                      >
+                        {/* Color swatches */}
+                        <div className="flex items-center gap-2 mb-3">
+                          <div
+                            className="w-8 h-8 rounded-lg border border-[var(--border-default)]"
+                            style={{ background: theme.preview.bg }}
+                            title="Background"
+                          />
+                          <div
+                            className="w-8 h-8 rounded-lg border border-[var(--border-default)]"
+                            style={{ background: theme.preview.accent }}
+                            title="Accent"
+                          />
+                          <div
+                            className="w-8 h-8 rounded-lg border border-[var(--border-default)]"
+                            style={{ background: theme.preview.text }}
+                            title="Text"
+                          />
+                          <span className={`ml-auto badge ${theme.mode === 'dark' ? 'badge-neutral' : 'badge-info'}`}>
+                            {theme.mode}
+                          </span>
+                        </div>
+                        <div className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>
+                          {theme.name}
+                        </div>
+                        <div className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                          {theme.description}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Logo Upload */}
+                <div className="border-t border-[var(--border-default)] pt-6">
+                  <h3 className="section-title mb-2">Organization Logo</h3>
+                  <p className="text-sm text-[var(--text-secondary)] mb-4">
+                    Upload a logo to display in the navigation bar and login page. PNG, JPEG, or SVG, max 2MB.
+                  </p>
+                  {settings.organization.logo && (
+                    <div className="mb-4 flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-[var(--radius-lg)] border border-[var(--border-default)] flex items-center justify-center overflow-hidden bg-[var(--bg-surface)]">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`/api/branding/logo?t=${Date.now()}`}
+                          alt="Current logo"
+                          className="max-w-full max-h-full object-contain"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleBrandingRemove('logo')}
+                        className="btn btn-danger btn-sm"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                        Remove Logo
+                      </button>
+                    </div>
+                  )}
+                  <label className="btn btn-secondary btn-sm cursor-pointer inline-flex">
+                    <ArrowUpTrayIcon className="h-4 w-4" />
+                    {uploadingLogo ? 'Uploading...' : 'Upload Logo'}
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/svg+xml"
+                      className="hidden"
+                      disabled={uploadingLogo}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleBrandingUpload('logo', file);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                </div>
+
+                {/* Favicon Upload */}
+                <div className="border-t border-[var(--border-default)] pt-6">
+                  <h3 className="section-title mb-2">Favicon</h3>
+                  <p className="text-sm text-[var(--text-secondary)] mb-4">
+                    Upload a custom favicon for the browser tab. PNG, ICO, or SVG, max 500KB.
+                  </p>
+                  {settings.organization.favicon && (
+                    <div className="mb-4 flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-[var(--radius-md)] border border-[var(--border-default)] flex items-center justify-center overflow-hidden bg-[var(--bg-surface)]">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`/api/branding/favicon?t=${Date.now()}`}
+                          alt="Current favicon"
+                          className="max-w-full max-h-full object-contain"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleBrandingRemove('favicon')}
+                        className="btn btn-danger btn-sm"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                        Remove Favicon
+                      </button>
+                    </div>
+                  )}
+                  <label className="btn btn-secondary btn-sm cursor-pointer inline-flex">
+                    <ArrowUpTrayIcon className="h-4 w-4" />
+                    {uploadingFavicon ? 'Uploading...' : 'Upload Favicon'}
+                    <input
+                      type="file"
+                      accept="image/png,image/x-icon,image/svg+xml,.ico"
+                      className="hidden"
+                      disabled={uploadingFavicon}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleBrandingUpload('favicon', file);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
                 </div>
               </div>
             )}

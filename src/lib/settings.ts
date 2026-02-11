@@ -116,6 +116,10 @@ export interface SystemSettings {
   organization: {
     name: string;
     logo: string | null;
+    favicon: string | null;
+  };
+  appearance: {
+    theme: string;
   };
   security: {
     passwordPolicy: {
@@ -200,13 +204,38 @@ export interface SystemSettings {
 }
 
 /**
+ * Deep merge two objects. Values from `source` fill in missing keys in `target`.
+ * Does not overwrite existing values in target — only adds missing ones.
+ */
+function deepMergeDefaults(target: any, defaults: any): any {
+  const result = { ...target };
+  for (const key of Object.keys(defaults)) {
+    if (result[key] === undefined) {
+      result[key] = defaults[key];
+    } else if (
+      typeof defaults[key] === 'object' &&
+      defaults[key] !== null &&
+      !Array.isArray(defaults[key]) &&
+      typeof result[key] === 'object' &&
+      result[key] !== null &&
+      !Array.isArray(result[key])
+    ) {
+      result[key] = deepMergeDefaults(result[key], defaults[key]);
+    }
+  }
+  return result;
+}
+
+/**
  * Get current system settings (decrypted)
  */
 export function getSettings(): SystemSettings {
   try {
     const data = fs.readFileSync(SETTINGS_PATH, 'utf-8');
     const settings = JSON.parse(data);
-    return decryptSensitiveFields(settings);
+    // Merge with defaults so old config files without new fields still work
+    const merged = deepMergeDefaults(settings, getDefaultSettings());
+    return decryptSensitiveFields(merged);
   } catch (error) {
     console.error('Error reading settings file:', error);
     // Return default settings if file doesn't exist
@@ -265,6 +294,10 @@ export function getDefaultSettings(): SystemSettings {
     organization: {
       name: 'ITS Business Core',
       logo: null,
+      favicon: null,
+    },
+    appearance: {
+      theme: 'midnight-precision',
     },
     security: {
       passwordPolicy: {
