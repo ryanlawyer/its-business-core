@@ -1,5 +1,6 @@
 import { getSettings } from '@/lib/settings';
 import { getAIProvider, AINotConfiguredError, trackAICall, detectEffectiveProvider } from '@/lib/ai';
+import { withRetry } from '@/lib/retry';
 
 export interface LineItem {
   description: string;
@@ -250,6 +251,12 @@ export function isOCRConfigured(): boolean {
 }
 
 /**
+ * Non-retriable OCR error codes - these indicate permanent failures
+ * that will not succeed on retry.
+ */
+const NON_RETRIABLE_OCR_CODES = ['UNSUPPORTED_TYPE', 'FILE_READ_ERROR', 'PARSE_ERROR', 'NOT_CONFIGURED'];
+
+/**
  * Process a receipt with retry logic
  */
 export async function processReceiptWithRetry(
@@ -259,29 +266,16 @@ export async function processReceiptWithRetry(
   userId?: string,
   entityId?: string,
 ): Promise<OCRResult> {
-  let lastError: Error | null = null;
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await extractReceiptDataFromFile(filePath, mimeType, userId, entityId);
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-
-      // Don't retry on non-retriable errors
-      if (error instanceof OCRServiceError) {
-        const nonRetriableErrors = ['UNSUPPORTED_TYPE', 'FILE_READ_ERROR', 'PARSE_ERROR', 'NOT_CONFIGURED'];
-        if (nonRetriableErrors.includes(error.code)) {
-          throw error;
+  return withRetry(
+    () => extractReceiptDataFromFile(filePath, mimeType, userId, entityId),
+    {
+      maxRetries,
+      retryOn: (error: unknown) => {
+        if (error instanceof OCRServiceError && NON_RETRIABLE_OCR_CODES.includes(error.code)) {
+          return false;
         }
-      }
-
-      // Wait before retrying (exponential backoff)
-      if (attempt < maxRetries) {
-        const delay = Math.pow(2, attempt) * 1000;
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
-    }
-  }
-
-  throw lastError || new OCRServiceError('MAX_RETRIES', 'Maximum retry attempts exceeded');
+        return true;
+      },
+    },
+  );
 }
