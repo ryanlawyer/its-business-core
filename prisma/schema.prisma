@@ -302,6 +302,7 @@ enum POStatus {
   DRAFT             // Being created, not submitted
   PENDING_APPROVAL  // Submitted, waiting for manager approval
   APPROVED          // Approved, ready to send to vendor
+  REJECTED          // Rejected by approver, can be revised and resubmitted
   COMPLETED         // Received and closed
   CANCELLED         // Cancelled (soft delete)
 }

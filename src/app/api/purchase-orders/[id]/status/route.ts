@@ -43,7 +43,8 @@ export async function POST(
     // Validate status transition
     const validTransitions: Record<POStatus, POStatus[]> = {
       DRAFT: ['PENDING_APPROVAL', 'CANCELLED'],
-      PENDING_APPROVAL: ['APPROVED', 'DRAFT', 'CANCELLED'],
+      PENDING_APPROVAL: ['APPROVED', 'REJECTED', 'CANCELLED'],
+      REJECTED: ['DRAFT', 'CANCELLED'],
       APPROVED: ['COMPLETED', 'CANCELLED'],
       COMPLETED: ['CANCELLED'],
       CANCELLED: [],
@@ -96,7 +97,7 @@ export async function POST(
           { status: 400 }
         );
       }
-    } else if (newStatus === 'DRAFT' && po.status === 'PENDING_APPROVAL') {
+    } else if (newStatus === 'REJECTED') {
       // Reject - must have approve permission
       if (!hasPermission(permissions, 'purchaseOrders', 'canApprove')) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -107,6 +108,11 @@ export async function POST(
           { error: 'Rejection note is required when rejecting a PO' },
           { status: 400 }
         );
+      }
+    } else if (newStatus === 'DRAFT' && po.status === 'REJECTED') {
+      // Reopen rejected PO for revision - owner or editor can do this
+      if (po.requestedById !== user.id && !hasPermission(permissions, 'purchaseOrders', 'canEdit')) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
     }
 
@@ -131,11 +137,17 @@ export async function POST(
       updateData.voidedAt = new Date();
       updateData.voidNote = note;
       auditAction = 'PO_VOIDED';
-    } else if (newStatus === 'DRAFT' && po.status === 'PENDING_APPROVAL') {
+    } else if (newStatus === 'REJECTED') {
       updateData.rejectedBy = user.id;
       updateData.rejectedAt = new Date();
       updateData.rejectionNote = note;
       auditAction = 'PO_REJECTED';
+    } else if (newStatus === 'DRAFT' && po.status === 'REJECTED') {
+      // Reopen for revision - clear rejection fields
+      updateData.rejectedBy = null;
+      updateData.rejectedAt = null;
+      updateData.rejectionNote = null;
+      auditAction = 'PO_UPDATED';
     }
 
     // Update PO and budget tracking in a transaction for consistency

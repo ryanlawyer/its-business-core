@@ -21,6 +21,7 @@ const statusColors: Record<string, string> = {
   DRAFT: 'badge badge-neutral',
   PENDING_APPROVAL: 'badge badge-warning',
   APPROVED: 'badge badge-success',
+  REJECTED: 'badge badge-error',
   COMPLETED: 'badge badge-info',
   CANCELLED: 'badge badge-error',
 };
@@ -29,6 +30,7 @@ const statusLabels: Record<string, string> = {
   DRAFT: 'Draft',
   PENDING_APPROVAL: 'Pending Approval',
   APPROVED: 'Approved',
+  REJECTED: 'Rejected',
   COMPLETED: 'Completed',
   CANCELLED: 'Cancelled',
 };
@@ -251,7 +253,7 @@ export default function PurchaseOrderDetailPage({
     setStatusAction(newStatus);
 
     // Show modal for actions that require a note
-    if (newStatus === 'CANCELLED' || (newStatus === 'DRAFT' && po?.status === 'PENDING_APPROVAL')) {
+    if (newStatus === 'CANCELLED' || newStatus === 'REJECTED') {
       setShowStatusModal(true);
       return;
     }
@@ -300,7 +302,11 @@ export default function PurchaseOrderDetailPage({
         break;
       case 'PENDING_APPROVAL':
         actions.push({ label: 'Approve', action: 'APPROVED', color: 'btn-success' });
-        actions.push({ label: 'Reject', action: 'DRAFT', color: 'bg-[var(--warning)] hover:bg-[var(--warning)] text-white' });
+        actions.push({ label: 'Reject', action: 'REJECTED', color: 'bg-[var(--warning)] hover:bg-[var(--warning)] text-white' });
+        actions.push({ label: 'Cancel', action: 'CANCELLED', color: 'btn-danger' });
+        break;
+      case 'REJECTED':
+        actions.push({ label: 'Revise & Resubmit', action: 'DRAFT', color: 'btn-primary' });
         actions.push({ label: 'Cancel', action: 'CANCELLED', color: 'btn-danger' });
         break;
       case 'APPROVED':
@@ -510,14 +516,14 @@ export default function PurchaseOrderDetailPage({
 
                 {/* Desktop Table View */}
                 <div className="hidden lg:block table-container">
-                  <table className="table">
+                  <table className="table" aria-label="Purchase order line items">
                     <thead>
                       <tr>
-                        <th className="text-left py-2 px-3">Description</th>
-                        <th className="text-left py-2 px-3">Budget Code</th>
-                        <th className="text-right py-2 px-3">Amount</th>
+                        <th scope="col" className="text-left py-2 px-3">Description</th>
+                        <th scope="col" className="text-left py-2 px-3">Budget Code</th>
+                        <th scope="col" className="text-right py-2 px-3">Amount</th>
                         {editing && (
-                          <th className="text-right py-2 px-3">Actions</th>
+                          <th scope="col" className="text-right py-2 px-3">Actions</th>
                         )}
                       </tr>
                     </thead>

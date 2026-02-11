@@ -22,6 +22,7 @@ const statusColors: Record<string, string> = {
   DRAFT: 'badge badge-neutral',
   PENDING_APPROVAL: 'badge badge-warning',
   APPROVED: 'badge badge-success',
+  REJECTED: 'badge badge-error',
   COMPLETED: 'badge badge-info',
   CANCELLED: 'badge badge-error',
 };
@@ -30,6 +31,7 @@ const statusLabels: Record<string, string> = {
   DRAFT: 'Draft',
   PENDING_APPROVAL: 'Pending Approval',
   APPROVED: 'Approved',
+  REJECTED: 'Rejected',
   COMPLETED: 'Completed',
   CANCELLED: 'Cancelled',
 };
@@ -142,6 +144,7 @@ export default function PurchaseOrdersPage() {
                 <option value="DRAFT">Draft</option>
                 <option value="PENDING_APPROVAL">Pending Approval</option>
                 <option value="APPROVED">Approved</option>
+                <option value="REJECTED">Rejected</option>
                 <option value="COMPLETED">Completed</option>
                 <option value="CANCELLED">Cancelled</option>
               </select>
@@ -197,28 +200,28 @@ export default function PurchaseOrdersPage() {
 
             {/* Desktop Table View */}
             <div className="hidden lg:block table-container">
-              <table className="table">
+              <table className="table" aria-label="Purchase orders">
                 <thead>
                   <tr>
-                    <th className="text-left py-3 px-4">
+                    <th scope="col" className="text-left py-3 px-4">
                       PO Number
                     </th>
-                    <th className="text-left py-3 px-4">
+                    <th scope="col" className="text-left py-3 px-4">
                       Date
                     </th>
-                    <th className="text-left py-3 px-4">
+                    <th scope="col" className="text-left py-3 px-4">
                       Vendor
                     </th>
-                    <th className="text-left py-3 px-4">
+                    <th scope="col" className="text-left py-3 px-4">
                       Department
                     </th>
-                    <th className="text-left py-3 px-4">
+                    <th scope="col" className="text-left py-3 px-4">
                       Status
                     </th>
-                    <th className="text-right py-3 px-4">
+                    <th scope="col" className="text-right py-3 px-4">
                       Amount
                     </th>
-                    <th className="text-right py-3 px-4">
+                    <th scope="col" className="text-right py-3 px-4">
                       Actions
                     </th>
                   </tr>
