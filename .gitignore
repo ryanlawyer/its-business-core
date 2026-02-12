@@ -54,3 +54,6 @@ Thumbs.db
 
 # Data directories
 /data
+
+# worktrees
+.worktrees/
