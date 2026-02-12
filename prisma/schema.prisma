@@ -326,6 +326,7 @@ model PurchaseOrder {
 
   // Optional fields
   notes String?
+  autoApprovalNote String?   // Reason auto-approval was skipped
 
   // Receipt attachment
   receiptFileName String?
