@@ -35,7 +35,14 @@ export async function GET(
         lineItems: {
           include: {
             budgetItem: {
-              select: { id: true, code: true, description: true },
+              select: {
+                id: true,
+                code: true,
+                description: true,
+                budgetAmount: true,
+                encumbered: true,
+                actualSpent: true,
+              },
             },
           },
         },
@@ -172,7 +179,14 @@ export async function PUT(
           lineItems: {
             include: {
               budgetItem: {
-                select: { id: true, code: true, description: true },
+                select: {
+                  id: true,
+                  code: true,
+                  description: true,
+                  budgetAmount: true,
+                  encumbered: true,
+                  actualSpent: true,
+                },
               },
             },
           },

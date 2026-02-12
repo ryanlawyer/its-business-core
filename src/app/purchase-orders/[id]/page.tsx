@@ -40,7 +40,10 @@ const statusLabels: Record<string, string> = {
 type BudgetItem = {
   id: string;
   code: string;
-  name: string;
+  description: string;
+  budgetAmount?: number;
+  encumbered?: number;
+  actualSpent?: number;
 };
 
 type Vendor = {
@@ -68,6 +71,7 @@ type PurchaseOrder = {
   status: string;
   totalAmount: number;
   notes: string | null;
+  autoApprovalNote: string | null;
   departmentId: string | null;
   department: { id: string; name: string } | null;
   requestedById: string;
@@ -257,7 +261,14 @@ export default function PurchaseOrderDetailPage({
         ...item,
         id: `temp-${Date.now()}`,
         budgetItem: budgetItem
-          ? { id: budgetItem.id, code: budgetItem.code, name: budgetItem.name }
+          ? {
+              id: budgetItem.id,
+              code: budgetItem.code,
+              description: budgetItem.description,
+              budgetAmount: budgetItem.budgetAmount,
+              encumbered: budgetItem.encumbered,
+              actualSpent: budgetItem.actualSpent,
+            }
           : undefined,
       },
     ]);
@@ -272,7 +283,14 @@ export default function PurchaseOrderDetailPage({
               ...item,
               id: li.id,
               budgetItem: budgetItem
-                ? { id: budgetItem.id, code: budgetItem.code, name: budgetItem.name }
+                ? {
+                    id: budgetItem.id,
+                    code: budgetItem.code,
+                    description: budgetItem.description,
+                    budgetAmount: budgetItem.budgetAmount,
+                    encumbered: budgetItem.encumbered,
+                    actualSpent: budgetItem.actualSpent,
+                  }
                 : undefined,
             }
           : li
@@ -377,6 +395,33 @@ export default function PurchaseOrderDetailPage({
 
   const totalAmount = lineItems.reduce((sum, item) => sum + item.amount, 0);
 
+  const renderBudgetContext = (item: POLineItem) => {
+    if (po.status !== 'PENDING_APPROVAL' || !item.budgetItem) return null;
+
+    const budget = item.budgetItem.budgetAmount || 0;
+    const committed = item.budgetItem.encumbered || 0;
+    const actualSpent = item.budgetItem.actualSpent || 0;
+    const thisAmount = item.amount;
+    const remainingAfter = budget - committed - actualSpent - thisAmount;
+    const isOverBudget = remainingAfter < 0;
+
+    return (
+      <div
+        className={`mt-2 text-xs px-3 py-2 rounded ${
+          isOverBudget
+            ? 'bg-[var(--error-subtle)] text-[var(--error)] border border-[var(--error-muted)]'
+            : 'bg-[var(--bg-tertiary)] text-[var(--text-muted)]'
+        }`}
+      >
+        <span className="font-medium">Budget:</span> ${budget.toFixed(2)} |
+        <span className="font-medium"> Committed:</span> ${committed.toFixed(2)} |
+        <span className="font-medium"> This PO:</span> ${thisAmount.toFixed(2)} |
+        <span className="font-medium"> Remaining after:</span> ${remainingAfter.toFixed(2)}
+        {isOverBudget && <span className="font-bold ml-1">(OVER BUDGET)</span>}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen py-8 pb-24">
       <div className="max-w-7xl mx-auto px-4">
@@ -432,6 +477,13 @@ export default function PurchaseOrderDetailPage({
             </div>
           </div>
         </div>
+
+        {/* Auto-approval Note Banner */}
+        {po.autoApprovalNote && po.status === 'PENDING_APPROVAL' && (
+          <div className="mb-6 rounded-[var(--radius-lg)] border border-[var(--warning-muted)] bg-[var(--warning-subtle)] px-4 py-3 text-sm text-[var(--warning)]">
+            <strong>Auto-approval skipped:</strong> {po.autoApprovalNote}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Details */}
@@ -516,7 +568,7 @@ export default function PurchaseOrderDetailPage({
                       <div className="mb-3">
                         <h3 className="text-base font-bold text-[var(--text-primary)]">{item.description}</h3>
                         {item.budgetItem && (
-                          <p className="text-sm text-[var(--text-secondary)]">{item.budgetItem.code} - {item.budgetItem.name}</p>
+                          <p className="text-sm text-[var(--text-secondary)]">{item.budgetItem.code} - {item.budgetItem.description}</p>
                         )}
                       </div>
                       <div className="space-y-2 text-sm">
@@ -525,6 +577,7 @@ export default function PurchaseOrderDetailPage({
                           <span className="text-[var(--text-primary)] font-medium">${item.amount.toFixed(2)}</span>
                         </div>
                       </div>
+                      {renderBudgetContext(item)}
                       {editing && (
                         <div className="border-t border-[var(--border-default)] pt-3 mt-3 flex justify-end gap-3">
                           <button
@@ -567,34 +620,43 @@ export default function PurchaseOrderDetailPage({
                     </thead>
                     <tbody>
                       {lineItems.map((item) => (
-                        <tr key={item.id}>
-                          <td className="py-2 px-3 text-sm text-[var(--text-primary)]">{item.description}</td>
-                          <td className="py-2 px-3 text-sm text-[var(--text-secondary)]">
-                            {item.budgetItem ? `${item.budgetItem.code} - ${item.budgetItem.name}` : '-'}
-                          </td>
-                          <td className="py-2 px-3 text-sm text-[var(--text-primary)] text-right">
-                            ${item.amount.toFixed(2)}
-                          </td>
-                          {editing && (
-                            <td className="py-2 px-3 text-sm text-right space-x-2">
-                              <button
-                                onClick={() => {
-                                  setEditingLineItem(item);
-                                  setShowLineItemModal(true);
-                                }}
-                                className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleDeleteLineItem(item.id!)}
-                                className="text-[var(--error)] hover:text-[var(--error)]"
-                              >
-                                Remove
-                              </button>
+                        <>
+                          <tr key={item.id}>
+                            <td className="py-2 px-3 text-sm text-[var(--text-primary)]">{item.description}</td>
+                            <td className="py-2 px-3 text-sm text-[var(--text-secondary)]">
+                              {item.budgetItem ? `${item.budgetItem.code} - ${item.budgetItem.description}` : '-'}
                             </td>
+                            <td className="py-2 px-3 text-sm text-[var(--text-primary)] text-right">
+                              ${item.amount.toFixed(2)}
+                            </td>
+                            {editing && (
+                              <td className="py-2 px-3 text-sm text-right space-x-2">
+                                <button
+                                  onClick={() => {
+                                    setEditingLineItem(item);
+                                    setShowLineItemModal(true);
+                                  }}
+                                  className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteLineItem(item.id!)}
+                                  className="text-[var(--error)] hover:text-[var(--error)]"
+                                >
+                                  Remove
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                          {renderBudgetContext(item) && (
+                            <tr key={`${item.id}-budget`}>
+                              <td colSpan={editing ? 4 : 3} className="py-0 px-3 pb-2">
+                                {renderBudgetContext(item)}
+                              </td>
+                            </tr>
                           )}
-                        </tr>
+                        </>
                       ))}
                       <tr className="border-t-2 border-[var(--border-default)] font-bold">
                         <td colSpan={2} className="py-2 px-3 text-sm text-[var(--text-primary)] text-right">

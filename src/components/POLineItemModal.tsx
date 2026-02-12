@@ -10,18 +10,20 @@ export type POLineItem = {
   budgetItem?: {
     id: string;
     code: string;
-    name: string;
+    description: string;
+    budgetAmount?: number;
+    encumbered?: number;
+    actualSpent?: number;
   };
 };
 
 type BudgetItem = {
   id: string;
   code: string;
-  name: string;
-  allocated?: number;
+  description: string;
+  budgetAmount?: number;
   encumbered?: number;
   actualSpent?: number;
-  remaining?: number;
 };
 
 type POLineItemModalProps = {
@@ -154,7 +156,7 @@ export default function POLineItemModal({
               <option value="">Select budget item</option>
               {budgetItems.map((item) => (
                 <option key={item.id} value={item.id}>
-                  {item.code} - {item.name}
+                  {item.code} - {item.description}
                 </option>
               ))}
             </select>
@@ -164,19 +166,20 @@ export default function POLineItemModal({
             {/* Show available budget */}
             {formData.budgetItemId && (() => {
               const selectedBudget = budgetItems.find(b => b.id === formData.budgetItemId);
-              if (selectedBudget && selectedBudget.remaining !== undefined) {
-                const isOverBudget = formData.amount > selectedBudget.remaining;
+              if (selectedBudget && selectedBudget.budgetAmount !== undefined) {
+                const remaining = (selectedBudget.budgetAmount || 0) - (selectedBudget.encumbered || 0) - (selectedBudget.actualSpent || 0);
+                const isOverBudget = formData.amount > remaining;
                 return (
                   <div className={`mt-2 p-2 rounded-[var(--radius-lg)] text-sm ${isOverBudget ? 'bg-[var(--error-subtle)] border border-[var(--error-muted)]' : 'bg-[var(--info-subtle)] border border-[var(--info-muted)]'}`}>
                     <div className="flex justify-between">
                       <span className="font-medium text-[var(--text-secondary)]">Available Budget:</span>
                       <span className={`font-bold ${isOverBudget ? 'text-[var(--error)]' : 'text-[var(--success)]'}`}>
-                        ${selectedBudget.remaining.toFixed(2)}
+                        ${remaining.toFixed(2)}
                       </span>
                     </div>
                     {isOverBudget && formData.amount > 0 && (
                       <div className="mt-1 text-[var(--error)] font-medium">
-                        ⚠️ Over budget by ${(formData.amount - selectedBudget.remaining).toFixed(2)}
+                        ⚠️ Over budget by ${(formData.amount - remaining).toFixed(2)}
                       </div>
                     )}
                   </div>
