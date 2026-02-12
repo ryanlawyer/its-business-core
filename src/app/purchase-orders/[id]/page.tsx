@@ -669,7 +669,7 @@ export default function PurchaseOrderDetailPage({
               <div className="card p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="section-title">Linked Receipts</h2>
-                  {canEditReceipts && (po.status === 'APPROVED' || po.status === 'COMPLETED') && (
+                  {canEditReceipts && po.status !== 'CANCELLED' && (
                     <button
                       onClick={() => setShowFindReceipts(true)}
                       className="btn btn-primary btn-sm"
@@ -743,7 +743,7 @@ export default function PurchaseOrderDetailPage({
             {/* Find & Attach Receipts (when no receipts linked yet) */}
             {(!po.receipts || po.receipts.length === 0) &&
               canEditReceipts &&
-              (po.status === 'APPROVED' || po.status === 'COMPLETED') && (
+              po.status !== 'CANCELLED' && (
               <div className="card p-6">
                 <div className="flex justify-between items-center">
                   <h2 className="section-title">Linked Receipts</h2>

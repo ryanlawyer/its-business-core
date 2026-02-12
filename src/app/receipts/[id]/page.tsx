@@ -322,7 +322,7 @@ export default function ReceiptDetailPage({ params }: { params: Promise<{ id: st
     try {
       setLoadingAllPOs(true);
       const params = new URLSearchParams({
-        status: 'APPROVED,COMPLETED',
+        status: 'DRAFT,PENDING_APPROVAL,APPROVED,COMPLETED,REJECTED',
         page: pageNum.toString(),
         limit: '10',
       });

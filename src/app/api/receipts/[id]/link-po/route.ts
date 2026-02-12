@@ -90,6 +90,14 @@ export async function POST(req: NextRequest, context: RouteContext) {
       );
     }
 
+    // Cannot link receipts to cancelled POs
+    if (purchaseOrder.status === 'CANCELLED') {
+      return NextResponse.json(
+        { error: 'Cannot link receipts to a cancelled purchase order' },
+        { status: 400 }
+      );
+    }
+
     // Optional: Warn if amounts don't match (but don't block)
     let amountWarning = null;
     if (receipt.totalAmount !== null && purchaseOrder.totalAmount !== null) {

@@ -66,7 +66,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
     // Query params for PO search
     const poWhereClause: any = {
       status: {
-        in: ['APPROVED', 'COMPLETED'],
+        not: 'CANCELLED',
       },
     };
 
