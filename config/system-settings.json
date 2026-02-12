@@ -1,11 +1,11 @@
 {
   "organization": {
     "name": "Integrated Tech Solutions",
-    "logo": null,
+    "logo": "branding/logo-279b9ae922ea4d12.png",
     "favicon": null
   },
   "appearance": {
-    "theme": "midnight-precision"
+    "theme": "ocean-depth"
   },
   "security": {
     "passwordPolicy": {
@@ -33,7 +33,7 @@
     "retentionMonths": 0
   },
   "ai": {
-    "provider": "none",
+    "provider": "ollama",
     "anthropic": {
       "apiKey": "",
       "model": "claude-sonnet-4-5-20250929"
@@ -47,8 +47,8 @@
       "model": "anthropic/claude-sonnet-4-5"
     },
     "ollama": {
-      "baseUrl": "http://localhost:11434",
-      "model": "llama3.2-vision"
+      "baseUrl": "http://192.168.18.150:11434",
+      "model": "qwen2.5vl:3b"
     },
     "custom": {
       "apiKey": "",

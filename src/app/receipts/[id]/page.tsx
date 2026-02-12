@@ -99,6 +99,19 @@ export default function ReceiptDetailPage({ params }: { params: Promise<{ id: st
   const [poSuggestions, setPOSuggestions] = useState<POSuggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [linkingPO, setLinkingPO] = useState(false);
+  const [poSearchTerm, setPOSearchTerm] = useState('');
+  const [allPOs, setAllPOs] = useState<Array<{
+    id: string;
+    poNumber: string;
+    poDate: string;
+    totalAmount: number | null;
+    status: string;
+    vendor: { id: string; name: string } | null;
+    receipts: { id: string; totalAmount: number | null }[];
+  }>>([]);
+  const [loadingAllPOs, setLoadingAllPOs] = useState(false);
+  const [allPOsPage, setAllPOsPage] = useState(1);
+  const [allPOsTotalPages, setAllPOsTotalPages] = useState(1);
 
   // Category state
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -305,9 +318,33 @@ export default function ReceiptDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  const fetchAllPOs = async (searchQuery: string = '', pageNum: number = 1) => {
+    try {
+      setLoadingAllPOs(true);
+      const params = new URLSearchParams({
+        status: 'APPROVED,COMPLETED',
+        page: pageNum.toString(),
+        limit: '10',
+      });
+      if (searchQuery) params.append('search', searchQuery);
+      const res = await fetch(`/api/purchase-orders?${params}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAllPOs(data.orders || []);
+        setAllPOsTotalPages(data.pagination?.totalPages || 1);
+      }
+    } catch (err) {
+      console.error('Error fetching all POs:', err);
+    } finally {
+      setLoadingAllPOs(false);
+    }
+  };
+
   const openPOLinking = () => {
     setShowPOLinking(true);
+    setPOSearchTerm('');
     fetchPOSuggestions();
+    fetchAllPOs('', 1);
   };
 
   const fetchCategorySuggestion = async () => {
@@ -937,8 +974,8 @@ export default function ReceiptDetailPage({ params }: { params: Promise<{ id: st
       {/* PO Linking Modal */}
       {showPOLinking && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="card max-w-2xl w-full max-h-[80vh] overflow-hidden">
-            <div className="p-4 border-b border-[var(--border-default)] flex justify-between items-center">
+          <div className="card max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-[var(--border-default)] flex justify-between items-center flex-shrink-0">
               <h3 className="section-title">Link to Purchase Order</h3>
               <button
                 onClick={() => setShowPOLinking(false)}
@@ -949,81 +986,189 @@ export default function ReceiptDetailPage({ params }: { params: Promise<{ id: st
                 </svg>
               </button>
             </div>
-            <div className="p-4 overflow-y-auto max-h-[60vh]">
-              {loadingSuggestions ? (
-                <div className="text-center py-8">
-                  <svg className="w-8 h-8 mx-auto animate-spin text-[var(--accent-primary)]" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  <p className="mt-2 text-[var(--text-secondary)]">Finding matching purchase orders...</p>
-                </div>
-              ) : poSuggestions.length === 0 ? (
-                <div className="empty-state py-8">
-                  <svg className="empty-state-icon" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                  </svg>
-                  <p className="empty-state-title">No matching purchase orders found</p>
-                  <p className="empty-state-description">Try adding a vendor to this receipt for better matches</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <p className="text-sm text-[var(--text-secondary)] mb-4">
-                    We found {poSuggestions.length} potential match{poSuggestions.length > 1 ? 'es' : ''} based on vendor, amount, and date:
-                  </p>
-                  {poSuggestions.map((suggestion) => (
-                    <div
-                      key={suggestion.purchaseOrder.id}
-                      className="border border-[var(--border-default)] rounded-lg p-4 hover:border-[var(--accent-primary)] transition-colors"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-[var(--text-primary)]">
-                              {suggestion.purchaseOrder.poNumber}
-                            </span>
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${
-                              suggestion.matchScore >= 60
-                                ? 'badge badge-success'
-                                : suggestion.matchScore >= 40
-                                ? 'badge badge-warning'
-                                : 'badge badge-neutral'
-                            }`}>
-                              {suggestion.matchScore}% match
-                            </span>
-                          </div>
-                          <div className="mt-1 text-sm text-[var(--text-secondary)]">
-                            {suggestion.purchaseOrder.vendor?.name || 'No vendor'} &bull; {
-                              suggestion.purchaseOrder.totalAmount !== null
-                                ? formatAmount(suggestion.purchaseOrder.totalAmount, receipt.currency)
-                                : 'No amount'
-                            } &bull; {formatDate(suggestion.purchaseOrder.poDate)}
-                          </div>
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            {suggestion.matchReasons.map((reason, idx) => (
-                              <span
-                                key={idx}
-                                className="badge badge-info text-xs"
-                              >
-                                {reason}
-                              </span>
-                            ))}
+
+            {/* Search */}
+            <div className="p-4 border-b border-[var(--border-default)] flex-shrink-0">
+              <input
+                type="text"
+                value={poSearchTerm}
+                onChange={(e) => {
+                  setPOSearchTerm(e.target.value);
+                  setAllPOsPage(1);
+                  fetchAllPOs(e.target.value, 1);
+                }}
+                placeholder="Search by PO number or vendor name..."
+                className="form-input w-full"
+              />
+            </div>
+
+            <div className="p-4 overflow-y-auto flex-1">
+              {/* Suggested Matches */}
+              <div className="mb-6">
+                <h4 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">
+                  Suggested Matches
+                </h4>
+                {loadingSuggestions ? (
+                  <div className="text-center py-4">
+                    <svg className="w-6 h-6 mx-auto animate-spin text-[var(--accent-primary)]" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                  </div>
+                ) : poSuggestions.length === 0 ? (
+                  <p className="text-sm text-[var(--text-muted)] py-2">No suggested matches found.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {poSuggestions.map((suggestion) => {
+                      const receiptedAmount = (suggestion.purchaseOrder as any).receipts
+                        ? (suggestion.purchaseOrder as any).receipts.reduce((sum: number, r: any) => sum + (r.totalAmount || 0), 0)
+                        : 0;
+                      return (
+                        <div
+                          key={suggestion.purchaseOrder.id}
+                          className="border border-[var(--border-default)] rounded-lg p-4 hover:border-[var(--accent-primary)] transition-colors"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-[var(--text-primary)]">
+                                  {suggestion.purchaseOrder.poNumber}
+                                </span>
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                  suggestion.matchScore >= 60
+                                    ? 'badge badge-success'
+                                    : suggestion.matchScore >= 40
+                                    ? 'badge badge-warning'
+                                    : 'badge badge-neutral'
+                                }`}>
+                                  {suggestion.matchScore}% match
+                                </span>
+                              </div>
+                              <div className="mt-1 text-sm text-[var(--text-secondary)]">
+                                {suggestion.purchaseOrder.vendor?.name || 'No vendor'} &bull; {
+                                  suggestion.purchaseOrder.totalAmount !== null
+                                    ? formatAmount(suggestion.purchaseOrder.totalAmount, receipt.currency)
+                                    : 'No amount'
+                                } &bull; {formatDate(suggestion.purchaseOrder.poDate)}
+                              </div>
+                              {suggestion.purchaseOrder.linkedReceiptCount > 0 && suggestion.purchaseOrder.totalAmount !== null && (
+                                <div className="mt-1 text-xs text-[var(--text-muted)]">
+                                  {formatAmount(receiptedAmount, receipt.currency)} of {formatAmount(suggestion.purchaseOrder.totalAmount, receipt.currency)} receipted
+                                </div>
+                              )}
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                {suggestion.matchReasons.map((reason, idx) => (
+                                  <span key={idx} className="badge badge-info text-xs">
+                                    {reason}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleLinkPO(suggestion.purchaseOrder.id)}
+                              disabled={linkingPO}
+                              className="ml-4 btn btn-primary btn-sm disabled:opacity-50"
+                            >
+                              {linkingPO ? 'Linking...' : 'Link'}
+                            </button>
                           </div>
                         </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* All POs */}
+              <div>
+                <h4 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">
+                  All Purchase Orders
+                </h4>
+                {loadingAllPOs ? (
+                  <div className="text-center py-4">
+                    <svg className="w-6 h-6 mx-auto animate-spin text-[var(--accent-primary)]" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                  </div>
+                ) : allPOs.length === 0 ? (
+                  <p className="text-sm text-[var(--text-muted)] py-2">No purchase orders found.</p>
+                ) : (
+                  <>
+                    <div className="space-y-3">
+                      {allPOs.map((po) => {
+                        const poReceiptedAmount = po.receipts
+                          ? po.receipts.reduce((sum, r) => sum + (r.totalAmount || 0), 0)
+                          : 0;
+                        return (
+                          <div
+                            key={po.id}
+                            className="border border-[var(--border-default)] rounded-lg p-4 hover:border-[var(--accent-primary)] transition-colors"
+                          >
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <span className="font-semibold text-[var(--text-primary)]">
+                                  {po.poNumber}
+                                </span>
+                                <div className="mt-1 text-sm text-[var(--text-secondary)]">
+                                  {po.vendor?.name || 'No vendor'} &bull; {
+                                    po.totalAmount !== null
+                                      ? formatAmount(po.totalAmount, receipt.currency)
+                                      : 'No amount'
+                                  } &bull; {formatDate(po.poDate)}
+                                </div>
+                                {po.receipts && po.receipts.length > 0 && po.totalAmount !== null && (
+                                  <div className="mt-1 text-xs text-[var(--text-muted)]">
+                                    {formatAmount(poReceiptedAmount, receipt.currency)} of {formatAmount(po.totalAmount, receipt.currency)} receipted
+                                  </div>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => handleLinkPO(po.id)}
+                                disabled={linkingPO}
+                                className="ml-4 btn btn-primary btn-sm disabled:opacity-50"
+                              >
+                                {linkingPO ? 'Linking...' : 'Link'}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {allPOsTotalPages > 1 && (
+                      <div className="flex justify-center items-center gap-2 mt-4">
                         <button
-                          onClick={() => handleLinkPO(suggestion.purchaseOrder.id)}
-                          disabled={linkingPO}
-                          className="ml-4 btn btn-primary btn-sm disabled:opacity-50"
+                          onClick={() => {
+                            const newPage = Math.max(1, allPOsPage - 1);
+                            setAllPOsPage(newPage);
+                            fetchAllPOs(poSearchTerm, newPage);
+                          }}
+                          disabled={allPOsPage === 1}
+                          className="btn btn-secondary btn-sm disabled:opacity-50"
                         >
-                          {linkingPO ? 'Linking...' : 'Link'}
+                          Previous
+                        </button>
+                        <span className="text-sm text-[var(--text-secondary)]">
+                          Page {allPOsPage} of {allPOsTotalPages}
+                        </span>
+                        <button
+                          onClick={() => {
+                            const newPage = Math.min(allPOsTotalPages, allPOsPage + 1);
+                            setAllPOsPage(newPage);
+                            fetchAllPOs(poSearchTerm, newPage);
+                          }}
+                          disabled={allPOsPage === allPOsTotalPages}
+                          className="btn btn-secondary btn-sm disabled:opacity-50"
+                        >
+                          Next
                         </button>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-            <div className="p-4 border-t border-[var(--border-default)]">
+            <div className="p-4 border-t border-[var(--border-default)] flex-shrink-0">
               <button
                 onClick={() => setShowPOLinking(false)}
                 className="btn btn-secondary w-full"

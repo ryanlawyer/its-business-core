@@ -62,6 +62,7 @@ export default function ReceiptsPage() {
   const [minAmount, setMinAmount] = useState('');
   const [maxAmount, setMaxAmount] = useState('');
   const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [filterUnlinked, setFilterUnlinked] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
 
   // Fetch vendors list on mount
@@ -95,6 +96,7 @@ export default function ReceiptsPage() {
       if (filterEndDate) params.append('endDate', filterEndDate);
       if (minAmount) params.append('minAmount', minAmount);
       if (maxAmount) params.append('maxAmount', maxAmount);
+      if (filterUnlinked) params.append('unlinked', 'true');
 
       const res = await fetch(`/api/receipts?${params}`);
       const data = await res.json();
@@ -105,7 +107,7 @@ export default function ReceiptsPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, statusFilter, debouncedSearch, filterVendorId, filterStartDate, filterEndDate, minAmount, maxAmount]);
+  }, [currentPage, statusFilter, debouncedSearch, filterVendorId, filterStartDate, filterEndDate, minAmount, maxAmount, filterUnlinked]);
 
   useEffect(() => {
     fetchReceipts();
@@ -132,12 +134,13 @@ export default function ReceiptsPage() {
     setFilterEndDate('');
     setMinAmount('');
     setMaxAmount('');
+    setFilterUnlinked(false);
     setStatusFilter('');
     setSearchTerm('');
     setCurrentPage(1);
   };
 
-  const hasActiveFilters = filterVendorId || filterStartDate || filterEndDate || minAmount || maxAmount;
+  const hasActiveFilters = filterVendorId || filterStartDate || filterEndDate || minAmount || maxAmount || filterUnlinked;
 
   const handleExportCSV = async () => {
     try {
@@ -404,6 +407,20 @@ export default function ReceiptsPage() {
                     step="0.01"
                     className="form-input"
                   />
+                </div>
+                <div className="flex items-end">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filterUnlinked}
+                      onChange={(e) => {
+                        setFilterUnlinked(e.target.checked);
+                        setCurrentPage(1);
+                      }}
+                      className="rounded border-[var(--border-default)] text-[var(--accent-primary)] focus:ring-[var(--accent-primary)]"
+                    />
+                    <span className="text-sm text-[var(--text-primary)]">Show unlinked only</span>
+                  </label>
                 </div>
                 <div className="flex items-end">
                   <button

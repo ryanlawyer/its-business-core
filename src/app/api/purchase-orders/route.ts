@@ -45,7 +45,11 @@ export async function GET(req: NextRequest) {
 
     // Add optional filters
     if (status) {
-      whereClause.status = status;
+      if (status.includes(',')) {
+        whereClause.status = { in: status.split(',').map((s: string) => s.trim()) };
+      } else {
+        whereClause.status = status;
+      }
     }
 
     if (search) {
@@ -64,9 +68,13 @@ export async function GET(req: NextRequest) {
       include: {
         vendor: {
           select: {
+            id: true,
             name: true,
             vendorNumber: true,
           },
+        },
+        receipts: {
+          select: { id: true, totalAmount: true },
         },
       },
       orderBy: {

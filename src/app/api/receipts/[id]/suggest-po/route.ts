@@ -2,6 +2,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
+import { scoreReceiptVsPO } from '@/lib/receipt-po-matcher';
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -62,21 +63,11 @@ export async function GET(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Build query to find matching POs
-    const suggestions: Array<{
-      purchaseOrder: any;
-      matchScore: number;
-      matchReasons: string[];
-    }> = [];
-
     // Query params for PO search
     const poWhereClause: any = {
-      // Only look for POs that aren't yet completed or are approved
       status: {
         in: ['APPROVED', 'COMPLETED'],
       },
-      // Only look at POs without already linked receipts
-      // (check if any receipt already linked - handled client-side for simplicity)
     };
 
     // If receipt has a vendor, prefer POs from the same vendor
@@ -95,69 +86,17 @@ export async function GET(req: NextRequest, context: RouteContext) {
       take: 20,
     });
 
-    // Score each PO
+    // Score each PO using shared utility
+    const suggestions: Array<{
+      purchaseOrder: any;
+      matchScore: number;
+      matchReasons: string[];
+    }> = [];
+
     for (const po of purchaseOrders) {
-      const matchReasons: string[] = [];
-      let matchScore = 0;
+      const match = scoreReceiptVsPO(receipt, po);
 
-      // Check vendor match
-      if (receipt.vendorId && po.vendorId === receipt.vendorId) {
-        matchScore += 40;
-        matchReasons.push('Vendor match');
-      }
-
-      // Check merchant name similarity (if no vendor linked)
-      if (!receipt.vendorId && receipt.merchantName && po.vendor.name) {
-        const merchantLower = receipt.merchantName.toLowerCase();
-        const vendorLower = po.vendor.name.toLowerCase();
-        if (
-          merchantLower.includes(vendorLower) ||
-          vendorLower.includes(merchantLower)
-        ) {
-          matchScore += 30;
-          matchReasons.push('Vendor name similar to merchant');
-        }
-      }
-
-      // Check amount match (within 1% tolerance)
-      if (receipt.totalAmount !== null && po.totalAmount !== null) {
-        const diff = Math.abs(receipt.totalAmount - po.totalAmount);
-        const tolerance = Math.max(receipt.totalAmount, po.totalAmount) * 0.01;
-        if (diff <= tolerance) {
-          matchScore += 40;
-          matchReasons.push('Amount matches');
-        } else if (diff <= tolerance * 5) {
-          matchScore += 20;
-          matchReasons.push('Amount close');
-        }
-      }
-
-      // Check date proximity (within 30 days)
-      if (receipt.receiptDate && po.poDate) {
-        const receiptTime = receipt.receiptDate.getTime();
-        const poTime = po.poDate.getTime();
-        const daysDiff = Math.abs(receiptTime - poTime) / (1000 * 60 * 60 * 24);
-        if (daysDiff <= 3) {
-          matchScore += 20;
-          matchReasons.push('Date within 3 days');
-        } else if (daysDiff <= 7) {
-          matchScore += 15;
-          matchReasons.push('Date within 7 days');
-        } else if (daysDiff <= 30) {
-          matchScore += 10;
-          matchReasons.push('Date within 30 days');
-        }
-      }
-
-      // Only include if there's at least one match reason
-      if (matchReasons.length > 0) {
-        // Check if this PO already has linked receipts
-        const hasLinkedReceipts = po.receipts.length > 0;
-        if (hasLinkedReceipts) {
-          matchScore -= 20; // Penalize already-linked POs
-          matchReasons.push('Already has linked receipts');
-        }
-
+      if (match.reasons.length > 0) {
         suggestions.push({
           purchaseOrder: {
             id: po.id,
@@ -169,8 +108,8 @@ export async function GET(req: NextRequest, context: RouteContext) {
             requestedBy: po.requestedBy,
             linkedReceiptCount: po.receipts.length,
           },
-          matchScore,
-          matchReasons,
+          matchScore: match.score,
+          matchReasons: match.reasons,
         });
       }
     }

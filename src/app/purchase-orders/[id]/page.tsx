@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import type { POLineItem } from '@/components/POLineItemModal';
+import ReconciliationBar from '@/components/ReconciliationBar';
+import FindReceiptsPanel from '@/components/FindReceiptsPanel';
 
 // Lazy load heavy components
 const POLineItemModal = dynamic(() => import('@/components/POLineItemModal'), {
@@ -111,6 +113,15 @@ export default function PurchaseOrderDetailPage({
   const [receiptError, setReceiptError] = useState('');
   const [receiptSuccess, setReceiptSuccess] = useState('');
   const [canUploadReceipt, setCanUploadReceipt] = useState(false);
+  const [showFindReceipts, setShowFindReceipts] = useState(false);
+  const [canEditReceipts, setCanEditReceipts] = useState(false);
+  const [receiptSummary, setReceiptSummary] = useState<{
+    poTotal: number;
+    receiptedTotal: number;
+    remainingAmount: number;
+    receiptCount: number;
+    percentCovered: number;
+  } | null>(null);
 
   const [formData, setFormData] = useState({
     poDate: '',
@@ -123,6 +134,8 @@ export default function PurchaseOrderDetailPage({
     fetchBudgetItems();
     fetchVendors();
     checkUploadPermission();
+    checkReceiptEditPermission();
+    fetchReceiptSummary();
   }, [id]);
 
   const checkUploadPermission = async () => {
@@ -135,6 +148,31 @@ export default function PurchaseOrderDetailPage({
     } catch (error) {
       console.error('Error checking upload permission:', error);
       setCanUploadReceipt(false);
+    }
+  };
+
+  const checkReceiptEditPermission = async () => {
+    try {
+      const res = await fetch('/api/permissions/check?resource=receipts&permission=canEdit');
+      if (res.ok) {
+        const data = await res.json();
+        setCanEditReceipts(data.hasPermission);
+      }
+    } catch (error) {
+      console.error('Error checking receipt edit permission:', error);
+      setCanEditReceipts(false);
+    }
+  };
+
+  const fetchReceiptSummary = async () => {
+    try {
+      const res = await fetch(`/api/purchase-orders/${id}/receipt-summary`);
+      if (res.ok) {
+        const data = await res.json();
+        setReceiptSummary(data);
+      }
+    } catch (error) {
+      console.error('Error fetching receipt summary:', error);
     }
   };
 
@@ -615,10 +653,31 @@ export default function PurchaseOrderDetailPage({
               />
             </div>
 
+            {/* Reconciliation Bar */}
+            {receiptSummary && receiptSummary.receiptCount > 0 && (
+              <div className="card p-6">
+                <ReconciliationBar
+                  poTotal={receiptSummary.poTotal}
+                  receiptedTotal={receiptSummary.receiptedTotal}
+                  receiptCount={receiptSummary.receiptCount}
+                />
+              </div>
+            )}
+
             {/* Linked Receipts Section */}
             {po.receipts && po.receipts.length > 0 && (
               <div className="card p-6">
-                <h2 className="section-title mb-4">Linked Receipts</h2>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="section-title">Linked Receipts</h2>
+                  {canEditReceipts && (po.status === 'APPROVED' || po.status === 'COMPLETED') && (
+                    <button
+                      onClick={() => setShowFindReceipts(true)}
+                      className="btn btn-primary btn-sm"
+                    >
+                      Find & Attach Receipts
+                    </button>
+                  )}
+                </div>
                 <div className="space-y-3">
                   {po.receipts.map((receipt) => (
                     <Link
@@ -678,6 +737,26 @@ export default function PurchaseOrderDetailPage({
                     </Link>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Find & Attach Receipts (when no receipts linked yet) */}
+            {(!po.receipts || po.receipts.length === 0) &&
+              canEditReceipts &&
+              (po.status === 'APPROVED' || po.status === 'COMPLETED') && (
+              <div className="card p-6">
+                <div className="flex justify-between items-center">
+                  <h2 className="section-title">Linked Receipts</h2>
+                  <button
+                    onClick={() => setShowFindReceipts(true)}
+                    className="btn btn-primary btn-sm"
+                  >
+                    Find & Attach Receipts
+                  </button>
+                </div>
+                <p className="text-sm text-[var(--text-muted)] mt-2">
+                  No receipts linked to this purchase order yet.
+                </p>
               </div>
             )}
 
@@ -819,6 +898,17 @@ export default function PurchaseOrderDetailPage({
           </div>
         </div>
       )}
+
+      {/* Find & Attach Receipts Panel */}
+      <FindReceiptsPanel
+        poId={id}
+        isOpen={showFindReceipts}
+        onClose={() => setShowFindReceipts(false)}
+        onLinked={() => {
+          fetchPO();
+          fetchReceiptSummary();
+        }}
+      />
     </div>
   );
 }

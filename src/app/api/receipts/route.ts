@@ -42,6 +42,7 @@ export async function GET(req: NextRequest) {
     const endDate = searchParams.get('endDate');
     const minAmount = searchParams.get('minAmount');
     const maxAmount = searchParams.get('maxAmount');
+    const unlinked = searchParams.get('unlinked');
     const sortBy = searchParams.get('sortBy') || 'createdAt';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
 
@@ -64,6 +65,10 @@ export async function GET(req: NextRequest) {
 
     if (budgetCategoryId) {
       whereClause.budgetCategoryId = budgetCategoryId;
+    }
+
+    if (unlinked === 'true') {
+      whereClause.purchaseOrderId = null;
     }
 
     if (startDate || endDate) {
