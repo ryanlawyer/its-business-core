@@ -24,7 +24,11 @@
   },
   "purchaseOrders": {
     "numberPrefix": "PO-",
-    "resetCounterYearly": true
+    "resetCounterYearly": true,
+    "autoApproval": {
+      "enabled": true,
+      "threshold": 500
+    }
   },
   "fiscalYear": {
     "startMonth": 1
