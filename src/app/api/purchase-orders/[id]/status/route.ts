@@ -205,10 +205,11 @@ export async function POST(
       updateData.rejectionNote = note;
       auditAction = 'PO_REJECTED';
     } else if (newStatus === 'DRAFT' && po.status === 'REJECTED') {
-      // Reopen for revision - clear rejection fields
+      // Reopen for revision - clear rejection and auto-approval fields
       updateData.rejectedBy = null;
       updateData.rejectedAt = null;
       updateData.rejectionNote = null;
+      updateData.autoApprovalNote = null;
       auditAction = 'PO_UPDATED';
     }
 

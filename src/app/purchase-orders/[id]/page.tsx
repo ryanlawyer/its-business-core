@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { use, useState, useEffect } from 'react';
+import { use, useState, useEffect, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -619,45 +619,48 @@ export default function PurchaseOrderDetailPage({
                       </tr>
                     </thead>
                     <tbody>
-                      {lineItems.map((item) => (
-                        <>
-                          <tr key={item.id}>
-                            <td className="py-2 px-3 text-sm text-[var(--text-primary)]">{item.description}</td>
-                            <td className="py-2 px-3 text-sm text-[var(--text-secondary)]">
-                              {item.budgetItem ? `${item.budgetItem.code} - ${item.budgetItem.description}` : '-'}
-                            </td>
-                            <td className="py-2 px-3 text-sm text-[var(--text-primary)] text-right">
-                              ${item.amount.toFixed(2)}
-                            </td>
-                            {editing && (
-                              <td className="py-2 px-3 text-sm text-right space-x-2">
-                                <button
-                                  onClick={() => {
-                                    setEditingLineItem(item);
-                                    setShowLineItemModal(true);
-                                  }}
-                                  className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteLineItem(item.id!)}
-                                  className="text-[var(--error)] hover:text-[var(--error)]"
-                                >
-                                  Remove
-                                </button>
+                      {lineItems.map((item) => {
+                        const budgetRow = renderBudgetContext(item);
+                        return (
+                          <Fragment key={item.id}>
+                            <tr>
+                              <td className="py-2 px-3 text-sm text-[var(--text-primary)]">{item.description}</td>
+                              <td className="py-2 px-3 text-sm text-[var(--text-secondary)]">
+                                {item.budgetItem ? `${item.budgetItem.code} - ${item.budgetItem.description}` : '-'}
                               </td>
-                            )}
-                          </tr>
-                          {renderBudgetContext(item) && (
-                            <tr key={`${item.id}-budget`}>
-                              <td colSpan={editing ? 4 : 3} className="py-0 px-3 pb-2">
-                                {renderBudgetContext(item)}
+                              <td className="py-2 px-3 text-sm text-[var(--text-primary)] text-right">
+                                ${item.amount.toFixed(2)}
                               </td>
+                              {editing && (
+                                <td className="py-2 px-3 text-sm text-right space-x-2">
+                                  <button
+                                    onClick={() => {
+                                      setEditingLineItem(item);
+                                      setShowLineItemModal(true);
+                                    }}
+                                    className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteLineItem(item.id!)}
+                                    className="text-[var(--error)] hover:text-[var(--error)]"
+                                  >
+                                    Remove
+                                  </button>
+                                </td>
+                              )}
                             </tr>
-                          )}
-                        </>
-                      ))}
+                            {budgetRow && (
+                              <tr>
+                                <td colSpan={editing ? 4 : 3} className="py-0 px-3 pb-2">
+                                  {budgetRow}
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
+                        );
+                      })}
                       <tr className="border-t-2 border-[var(--border-default)] font-bold">
                         <td colSpan={2} className="py-2 px-3 text-sm text-[var(--text-primary)] text-right">
                           Total:
