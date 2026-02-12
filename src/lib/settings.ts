@@ -139,6 +139,10 @@ export interface SystemSettings {
   purchaseOrders: {
     numberPrefix: string;
     resetCounterYearly: boolean;
+    autoApproval: {
+      enabled: boolean;
+      threshold: number;
+    };
   };
   fiscalYear: {
     startMonth: number; // 1-12
@@ -317,6 +321,10 @@ export function getDefaultSettings(): SystemSettings {
     purchaseOrders: {
       numberPrefix: 'PO-',
       resetCounterYearly: true,
+      autoApproval: {
+        enabled: false,
+        threshold: 500,
+      },
     },
     fiscalYear: {
       startMonth: 1,
