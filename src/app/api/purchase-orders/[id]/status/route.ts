@@ -5,6 +5,55 @@ import { createAuditLog, getRequestContext } from '@/lib/audit';
 import { POStatus } from '@prisma/client';
 import { getUserWithPermissions, hasPermission } from '@/lib/check-permissions';
 import { updateBudgetFromPO } from '@/lib/budget-tracking';
+import { getSettings } from '@/lib/settings';
+
+/**
+ * Check if a PO qualifies for auto-approval.
+ * Returns { approved: true } or { approved: false, reason: string }
+ */
+async function checkAutoApproval(
+  poId: string,
+  totalAmount: number
+): Promise<{ approved: boolean; reason?: string }> {
+  const settings = getSettings();
+  const autoApproval = settings.purchaseOrders?.autoApproval;
+
+  if (!autoApproval?.enabled) {
+    return { approved: false, reason: 'Auto-approval is disabled' };
+  }
+
+  // Check amount threshold
+  if (totalAmount > autoApproval.threshold) {
+    return {
+      approved: false,
+      reason: `Over auto-approval threshold ($${autoApproval.threshold.toFixed(2)})`,
+    };
+  }
+
+  // Check budget availability for all line items
+  const lineItems = await prisma.pOLineItem.findMany({
+    where: { purchaseOrderId: poId },
+    include: { budgetItem: true },
+  });
+
+  for (const lineItem of lineItems) {
+    if (!lineItem.budgetItem) continue;
+
+    const remaining =
+      lineItem.budgetItem.budgetAmount -
+      lineItem.budgetItem.encumbered -
+      lineItem.budgetItem.actualSpent;
+
+    if (lineItem.amount > remaining) {
+      return {
+        approved: false,
+        reason: `Would exceed budget: ${lineItem.budgetItem.description} (remaining: $${remaining.toFixed(2)})`,
+      };
+    }
+  }
+
+  return { approved: true };
+}
 
 // POST /api/purchase-orders/[id]/status - Change PO status
 export async function POST(
@@ -125,6 +174,19 @@ export async function POST(
 
     if (newStatus === 'PENDING_APPROVAL') {
       auditAction = 'PO_SUBMITTED';
+
+      // Check auto-approval eligibility
+      const autoResult = await checkAutoApproval(id, po.totalAmount);
+      if (autoResult.approved) {
+        // Auto-approve: skip PENDING_APPROVAL, go directly to APPROVED
+        updateData.status = 'APPROVED';
+        updateData.approvedBy = user.id;
+        updateData.approvedAt = new Date();
+        auditAction = 'PO_AUTO_APPROVED';
+      } else if (autoResult.reason && autoResult.reason !== 'Auto-approval is disabled') {
+        // Store the reason for the approver to see
+        updateData.autoApprovalNote = autoResult.reason;
+      }
     } else if (newStatus === 'APPROVED') {
       updateData.approvedBy = user.id;
       updateData.approvedAt = new Date();
@@ -158,7 +220,7 @@ export async function POST(
       });
 
       // Update budget tracking (encumbered/actualSpent)
-      await updateBudgetFromPO(id, po.status, newStatus, tx);
+      await updateBudgetFromPO(id, po.status, updateData.status as POStatus, tx);
 
       return updatedPO;
     });
@@ -172,7 +234,7 @@ export async function POST(
       entityId: id,
       changes: {
         before: { status: po.status },
-        after: { status: newStatus, note },
+        after: { status: updateData.status, note },
       },
       ipAddress,
       userAgent,
