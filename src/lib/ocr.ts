@@ -139,9 +139,12 @@ export async function extractReceiptData(
       throw error;
     }
 
+    // Detect non-retriable provider errors (e.g. PDF not supported)
+    const message = error instanceof Error ? error.message : 'Unknown OCR error';
+    const isUnsupportedFormat = message.includes('cannot be processed with this AI provider');
     throw new OCRServiceError(
-      'UNKNOWN_ERROR',
-      error instanceof Error ? error.message : 'Unknown OCR error'
+      isUnsupportedFormat ? 'UNSUPPORTED_FORMAT' : 'UNKNOWN_ERROR',
+      message,
     );
   }
 }
@@ -242,9 +245,9 @@ export function isOCRConfigured(): boolean {
     case 'openrouter':
       return !!settings.ai.openrouter?.apiKey;
     case 'ollama':
-      return !!settings.ai.ollama?.baseUrl;
+      return !!(settings.ai.ollama?.baseUrl && settings.ai.ollama?.model);
     case 'custom':
-      return !!settings.ai.custom?.baseUrl;
+      return !!(settings.ai.custom?.baseUrl && settings.ai.custom?.model);
     default:
       return false;
   }
@@ -254,7 +257,7 @@ export function isOCRConfigured(): boolean {
  * Non-retriable OCR error codes - these indicate permanent failures
  * that will not succeed on retry.
  */
-const NON_RETRIABLE_OCR_CODES = ['UNSUPPORTED_TYPE', 'FILE_READ_ERROR', 'PARSE_ERROR', 'NOT_CONFIGURED'];
+const NON_RETRIABLE_OCR_CODES = ['UNSUPPORTED_TYPE', 'UNSUPPORTED_FORMAT', 'FILE_READ_ERROR', 'PARSE_ERROR', 'NOT_CONFIGURED'];
 
 /**
  * Process a receipt with retry logic

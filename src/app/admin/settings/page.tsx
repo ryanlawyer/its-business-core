@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { SystemSettings } from '@/lib/settings';
 import {
   BuildingOffice2Icon,
@@ -18,6 +18,7 @@ import {
   EyeIcon,
   EyeSlashIcon,
   ArrowUpTrayIcon,
+  ArrowPathIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
 import { themes, type ThemeDefinition } from '@/lib/themes';
@@ -52,6 +53,13 @@ export default function SettingsPage() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingFavicon, setUploadingFavicon] = useState(false);
 
+  // Ollama model discovery
+  const [ollamaModels, setOllamaModels] = useState<{ name: string; size: number; details?: { family?: string; parameterSize?: string; quantizationLevel?: string } }[]>([]);
+  const [loadingOllamaModels, setLoadingOllamaModels] = useState(false);
+  const [ollamaModelsError, setOllamaModelsError] = useState<string | null>(null);
+  const [ollamaManualEntry, setOllamaManualEntry] = useState(false);
+  const ollamaFetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     fetchSettings();
   }, []);
@@ -63,6 +71,43 @@ export default function SettingsPage() {
       return () => clearTimeout(timer);
     }
   }, [feedback]);
+
+  const fetchOllamaModels = useCallback(async (baseUrl: string) => {
+    if (!baseUrl) return;
+    setLoadingOllamaModels(true);
+    setOllamaModelsError(null);
+    try {
+      const res = await fetch(`/api/settings/ollama-models?baseUrl=${encodeURIComponent(baseUrl)}`);
+      const data = await res.json();
+      if (data.error) {
+        setOllamaModelsError(data.error);
+        setOllamaModels([]);
+      } else {
+        setOllamaModels(data.models || []);
+      }
+    } catch {
+      setOllamaModelsError('Failed to fetch models from Ollama server');
+      setOllamaModels([]);
+    } finally {
+      setLoadingOllamaModels(false);
+    }
+  }, []);
+
+  // Auto-fetch Ollama models when provider is ollama and baseUrl changes
+  useEffect(() => {
+    if (settings?.ai?.provider !== 'ollama') return;
+    const baseUrl = settings.ai.ollama?.baseUrl;
+    if (!baseUrl) return;
+
+    if (ollamaFetchTimer.current) clearTimeout(ollamaFetchTimer.current);
+    ollamaFetchTimer.current = setTimeout(() => {
+      fetchOllamaModels(baseUrl);
+    }, 500);
+
+    return () => {
+      if (ollamaFetchTimer.current) clearTimeout(ollamaFetchTimer.current);
+    };
+  }, [settings?.ai?.provider, settings?.ai?.ollama?.baseUrl, fetchOllamaModels]);
 
   const fetchSettings = async () => {
     try {
@@ -177,6 +222,14 @@ export default function SettingsPage() {
     } catch {
       setFeedback({ type: 'error', message: `Failed to remove ${type}.` });
     }
+  };
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
   };
 
   if (loading || !settings) {
@@ -986,18 +1039,66 @@ export default function SettingsPage() {
                         </div>
                         <div>
                           <label className="form-label mb-2">Model</label>
-                          <input
-                            type="text"
-                            value={settings.ai.ollama?.model || ''}
-                            onChange={(e) =>
-                              setSettings({
-                                ...settings,
-                                ai: { ...settings.ai, ollama: { ...settings.ai.ollama, model: e.target.value } },
-                              })
-                            }
-                            placeholder="llama3.2-vision"
-                            className="form-input w-full max-w-md"
-                          />
+                          <div className="flex items-center gap-2 max-w-md">
+                            {ollamaManualEntry || (ollamaModelsError && ollamaModels.length === 0) ? (
+                              <input
+                                type="text"
+                                value={settings.ai.ollama?.model || ''}
+                                onChange={(e) =>
+                                  setSettings({
+                                    ...settings,
+                                    ai: { ...settings.ai, ollama: { ...settings.ai.ollama, model: e.target.value } },
+                                  })
+                                }
+                                placeholder="llama3.2-vision"
+                                className="form-input w-full"
+                              />
+                            ) : (
+                              <select
+                                value={settings.ai.ollama?.model || ''}
+                                onChange={(e) => {
+                                  if (e.target.value === '__manual__') {
+                                    setOllamaManualEntry(true);
+                                    return;
+                                  }
+                                  setSettings({
+                                    ...settings,
+                                    ai: { ...settings.ai, ollama: { ...settings.ai.ollama, model: e.target.value } },
+                                  });
+                                }}
+                                disabled={loadingOllamaModels}
+                                className="form-input form-select w-full"
+                              >
+                                <option value="">
+                                  {loadingOllamaModels ? 'Loading models...' : 'Select a model...'}
+                                </option>
+                                {ollamaModels.map((m) => (
+                                  <option key={m.name} value={m.name}>
+                                    {m.name} ({formatBytes(m.size)}{m.details?.family ? ` - ${m.details.family}` : ''})
+                                  </option>
+                                ))}
+                                <option value="__manual__">Enter manually...</option>
+                              </select>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOllamaManualEntry(false);
+                                const baseUrl = settings.ai.ollama?.baseUrl;
+                                if (baseUrl) fetchOllamaModels(baseUrl);
+                              }}
+                              disabled={loadingOllamaModels}
+                              className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors shrink-0"
+                              title="Refresh models"
+                            >
+                              <ArrowPathIcon className={`h-5 w-5 ${loadingOllamaModels ? 'animate-spin' : ''}`} />
+                            </button>
+                          </div>
+                          {ollamaModelsError && (
+                            <p className="text-sm text-[var(--warning)] mt-1">
+                              {ollamaModelsError}
+                            </p>
+                          )}
                           <p className="text-sm text-[var(--text-muted)] mt-1">
                             For OCR, use a vision-capable model (e.g., llava, llama3.2-vision). No API key needed.
                           </p>

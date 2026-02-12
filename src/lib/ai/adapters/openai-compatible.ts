@@ -103,39 +103,44 @@ export class OpenAICompatibleAdapter implements AIProvider {
   }
 
   private async convertPdfToImage(base64Pdf: string): Promise<string> {
-    // Use pdf-lib to extract first page, then sharp to convert to image
-    const { PDFDocument } = await import('pdf-lib');
-    const sharp = (await import('sharp')).default;
+    const { writeFile, readFile, mkdtemp } = await import('fs/promises');
+    const { join } = await import('path');
+    const { tmpdir } = await import('os');
+    const { execFile } = await import('child_process');
+    const { promisify } = await import('util');
+    const execFileAsync = promisify(execFile);
 
-    const pdfBytes = Buffer.from(base64Pdf, 'base64');
-    const pdfDoc = await PDFDocument.load(pdfBytes);
-    const page = pdfDoc.getPages()[0];
+    const tempDir = await mkdtemp(join(tmpdir(), 'pdf-convert-'));
+    const pdfPath = join(tempDir, 'input.pdf');
+    const outputPrefix = join(tempDir, 'output');
 
-    if (!page) {
-      throw new Error('PDF has no pages');
-    }
-
-    // Create a new PDF with just the first page for conversion
-    const singlePagePdf = await PDFDocument.create();
-    const [copiedPage] = await singlePagePdf.copyPages(pdfDoc, [0]);
-    singlePagePdf.addPage(copiedPage);
-    const singlePageBytes = await singlePagePdf.save();
-
-    // Use sharp to convert PDF to PNG
-    // sharp can render PDF first page when built with poppler support
-    // If that fails, we send the raw PDF bytes as a fallback rendered through sharp
     try {
-      const imageBuffer = await sharp(Buffer.from(singlePageBytes), {
-        density: 200, // DPI for PDF rendering
-      })
-        .png()
-        .toBuffer();
+      const pdfBytes = Buffer.from(base64Pdf, 'base64');
+      await writeFile(pdfPath, pdfBytes);
 
+      // Use pdftoppm (poppler-utils) to convert first page to PNG
+      await execFileAsync('pdftoppm', [
+        '-png',
+        '-r', '200',       // 200 DPI
+        '-f', '1',          // first page
+        '-l', '1',          // last page (only first)
+        '-singlefile',      // don't add page number suffix
+        pdfPath,
+        outputPrefix,
+      ]);
+
+      const pngPath = `${outputPrefix}.png`;
+      const imageBuffer = await readFile(pngPath);
       return imageBuffer.toString('base64');
     } catch {
-      // Fallback: if sharp can't handle PDF, just use the raw data
-      // Some providers can handle PDF directly via image_url
-      return base64Pdf;
+      throw new Error(
+        'PDF receipts cannot be processed with this AI provider because PDF-to-image conversion failed. ' +
+        'Please upload an image file (JPEG or PNG) instead, or use Anthropic which supports PDFs natively.'
+      );
+    } finally {
+      // Clean up temp files
+      const { rm } = await import('fs/promises');
+      await rm(tempDir, { recursive: true, force: true }).catch(() => {});
     }
   }
 

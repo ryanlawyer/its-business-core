@@ -121,6 +121,9 @@ export async function getAIProvider(): Promise<AIProvider> {
       break;
     }
     case 'ollama': {
+      if (!ai.ollama?.baseUrl || !ai.ollama?.model) {
+        throw new AINotConfiguredError('Ollama is selected but base URL or model is not configured.');
+      }
       const { OpenAICompatibleAdapter } = await import('./adapters/openai-compatible');
       provider = new OpenAICompatibleAdapter({
         name: 'ollama',
@@ -131,6 +134,9 @@ export async function getAIProvider(): Promise<AIProvider> {
       break;
     }
     case 'custom': {
+      if (!ai.custom?.baseUrl || !ai.custom?.model) {
+        throw new AINotConfiguredError('Custom provider is selected but base URL or model is not configured.');
+      }
       const { OpenAICompatibleAdapter } = await import('./adapters/openai-compatible');
       provider = new OpenAICompatibleAdapter({
         name: 'custom',
