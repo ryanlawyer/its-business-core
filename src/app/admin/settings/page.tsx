@@ -772,6 +772,67 @@ export default function SettingsPage() {
                     If enabled, PO numbers will reset to 001 each year. If disabled, numbers will continue incrementing.
                   </p>
                 </div>
+
+                {/* Auto-Approval */}
+                <div className="border-t border-[var(--border-default)] pt-6">
+                  <h3 className="section-title mb-4">Auto-Approval</h3>
+                  <p className="text-sm text-[var(--text-secondary)] mb-4">
+                    When enabled, POs are automatically approved if the total amount is under the threshold and all line items are within their budget.
+                  </p>
+
+                  <div className="space-y-4">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={settings.purchaseOrders?.autoApproval?.enabled ?? false}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            purchaseOrders: {
+                              ...settings.purchaseOrders,
+                              autoApproval: {
+                                ...settings.purchaseOrders?.autoApproval,
+                                enabled: e.target.checked,
+                              },
+                            },
+                          })
+                        }
+                        className="mr-2"
+                      />
+                      <span className="text-sm font-medium text-[var(--text-secondary)]">Enable auto-approval for purchase orders</span>
+                    </label>
+
+                    {settings.purchaseOrders?.autoApproval?.enabled && (
+                      <div className="ml-6 border-l-2 border-[var(--border-default)] pl-4">
+                        <label className="form-label mb-2">
+                          Auto-Approval Threshold ($)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={settings.purchaseOrders?.autoApproval?.threshold ?? 500}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              purchaseOrders: {
+                                ...settings.purchaseOrders,
+                                autoApproval: {
+                                  ...settings.purchaseOrders?.autoApproval,
+                                  threshold: parseFloat(e.target.value) || 0,
+                                },
+                              },
+                            })
+                          }
+                          className="form-input w-48"
+                        />
+                        <p className="text-sm text-[var(--text-muted)] mt-1">
+                          POs at or under this amount will be auto-approved when all line items are within budget
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
